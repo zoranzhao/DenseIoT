@@ -84,7 +84,7 @@ void test_spare_client(){
 }
 
 void test_local(){
-   
+
    std::thread local_producer(job_producer, 120, "local_producer");
    std::thread local_consumer(job_consumer, 10, "local_consumer");
 
@@ -93,20 +93,42 @@ void test_local(){
 
 }
 
+void load_image(network *net){
+        char filename[256] = "data/val2017/1.jpg";
+#ifdef NNPACK
+	image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
+	image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
+#else
+	image im = load_image_color(filename,0,0);
+        image sized = letterbox_image(im, net->w, net->h);
+#endif
 
-void test_detector_dist(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
+}
+
+void get_image(image* im){
+    unsigned int size;
+    char* data;
+    int id;
+    get_job((void**)&data, &size, &id);
+    im->data = (float*)data;
+}
+
+//"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
+void test_detector_dist()
 {
-    printf("thresh %f hier_thresh %f\n",  thresh, hier_thresh);
-    list *options = read_data_cfg(datacfg);
+
+    list *options = read_data_cfg("cfg/coco.data");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
+    float thresh = .24;
+    float hier_thresh = .5;
+
 
     image **alphabet = load_alphabet();
-    network *net = load_network(cfgfile, weightfile, 0);
+    network *net = load_network("cfg/yolo.cfg", "yolo.weights", 0);
     set_batch_network(net, 1);
     srand(2222222);
-    char buff[256];
-    char *input = buff;
+    char filename[256] = "data/val2017/1.jpg";
     int j;
     float nms=.3;
 #ifdef NNPACK
@@ -116,18 +138,19 @@ void test_detector_dist(char *datacfg, char *cfgfile, char *weightfile, char *fi
 
     while(1){
 
-        strncpy(input, filename, 256);
-
 #ifdef NNPACK
-	image im = load_image_thread(input, 0, 0, net->c, net->threadpool);
+	image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
 	image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
 #else
-	image im = load_image_color(input,0,0);
+	image im = load_image_color(filename,0,0);
         image sized = letterbox_image(im, net->w, net->h);
 
 #endif
+        printf("Input image size is %d\n", sized.w*sized.h*sized.c);
+        printf("Input image w is %d\n", sized.w);
+        printf("Input image h is %d\n", sized.h);
+        printf("Input image c is %d\n", sized.c);
         layer l = net->layers[net->n-1];
-
         box *boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
         float **probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
         for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes + 1, sizeof(float *));
@@ -136,17 +159,17 @@ void test_detector_dist(char *datacfg, char *cfgfile, char *weightfile, char *fi
             masks = (float **)calloc(l.w*l.h*l.n, sizeof(float*));
             for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = (float *)calloc(l.coords-4, sizeof(float *));
         }
-
         float *X = sized.data;
         double t1=what_time_is_it_now();
 	network_predict_dist(net, X);
         double t2=what_time_is_it_now();
-	printf("%s: Predicted in %f s.\n", input, t2 - t1);
+	printf("%s: Predicted in %f s.\n", filename, t2 - t1);
         get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
 
         if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+        save_image(im, "predictions");
 /*      if(outfile){
             save_image(im, outfile);
         }
@@ -167,7 +190,7 @@ void test_detector_dist(char *datacfg, char *cfgfile, char *weightfile, char *fi
         free_image(sized);
         free(boxes);
         free_ptrs((void **)probs, l.w*l.h*l.n);
-        if (filename) break;
+	break;
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
@@ -181,9 +204,9 @@ void test_detector_dist(char *datacfg, char *cfgfile, char *weightfile, char *fi
 int main(int argc, char **argv)
 {
 
-    char *outfile = find_char_arg(argc, argv, "-out", 0);
-    int fullscreen = find_arg(argc, argv, "-fullscreen");
-    test_detector_dist(argv[1], argv[2], argv[3], argv[4], .24, .5, outfile, fullscreen);
+    //char *outfile = find_char_arg(argc, argv, "-out", 0);
+    //int fullscreen = find_arg(argc, argv, "-fullscreen");
+    test_detector_dist();
 
     return 0;
 }
