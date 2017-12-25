@@ -93,24 +93,29 @@ void test_local(){
 
 }
 
-void load_image(network *net){
-        char filename[256] = "data/val2017/1.jpg";
+image load_image(network *net){
+    char filename[256] = "data/val2017/1.jpg";
 #ifdef NNPACK
-	image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
-	image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
+    image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
+    image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
 #else
-	image im = load_image_color(filename,0,0);
-        image sized = letterbox_image(im, net->w, net->h);
+    image im = load_image_color(filename,0,0);
+    image sized = letterbox_image(im, net->w, net->h);
 #endif
-
+    unsigned int size;
+    size = (net->w)*(net->h)*(net->c);
+    put_job(sized.data, size, 0);
+    //ofs << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl;   
+    //std::cout << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl; 
+    return im;  
 }
 
 void get_image(image* im){
     unsigned int size;
-    char* data;
+    float* data;
     int id;
     get_job((void**)&data, &size, &id);
-    im->data = (float*)data;
+    im->data = data;
 }
 
 //"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
@@ -138,14 +143,10 @@ void test_detector_dist()
 
     while(1){
 
-#ifdef NNPACK
-	image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
-	image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
-#else
-	image im = load_image_color(filename,0,0);
-        image sized = letterbox_image(im, net->w, net->h);
-
-#endif
+        image sized;
+	sized.w = net->w; sized.h = net->h; sized.c = net->c;
+	image im = load_image(net);
+        get_image(&sized);
         printf("Input image size is %d\n", sized.w*sized.h*sized.c);
         printf("Input image w is %d\n", sized.w);
         printf("Input image h is %d\n", sized.h);
