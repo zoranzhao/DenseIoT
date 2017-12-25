@@ -38,7 +38,7 @@ $(OBJDIR)%.o: %.cpp $(DEPS)
 	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@
 
 test:
-	./$(EXEC) cfg/coco.data cfg/yolo.cfg yolo.weights data/dog.jpg
+	./$(EXEC)
 
 obj:
 	mkdir -p obj
