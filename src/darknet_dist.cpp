@@ -141,7 +141,7 @@ void test_detector_dist(std::string thread_name)
     network *net = load_network("cfg/yolo.cfg", "yolo.weights", 0);
     set_batch_network(net, 1);
 
-    //load_image();
+    load_images("local_producer");
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();
@@ -224,12 +224,12 @@ void test_detector_dist(std::string thread_name)
 
 int main(int argc, char **argv)
 {
-    std::thread local_producer(load_images, "local_producer");
-    std::thread local_consumer(test_detector_dist, "local_consumer");
+    //std::thread local_producer(load_images, "local_producer");
+    //std::thread local_consumer(test_detector_dist, "local_consumer");
 
-    local_producer.join();
-    local_consumer.join();
-
+    //local_producer.join();
+    //local_consumer.join();
+    test_detector_dist("local_consumer");
     return 0;
 }
 
