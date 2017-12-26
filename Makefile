@@ -46,4 +46,4 @@ obj:
 .PHONY: clean
 
 clean:
-	rm -rf $(EXEC) $(EXECOBJ) *.log
+	rm -rf $(EXEC) $(EXECOBJ) *.log *.png
