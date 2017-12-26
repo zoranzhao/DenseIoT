@@ -23,7 +23,7 @@ endif
 ifeq ($(NNPACK), 1)
 COMMON+= -DNNPACK
 CFLAGS+= -DNNPACK
-#LDFLAGS+= -lnnpack -lpthreadpool
+LDFLAGS+= -lnnpack -lpthreadpool
 endif
 
 ifeq ($(ARM_NEON), 1)
@@ -44,7 +44,7 @@ all: obj $(EXEC)
 
 
 $(EXEC): $(EXECOBJ)
-	$(CXX) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIB)
+	$(CXX) $(COMMON) $(CFLAGS) $^ -o $@  $(LDLIB) $(LDFLAGS)
 
 $(OBJDIR)%.o: %.cpp $(DEPS)
 	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@
