@@ -1,3 +1,5 @@
+NNPACK=0
+ARM_NEON=0
 VPATH=./src
 EXEC=darknet_dist
 OBJDIR=./obj/
@@ -17,6 +19,16 @@ LDLIB=-L$(DARKNET) -l:libdarknet.a -L$(RIOT) -l:libriot.a
 
 ifeq ($(DEBUG), 1) 
 OPTS=-O0 -g
+endif
+ifeq ($(NNPACK), 1)
+COMMON+= -DNNPACK
+CFLAGS+= -DNNPACK
+LDFLAGS+= -lnnpack -lpthreadpool
+endif
+
+ifeq ($(ARM_NEON), 1)
+COMMON+= -DARM_NEON
+CFLAGS+= -DARM_NEON -mfpu=neon-vfpv4 -funsafe-math-optimizations -ftree-vectorize
 endif
 
 CFLAGS+=$(OPTS)
