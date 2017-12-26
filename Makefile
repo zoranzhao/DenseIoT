@@ -1,5 +1,5 @@
-NNPACK=0
-ARM_NEON=0
+NNPACK=1
+ARM_NEON=1
 VPATH=./src
 EXEC=darknet_dist
 OBJDIR=./obj/
