@@ -1,6 +1,4 @@
-extern "C"{
 #include "darknet.h"
-}
 #include "riot.h"
 
 #include <fstream>
