@@ -111,7 +111,7 @@ void load_images(std::string thread_name){
 #ifdef DEBUG_DIST
     std::ofstream ofs (thread_name + ".log", std::ofstream::out);
 #endif 
-    for(id = 0; id < 10; id ++){
+    for(id = 0; id < 1000; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
 //#ifdef NNPACK
 //         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
@@ -159,7 +159,7 @@ void test_detector_dist(std::string thread_name)
 
     int j;
     int id = 0;//5000 > id > 0
-    for(id = 0; id < 5; id ++){
+    for(id = 0; id < 1000; id ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
 
