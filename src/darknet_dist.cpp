@@ -109,7 +109,11 @@ void load_images(std::string thread_name){
          image im = load_image_color(filename, 0, 0);
          image sized = letterbox_image(im, net->w, net->h);
 //#endif
+
          size = (net->w)*(net->h)*(net->c);
+#ifdef DEBUG_DIST
+	 ofs << "Task"<< id <<", size is: " << size << std::endl;  
+#endif 
          put_job(sized.data, size, 0);
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
