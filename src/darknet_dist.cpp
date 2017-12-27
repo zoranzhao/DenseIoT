@@ -202,8 +202,13 @@ void test_detector_dist(std::string thread_name)
         save_image(im, outfile);
         free(boxes);
         free_ptrs((void **)probs, l.w*l.h*l.n);
+        if (l.coords > 4){
+        	free_ptrs((void **)masks, l.w*l.h*l.n);
+	}
+        free_image(im);
 #endif
-        //free_image(im);
+        free_image(sized);
+
 /*      if(outfile){
             save_image(im, outfile);
         }
