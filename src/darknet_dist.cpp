@@ -99,11 +99,12 @@ void load_images(std::string thread_name){
     unsigned int size;
 #ifdef DEBUG_DIST
     std::ofstream ofs (thread_name + ".log", std::ofstream::out);
-#endif
+    std::cout << "Loading images ... ..." << std::endl;  
+#endif 
     for(id = 0; id < 100; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
 #ifdef DEBUG_DIST
-	 ofs << "Task file is: "<< filename << std::endl;  
+	 std::cout << "Task file is: "<< filename << std::endl;  
 #endif 
 //#ifdef NNPACK
 //         image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
