@@ -1,4 +1,5 @@
 #include "darknet.h"
+#include "option_list.h"
 #include "riot.h"
 
 #include <fstream>
@@ -92,31 +93,41 @@ void test_local(){
 
 }
 
+
+
 void load_images(std::string thread_name){
-    network *net = parse_network_cfg("cfg/yolo.cfg");
+
+
+
+    int h;
+    int w;
+    int c;
+
+    extract_network_cfg_input("cfg/yolo.cfg", &h, &w, &c);
     char filename[256];
     int id = 0;//5000 > id > 0
     unsigned int size;
+
 #ifdef DEBUG_DIST
     std::ofstream ofs (thread_name + ".log", std::ofstream::out);
 #endif 
     for(id = 0; id < 10; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
 //#ifdef NNPACK
-//         image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
-//         image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
+//         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+//         image sized = letterbox_image_thread(im, w, h, net->threadpool);
 //#else
          image im = load_image_color(filename, 0, 0);
-         image sized = letterbox_image(im, net->w, net->h);
+         image sized = letterbox_image(im, w, h);
 //#endif
 
-         size = (net->w)*(net->h)*(net->c);
+         size = (w)*(h)*(c);
          put_job(sized.data, size, 0);
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
 #endif 
     }
-    free_network(net);
+    //free_network(net);
     //ofs << "Put task "<< id <<", size is: " << size << std::endl;   
     //std::cout << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl; 
     //return im;  
@@ -134,10 +145,7 @@ void get_image(image* im){
 void test_detector_dist(std::string thread_name)
 {
 
-
-
-
-    load_images("local_producer");
+    //load_images("local_producer");
 
     network *net = load_network("cfg/yolo.cfg", "yolo.weights", 0);
     set_batch_network(net, 1);
@@ -225,12 +233,12 @@ void test_detector_dist(std::string thread_name)
 
 int main(int argc, char **argv)
 {
-    //std::thread local_producer(load_images, "local_producer");
-    //std::thread local_consumer(test_detector_dist, "local_consumer");
+    std::thread local_producer(load_images, "local_producer");
+    std::thread local_consumer(test_detector_dist, "local_consumer");
 
-    //local_producer.join();
-    //local_consumer.join();
-    test_detector_dist("local_consumer");
+    local_producer.join();
+    local_consumer.join();
+    //test_detector_dist("local_consumer");
     return 0;
 }
 
