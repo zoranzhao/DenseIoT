@@ -99,13 +99,9 @@ void load_images(std::string thread_name){
     unsigned int size;
 #ifdef DEBUG_DIST
     std::ofstream ofs (thread_name + ".log", std::ofstream::out);
-    std::cout << "Loading images ... ..." << std::endl;  
 #endif 
     for(id = 0; id < 100; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
-#ifdef DEBUG_DIST
-	 std::cout << "Task file is: "<< filename << std::endl;  
-#endif 
 //#ifdef NNPACK
 //         image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
 //         image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
@@ -115,7 +111,6 @@ void load_images(std::string thread_name){
 //#endif
 
          size = (net->w)*(net->h)*(net->c);
-
          put_job(sized.data, size, 0);
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
@@ -142,12 +137,12 @@ void test_detector_dist(std::string thread_name)
 
 
 
-
+    load_images("local_producer");
 
     network *net = load_network("cfg/yolo.cfg", "yolo.weights", 0);
     set_batch_network(net, 1);
 
-    load_images("local_producer");
+
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();
