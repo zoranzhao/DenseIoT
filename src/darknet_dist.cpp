@@ -102,6 +102,9 @@ void load_images(std::string thread_name){
 #endif
     for(id = 0; id < 100; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
+#ifdef DEBUG_DIST
+	 ofs << "Task file is: "<< filename << std::endl;  
+#endif 
 //#ifdef NNPACK
 //         image im = load_image_thread(filename, 0, 0, net->c, net->threadpool);
 //         image sized = letterbox_image_thread(im, net->w, net->h, net->threadpool);
@@ -109,9 +112,7 @@ void load_images(std::string thread_name){
          image im = load_image_color(filename, 0, 0);
          image sized = letterbox_image(im, net->w, net->h);
 //#endif
-#ifdef DEBUG_DIST
-	 ofs << "Task file is: "<< filename << std::endl;  
-#endif 
+
          size = (net->w)*(net->h)*(net->c);
 
          put_job(sized.data, size, 0);
