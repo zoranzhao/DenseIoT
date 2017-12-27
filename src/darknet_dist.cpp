@@ -116,7 +116,7 @@ void load_images(std::string thread_name){
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
 #endif 
     }
-
+    free_network(net);
     //ofs << "Put task "<< id <<", size is: " << size << std::endl;   
     //std::cout << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl; 
     //return im;  
