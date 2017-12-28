@@ -258,8 +258,8 @@ void server_and_local(){
 
 
 void stealer_only(){
-    std::thread rp(remote_producer, 2, "remote_producer1");
-    std::thread lc(local_consumer, 2, "local_consumer1");
+    std::thread rp(remote_producer, 20, "remote_producer1");
+    std::thread lc(local_consumer, 20, "local_consumer1");
     rp.join();
     lc.join();
 }
