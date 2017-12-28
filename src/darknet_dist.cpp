@@ -182,10 +182,10 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
 
         get_image(&sized, &id);
-        printf("Input image size is %d\n", sized.w*sized.h*sized.c);
-        printf("Input image w is %d\n", sized.w);
-        printf("Input image h is %d\n", sized.h);
-        printf("Input image c is %d\n", sized.c);
+        //printf("Input image size is %d\n", sized.w*sized.h*sized.c);
+        //printf("Input image w is %d\n", sized.w);
+        //printf("Input image h is %d\n", sized.h);
+        //printf("Input image c is %d\n", sized.c);
 
         float *X = sized.data;
         double t1=what_time_is_it_now();
@@ -247,9 +247,9 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 
 void server_and_local(){
-    std::thread lp(local_producer, 40, "local_producer1");
-    std::thread lc(local_consumer, 20, "local_consumer1");
-    std::thread rc(remote_consumer, 20, "remote_consumer1");
+    std::thread lp(local_producer, 4, "local_producer1");
+    std::thread lc(local_consumer, 2, "local_consumer1");
+    std::thread rc(remote_consumer, 2, "remote_consumer1");
     lp.join();
     lc.join();
     rc.join();
@@ -258,8 +258,8 @@ void server_and_local(){
 
 
 void stealer_only(){
-    std::thread rp(remote_producer, 20, "remote_producer1");
-    std::thread lc(local_consumer, 20, "local_consumer1");
+    std::thread rp(remote_producer, 2, "remote_producer1");
+    std::thread lc(local_consumer, 2, "local_consumer1");
     rp.join();
     lc.join();
 }
