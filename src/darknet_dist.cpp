@@ -126,6 +126,7 @@ void load_images(std::string thread_name){
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
 #endif 
+         free_image(im);
     }
     //free_network(net);
     //ofs << "Put task "<< id <<", size is: " << size << std::endl;   
@@ -157,6 +158,18 @@ void test_detector_dist(std::string thread_name)
     net->threadpool = pthreadpool_create(4);
 #endif
 
+#ifdef DEBUG_DIST
+    image **alphabet = load_alphabet();
+    list *options = read_data_cfg("cfg/coco.data");
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+    char filename[256];
+    char outfile[256];
+    float thresh = .24;
+    float hier_thresh = .5;
+    float nms=.3;
+#endif
+
     int j;
     int id = 0;//5000 > id > 0
     for(id = 0; id < 1000; id ++){
@@ -174,15 +187,8 @@ void test_detector_dist(std::string thread_name)
 	network_predict_dist(net, X);
         double t2=what_time_is_it_now();
 #ifdef DEBUG_DIST
-	char filename[256];
-	char outfile[256];
-        float thresh = .24;
-        float hier_thresh = .5;
-	float nms=.3;
-        image **alphabet = load_alphabet();
-        list *options = read_data_cfg("cfg/coco.data");
-        char *name_list = option_find_str(options, "names", "data/names.list");
-        char **names = get_labels(name_list);
+
+
 	sprintf(filename, "data/val2017/%d.jpg", id);
 	sprintf(outfile, "%d", id);
         layer l = net->layers[net->n-1];
