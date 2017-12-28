@@ -18,25 +18,17 @@
 #define ORANGE1  "192.168.42.13"
 
 #define DEBUG_DIST 1
-
-//Generate ramdom jobs into the queue
-void job_producer(unsigned int number_of_jobs, std::string thread_name){
-    //std::ofstream ofs (thread_name + ".log", std::ofstream::out);
-    std::thread::id this_id = std::this_thread::get_id();
-    unsigned int size;
-    char* data;
-    for(unsigned int id = 0; id < number_of_jobs; id++){
-        size=(id+1)*1000;
-        data = (char*)malloc(size);
-        put_job(data, size, id);
-        //ofs << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl;   
-        std::cout << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl;   
-
-    }
-    //ofs.close();
-}
-
-
+//    Busy         idle stealer  
+//     b0 <---steal--- o0
+//      \              /
+//       \            /
+//        \          /
+//         \        /
+//          \      /
+//           \    /
+//            \  /
+//	       p0    //Final output
+/*
 
 void job_consumer(unsigned int number_of_jobs, std::string thread_name){
 
@@ -54,11 +46,6 @@ void job_consumer(unsigned int number_of_jobs, std::string thread_name){
 
 }
 
-void busy_steal_jobs(unsigned int number_of_jobs){
-   for(unsigned int i = 0; i < number_of_jobs; i++){
-   	steal_and_push(SRV_IP, PORTNO, i);
-   }
-}
 
 
 void test_busy_client(){
@@ -92,26 +79,37 @@ void test_local(){
    local_consumer.join();
 
 }
+*/
 
 
 
-void load_images(std::string thread_name){
+void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
+	serve_steal(number_of_jobs, PORTNO);
+}
 
 
+void remote_producer(unsigned int number_of_jobs, std::string thread_name){
+   for(unsigned int i = 0; i < number_of_jobs; i++){
+   	steal_and_push(BLUE0, PORTNO, i);
+   }
+}
 
+
+//Load images from file into the shared dequeue 
+void local_producer(unsigned int number_of_jobs, std::string thread_name){
     int h;
     int w;
     int c;
-
-    extract_network_cfg_input("cfg/yolo.cfg", &h, &w, &c);
+    //std::thread::id this_id = std::this_thread::get_id();
+    extract_network_cfg_input((char*)"cfg/yolo.cfg", &h, &w, &c);
     char filename[256];
-    int id = 0;//5000 > id > 0
+    unsigned int id = 0;//5000 > id > 0
     unsigned int size;
 
 #ifdef DEBUG_DIST
     std::ofstream ofs (thread_name + ".log", std::ofstream::out);
 #endif 
-    for(id = 0; id < 1000; id ++){
+    for(id = 0; id < number_of_jobs; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
 //#ifdef NNPACK
 //         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
@@ -122,12 +120,16 @@ void load_images(std::string thread_name){
 //#endif
 
          size = (w)*(h)*(c);
-         put_job(sized.data, size, 0);
+         put_job(sized.data, size, id);
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
 #endif 
          free_image(im);
     }
+#ifdef DEBUG_DIST
+    ofs.close();
+#endif 
+
     //free_network(net);
     //ofs << "Put task "<< id <<", size is: " << size << std::endl;   
     //std::cout << "Thread "<< this_id <<" put task "<< id <<", size is: " << size << std::endl; 
@@ -140,15 +142,16 @@ void get_image(image* im){
     int id;
     get_job((void**)&data, &size, &id);
     im->data = data;
+    printf("Processing task id is %d\n", id);
 }
 
 //"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
-void test_detector_dist(std::string thread_name)
+void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 {
 
     //load_images("local_producer");
 
-    network *net = load_network("cfg/yolo.cfg", "yolo.weights", 0);
+    network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(net, 1);
 
 
@@ -160,8 +163,8 @@ void test_detector_dist(std::string thread_name)
 
 #ifdef DEBUG_DIST
     image **alphabet = load_alphabet();
-    list *options = read_data_cfg("cfg/coco.data");
-    char *name_list = option_find_str(options, "names", "data/names.list");
+    list *options = read_data_cfg((char*)"cfg/coco.data");
+    char *name_list = option_find_str(options, (char*)"names", (char*)"data/names.list");
     char **names = get_labels(name_list);
     char filename[256];
     char outfile[256];
@@ -171,8 +174,8 @@ void test_detector_dist(std::string thread_name)
 #endif
 
     int j;
-    int id = 0;//5000 > id > 0
-    for(id = 0; id < 1000; id ++){
+    unsigned int id = 0;//5000 > id > 0
+    for(id = 0; id < number_of_jobs; id ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
 
@@ -241,15 +244,38 @@ void test_detector_dist(std::string thread_name)
 
 
 
+void server_and_local(){
+    std::thread lp(local_producer, 20, "local_producer1");
+    std::thread lc(local_consumer, 20, "local_consumer1");
+    std::thread rc(remote_consumer, 20, "remote_consumer1");
+    lp.join();
+    lc.join();
+    rc.join();
+}
+
+
+
+void stealer_only(){
+    std::thread rp(remote_producer, 20, "remote_producer1");
+    std::thread lc(local_consumer, 20, "local_consumer1");
+    rp.join();
+    lc.join();
+}
+
+
+void local_only(){
+    std::thread lp(local_producer, 20, "local_producer1");
+    std::thread lc(local_consumer, 20, "local_consumer1");
+    lp.join();
+    lc.join();
+}
+
 
 int main(int argc, char **argv)
 {
-    std::thread local_producer(load_images, "local_producer");
-    std::thread local_consumer(test_detector_dist, "local_consumer");
-
-    local_producer.join();
-    local_consumer.join();
-    //test_detector_dist("local_consumer");
+    //server_and_local();
+    //stealer_only();
+    local_only();
     return 0;
 }
 
