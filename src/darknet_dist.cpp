@@ -90,7 +90,7 @@ void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 
 void remote_producer(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
-   	steal_and_push(BLUE0, PORTNO, i);
+   	steal_and_push(SRV_IP, PORTNO, i);
    }
 }
 
@@ -245,7 +245,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 
 void server_and_local(){
-    std::thread lp(local_producer, 20, "local_producer1");
+    std::thread lp(local_producer, 40, "local_producer1");
     std::thread lc(local_consumer, 20, "local_consumer1");
     std::thread rc(remote_consumer, 20, "remote_consumer1");
     lp.join();
@@ -273,9 +273,9 @@ void local_only(){
 
 int main(int argc, char **argv)
 {
-    //server_and_local();
+    server_and_local();
     //stealer_only();
-    local_only();
+    //local_only();
     return 0;
 }
 
