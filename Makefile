@@ -9,7 +9,7 @@ CC=gcc
 CXX=g++
 AR=ar
 ARFLAGS=rcs
-OPTS= -std=c++11 -Ofast
+
 LDFLAGS= -lm -pthread 
 CFLAGS=-Wall -fPIC
 DARKNET= ../darknet-nnpack
@@ -19,7 +19,9 @@ LDLIB=-L$(DARKNET) -l:libdarknet.a -L$(RIOT) -l:libriot.a
 
 
 ifeq ($(DEBUG), 1) 
-OPTS=-O0 -g
+OPTS+=-O0 -g -std=c++11
+else
+OPTS= -std=c++11 -Ofast
 endif
 ifeq ($(NNPACK), 1)
 COMMON+= -DNNPACK
