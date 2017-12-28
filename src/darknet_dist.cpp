@@ -136,11 +136,12 @@ void local_producer(unsigned int number_of_jobs, std::string thread_name){
     //return im;  
 }
 
-void get_image(image* im){
+void get_image(image* im, int* im_id){
     unsigned int size;
     float* data;
     int id;
     get_job((void**)&data, &size, &id);
+    *im_id = id;
     im->data = data;
     printf("Processing task id is %d\n", id);
 }
@@ -174,12 +175,13 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 #endif
 
     int j;
-    unsigned int id = 0;//5000 > id > 0
-    for(id = 0; id < number_of_jobs; id ++){
+    int id = 0;//5000 > id > 0
+    unsigned int cnt = 0;//5000 > id > 0
+    for(cnt = 0; cnt < number_of_jobs; cnt ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
 
-        get_image(&sized);
+        get_image(&sized, &id);
         printf("Input image size is %d\n", sized.w*sized.h*sized.c);
         printf("Input image w is %d\n", sized.w);
         printf("Input image h is %d\n", sized.h);
