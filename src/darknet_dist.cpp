@@ -247,9 +247,9 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 
 void server_and_local(){
-    std::thread lp(local_producer, 4, "local_producer1");
-    std::thread lc(local_consumer, 2, "local_consumer1");
-    std::thread rc(remote_consumer, 2, "remote_consumer1");
+    std::thread lp(local_producer, 40, "local_producer1");
+    std::thread lc(local_consumer, 20, "local_consumer1");
+    std::thread rc(remote_consumer, 20, "remote_consumer1");
     lp.join();
     lc.join();
     rc.join();
