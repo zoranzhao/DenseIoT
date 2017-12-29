@@ -120,7 +120,7 @@ void local_producer(unsigned int number_of_jobs, std::string thread_name){
 //#endif
 
          size = (w)*(h)*(c);
-         put_job(sized.data, size, id);
+         put_job(sized.data, size*sizeof(float), id);
 #ifdef DEBUG_DIST
 	 ofs << "Put task "<< id <<", size is: " << size << std::endl;  
 #endif 
@@ -285,8 +285,8 @@ int main(int argc, char **argv)
 {
     //server_and_local();
     //stealer_only();
-    //server_only();
-    local_only();
+    server_only();
+    //local_only();
     return 0;
 }
 
