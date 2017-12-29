@@ -256,6 +256,14 @@ void server_and_local(){
 }
 
 
+void server_only(){
+    std::thread lp(local_producer, 20, "local_producer1");
+    std::thread rc(remote_consumer, 20, "remote_consumer1");
+    lp.join();
+    rc.join();
+}
+
+
 
 void stealer_only(){
     std::thread rp(remote_producer, 20, "remote_producer1");
@@ -277,6 +285,7 @@ int main(int argc, char **argv)
 {
     //server_and_local();
     //stealer_only();
+    //server_only();
     local_only();
     return 0;
 }
