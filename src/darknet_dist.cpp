@@ -4,10 +4,12 @@
 
 int main(int argc, char **argv)
 {
-    //server_and_local();
-    //stealer_only();
-    server_only();
-    //local_only();
+    //produce_consume();
+    //produce_consume_serve();
+    produce_serve();
+    //steal_consume();
+    //steal_only();
+
     return 0;
 }
 

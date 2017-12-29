@@ -246,7 +246,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 
 
-void server_and_local(){
+void produce_consume_serve(){
     std::thread lp(local_producer, 40, "local_producer1");
     std::thread lc(local_consumer, 20, "local_consumer1");
     std::thread rc(remote_consumer, 20, "remote_consumer1");
@@ -256,7 +256,7 @@ void server_and_local(){
 }
 
 
-void server_only(){
+void produce_serve(){
     std::thread lp(local_producer, 20, "local_producer1");
     std::thread rc(remote_consumer, 20, "remote_consumer1");
     lp.join();
@@ -265,7 +265,13 @@ void server_only(){
 
 
 
-void stealer_only(){
+void steal_only(){
+    std::thread rp(remote_producer, 20, "remote_producer1");
+    rp.join();
+}
+
+
+void steal_consume(){
     std::thread rp(remote_producer, 20, "remote_producer1");
     std::thread lc(local_consumer, 20, "local_consumer1");
     rp.join();
@@ -273,7 +279,7 @@ void stealer_only(){
 }
 
 
-void local_only(){
+void produce_consume(){
     std::thread lp(local_producer, 20, "local_producer1");
     std::thread lc(local_consumer, 20, "local_consumer1");
     lp.join();
