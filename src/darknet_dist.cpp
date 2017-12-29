@@ -275,9 +275,9 @@ void local_only(){
 
 int main(int argc, char **argv)
 {
-    server_and_local();
+    //server_and_local();
     //stealer_only();
-    //local_only();
+    local_only();
     return 0;
 }
 
