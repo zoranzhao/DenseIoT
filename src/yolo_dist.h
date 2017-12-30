@@ -90,7 +90,7 @@ void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 
 void remote_producer(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
-   	steal_and_push(SRV_IP, PORTNO);
+   	steal_and_push(AP, PORTNO);
    }
 }
 
