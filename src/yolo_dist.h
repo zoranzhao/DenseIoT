@@ -1,6 +1,7 @@
-#include "darknet.h"
-#include "option_list.h"
-#include "riot.h"
+
+
+//#include "riot.h"
+#include "darknet_dist.h"
 
 #include <fstream>
 
@@ -189,7 +190,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
         float *X = sized.data;
         double t1=what_time_is_it_now();
-	network_predict_dist(net, X);
+	network_predict_dist_test(net, X);
         double t2=what_time_is_it_now();
 #ifdef DEBUG_DIST
 
@@ -280,8 +281,8 @@ void steal_consume(){
 
 
 void produce_consume(){
-    std::thread lp(local_producer, 20, "local_producer1");
-    std::thread lc(local_consumer, 20, "local_consumer1");
+    std::thread lp(local_producer, 1, "local_producer1");
+    std::thread lc(local_consumer, 1, "local_consumer1");
     lp.join();
     lc.join();
 }

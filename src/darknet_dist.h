@@ -148,7 +148,7 @@ inline float *network_predict_dist_test(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist(net);
+    forward_network_dist_test(net);
     float *out = net->output;
     *net = orig;
     return out;
