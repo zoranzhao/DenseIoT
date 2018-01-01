@@ -73,13 +73,13 @@ void local_producer(unsigned int number_of_jobs, std::string thread_name){
 #endif 
     for(id = 0; id < number_of_jobs; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
-#ifdef NNPACK
-         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
-         image sized = letterbox_image_thread(im, w, h, net->threadpool);
-#else
+//#ifdef NNPACK
+//         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+//         image sized = letterbox_image_thread(im, w, h, net->threadpool);
+//#else
          image im = load_image_color(filename, 0, 0);
          image sized = letterbox_image(im, w, h);
-#endif
+//#endif
          size = (w)*(h)*(c);
          put_job(sized.data, size*sizeof(float), id);
 #ifdef DEBUG_DIST
