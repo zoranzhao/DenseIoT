@@ -44,14 +44,14 @@ void load_image_by_number(image* img, unsigned int id){
     int w = img->w;
     char filename[256];
     sprintf(filename, "data/val2017/%d.jpg", id);
-#ifdef NNPACK
-    int c = img->c;
-    image im = load_image_thread(filename, 0, 0, c, net->threadpool);
-    image sized = letterbox_image_thread(im, w, h, net->threadpool);
-#else
+//#ifdef NNPACK
+//    int c = img->c;
+//    image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+//    image sized = letterbox_image_thread(im, w, h, net->threadpool);
+//#else
     image im = load_image_color(filename, 0, 0);
     image sized = letterbox_image(im, w, h);
-#endif
+//#endif
     free_image(im);
     img->data = sized.data;
 }
