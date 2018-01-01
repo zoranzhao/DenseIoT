@@ -169,11 +169,11 @@ def test_plot_figure(style_label=""):
 
     fig, axes = plt.subplots(ncols=1, nrows=2, num=style_label,
                              figsize=fig_size, squeeze=True)
-    axes[0].set_ylabel("layer_data_byte_num.log")
+    axes[0].set_ylabel("layer_data_time.log")
     axes[1].set_ylabel("layer_exe_time.log")
 
-    test_plot_bar(axes[0], "layer_data_byte_num.log")
-    test_plot_bar(axes[1], "layer_exe_time.log")
+    test_plot_bar(axes[0], "./profile/layer_data_time.log")
+    test_plot_bar(axes[1], "./profile/layer_exe_time.log")
 
     fig.tight_layout()
 
