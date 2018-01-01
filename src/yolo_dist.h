@@ -1,24 +1,6 @@
-
-
-//#include "riot.h"
 #include "darknet_dist.h"
 
-#include <fstream>
 
-#define PORTNO 11111
-#define SRV_IP "10.145.85.169"
-
-#define AP "192.168.42.1"
-
-#define PINK0    "192.168.42.16"
-#define BLUE0    "192.168.42.14"
-#define ORANGE0  "192.168.42.15"
-
-#define PINK1    "192.168.42.11"
-#define BLUE1    "192.168.42.12"
-#define ORANGE1  "192.168.42.13"
-
-#define DEBUG_DIST 1
 //    Busy         idle stealer  
 //     b0 <---steal--- o0
 //      \              /
@@ -29,71 +11,50 @@
 //           \    /
 //            \  /
 //	       p0    //Final output
-/*
-
-void job_consumer(unsigned int number_of_jobs, std::string thread_name){
-
-    std::ofstream ofs (thread_name + ".log", std::ofstream::out);
-    std::thread::id this_id = std::this_thread::get_id();
-    unsigned int size;
-    char* data;
-    int id;
-    for(unsigned int i = 0; i < number_of_jobs; i++){
-	get_job((void**)&data, &size, &id);
-        ofs << "Thread "<< this_id <<" got task "<< id <<", size is: " << size << std::endl;
-    }
-    ofs.close();
-    free(data);
-
-}
-
-
-
-void test_busy_client(){
-
-   std::thread remote_consumer(serve_steal, PORTNO);   
-   std::thread local_producer(job_producer, 200, "local_producer");
-   std::thread local_consumer(job_consumer, 10,  "local_consumer");
-
-   remote_consumer.join();
-   local_producer.join();
-   local_consumer.join();
-
-}
-
-void test_spare_client(){
-
-   std::thread remote_producer(busy_steal_jobs, 100);
-   std::thread local_consumer(job_consumer, 90, "local_consumer");
-
-   local_consumer.join();
-   remote_producer.join();
-
-}
-
-void test_local(){
-
-   std::thread local_producer(job_producer, 120, "local_producer");
-   std::thread local_consumer(job_consumer, 10, "local_consumer");
-
-   local_producer.join();
-   local_consumer.join();
-
-}
-*/
-
 
 
 void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 	serve_steal(number_of_jobs, PORTNO);
+/*
+	unsigned int bytes_length;
+	char* blob_buffer;
+	int job_id;
+	unsigned int id;
+	for(id = 0; id < number_of_jobs; id ++){
+		get_job((void**)&blob_buffer, &bytes_length, &job_id);
+		std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
+		//free(blob_buffer);
+	}
+*/
 }
 
 
 void remote_producer(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
-   	steal_and_push(AP, PORTNO);
+   	steal_and_push(SRV, PORTNO);
    }
 }
+
+
+
+//Load images by name
+void load_image_by_number(image* img, unsigned int id){
+    int h = img->h;
+    int w = img->w;
+    char filename[256];
+    sprintf(filename, "data/val2017/%d.jpg", id);
+#ifdef NNPACK
+    int c = img->c;
+    image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+    image sized = letterbox_image_thread(im, w, h, net->threadpool);
+#else
+    image im = load_image_color(filename, 0, 0);
+    image sized = letterbox_image(im, w, h);
+#endif
+    free_image(im);
+    img->data = sized.data;
+}
+
 
 
 //Load images from file into the shared dequeue 
@@ -112,14 +73,13 @@ void local_producer(unsigned int number_of_jobs, std::string thread_name){
 #endif 
     for(id = 0; id < number_of_jobs; id ++){
          sprintf(filename, "data/val2017/%d.jpg", id);
-//#ifdef NNPACK
-//         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
-//         image sized = letterbox_image_thread(im, w, h, net->threadpool);
-//#else
+#ifdef NNPACK
+         image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+         image sized = letterbox_image_thread(im, w, h, net->threadpool);
+#else
          image im = load_image_color(filename, 0, 0);
          image sized = letterbox_image(im, w, h);
-//#endif
-
+#endif
          size = (w)*(h)*(c);
          put_job(sized.data, size*sizeof(float), id);
 #ifdef DEBUG_DIST
@@ -182,7 +142,8 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
 
-        get_image(&sized, &id);
+	id = cnt;
+        load_image_by_number(&sized, id);
         //printf("Input image size is %d\n", sized.w*sized.h*sized.c);
         //printf("Input image w is %d\n", sized.w);
         //printf("Input image h is %d\n", sized.h);
@@ -247,6 +208,8 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 
 
+
+
 void produce_consume_serve(){
     std::thread lp(local_producer, 40, "local_producer1");
     std::thread lc(local_consumer, 20, "local_consumer1");
@@ -255,6 +218,22 @@ void produce_consume_serve(){
     lc.join();
     rc.join();
 }
+
+//layer-based communication profiling
+void consume_serve(){
+    unsigned int layers = 32;
+    std::thread lc(local_consumer, 1, "local_consumer1");//pushing 
+    std::thread rc(remote_consumer, layers, "remote_consumer1");
+    lc.join();
+    rc.join();
+}
+void steal_only(){
+    unsigned int layers = 32;
+    std::thread rp(remote_producer, layers, "remote_producer1");
+    rp.join();
+}
+//layer-based communication profiling
+
 
 
 void produce_serve(){
@@ -266,9 +245,11 @@ void produce_serve(){
 
 
 
-void steal_only(){
-    std::thread rp(remote_producer, 20, "remote_producer1");
-    rp.join();
+
+
+void consume_only(){
+    std::thread lc(local_consumer, 1, "local_consumer1");
+    lc.join();
 }
 
 
