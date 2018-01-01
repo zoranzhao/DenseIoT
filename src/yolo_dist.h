@@ -152,7 +152,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
         float *X = sized.data;
         double t1=what_time_is_it_now();
-	network_predict_dist_test(net, X);
+	network_predict_dist_prof_exe(net, X);
         double t2=what_time_is_it_now();
 #ifdef DEBUG_DIST
 

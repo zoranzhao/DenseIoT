@@ -188,3 +188,17 @@ inline float *network_predict_dist_test(network *net, float *input)
     *net = orig;
     return out;
 }
+
+
+inline float *network_predict_dist_prof_exe(network *net, float *input)
+{
+    network orig = *net;
+    net->input = input;
+    net->truth = 0;
+    net->train = 0;
+    net->delta = 0;
+    forward_network_dist_prof_exe(net);
+    float *out = net->output;
+    *net = orig;
+    return out;
+}
