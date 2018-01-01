@@ -99,8 +99,8 @@ inline void forward_network_dist_prof_exe(network *netp)
     //net.input
     //double read_t = 0;
     //double write_t = 0;
-    //double t0 = 0;
-    //double t1 = 0;
+    double t0 = 0;
+    double t1 = 0;
     FILE *time_file;
     FILE *data_file;
     time_file = fopen("layer_exe_time.log", "w");
@@ -110,10 +110,6 @@ inline void forward_network_dist_prof_exe(network *netp)
 
         t0 = what_time_is_it_now();
         net.index = i;
-        //layer l = net.layers[i];
-
-
-
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
