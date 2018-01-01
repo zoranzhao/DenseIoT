@@ -154,7 +154,6 @@ inline void forward_network_dist_test(network *netp)
     int i;
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
-        t0 = what_time_is_it_now();
         net.index = i;
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
@@ -165,7 +164,6 @@ inline void forward_network_dist_test(network *netp)
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
         }
-        t1 = what_time_is_it_now();
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
     }
