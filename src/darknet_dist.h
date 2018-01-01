@@ -91,8 +91,7 @@ void read_layer_test(network *netp, int idx)
 
 }
 
-
-inline void forward_network_dist_test(network *netp)
+inline void forward_network_dist_prof_exe(network *netp)
 {
     network net = *netp;
     int i;
@@ -102,14 +101,14 @@ inline void forward_network_dist_test(network *netp)
     //double write_t = 0;
     //double t0 = 0;
     //double t1 = 0;
-    //FILE *time_file;
-    //FILE *data_file;
-    //time_file = fopen("layer_exe_time.log", "w");
-    //data_file = fopen("layer_data_byte_num.log", "w");
+    FILE *time_file;
+    FILE *data_file;
+    time_file = fopen("layer_exe_time.log", "w");
+    data_file = fopen("layer_data_byte_num.log", "w");
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
 
-        //t0 = what_time_is_it_now();
+        t0 = what_time_is_it_now();
         net.index = i;
         //layer l = net.layers[i];
 
@@ -118,20 +117,19 @@ inline void forward_network_dist_test(network *netp)
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
-	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
         net.layers[i].forward(net.layers[i], net);
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
         }
-        //t1 = what_time_is_it_now();
+        t1 = what_time_is_it_now();
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
 
 
 	//printf("Processing time is: %lf\n", t1 - t0);
-        //fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
-        //fprintf(time_file, "%lf\n", t1 - t0 );
+        fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
+        fprintf(time_file, "%lf\n", t1 - t0 );
 /*
 	if(i > 0){
             double t1 = what_time_is_it_now();
@@ -148,10 +146,34 @@ inline void forward_network_dist_test(network *netp)
 */
     }
 
-    //fclose(time_file);
-    //fclose(data_file);
+    fclose(time_file);
+    fclose(data_file);
     //printf("Writing time is: %lf, reading time is: %lf\n", read_t, write_t);
     //calc_network_cost(netp);
+}
+
+inline void forward_network_dist_test(network *netp)
+{
+    network net = *netp;
+    int i;
+
+    for(i = 0; i < net.n; ++i){//Iteratively execute the layers
+        t0 = what_time_is_it_now();
+        net.index = i;
+        if(net.layers[i].delta){	       
+            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
+        }
+	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
+        net.layers[i].forward(net.layers[i], net);
+        net.input = net.layers[i].output;  //Layer output
+        if(net.layers[i].truth) {
+            net.truth = net.layers[i].output;
+        }
+        t1 = what_time_is_it_now();
+        printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
+		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
+    }
+
 }
 
 inline float *network_predict_dist_test(network *net, float *input)
