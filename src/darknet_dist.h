@@ -1,8 +1,5 @@
-#include <stdio.h>
-#include <time.h>
-#include <assert.h>
-#include "darknet.h"
 
+#include "darknet.h"
 
 extern "C"{
 #include "image.h"
@@ -43,18 +40,28 @@ extern "C"{
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <time.h>
+#include <assert.h>
 
 #include "riot.h"
-//	char datafile[80];
-
-//	sprintf(datafile, "data_%d.bin", i);
-//	FILE *file = fopen(datafile, "wb");
-//	fwrite(l.output, sizeof(float), l.outputs, file);
-//	fclose(file);
 
 
-        //printf("Float is %d, Layer %s spends %f, output data size is: %d\n", sizeof(float), get_layer_string(l.type), t2 - t1, l.outputs);
 
+#define PORTNO 11111
+#define SRV "10.145.85.169"
+
+#define AP "192.168.42.1"
+
+#define PINK0    "192.168.42.16"
+#define BLUE0    "192.168.42.14"
+#define ORANGE0  "192.168.42.15"
+
+#define PINK1    "192.168.42.11"
+#define BLUE1    "192.168.42.12"
+#define ORANGE1  "192.168.42.13"
+
+#define DEBUG_DIST 1
 
 void write_layer_test(network *netp, int idx)
 {
@@ -93,32 +100,38 @@ inline void forward_network_dist_test(network *netp)
     //net.input
     //double read_t = 0;
     //double write_t = 0;
-    double t0 = 0;
-    double t1 = 0;
-    FILE *time_file;
-    FILE *data_file;
-    time_file = fopen("layer_exe_time.log", "w");
-    data_file = fopen("layer_data_byte_num.log", "w");
+    //double t0 = 0;
+    //double t1 = 0;
+    //FILE *time_file;
+    //FILE *data_file;
+    //time_file = fopen("layer_exe_time.log", "w");
+    //data_file = fopen("layer_data_byte_num.log", "w");
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
 
-        t0 = what_time_is_it_now();
+        //t0 = what_time_is_it_now();
         net.index = i;
         //layer l = net.layers[i];
+
+
+
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
+	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
         net.layers[i].forward(net.layers[i], net);
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
         }
-        t1 = what_time_is_it_now();
-        //printf("Index %d, Layer %s, input data byte num is: %d, output data byte num is: %d\n", 
-	//	i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
+        //t1 = what_time_is_it_now();
+        printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
+		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
+
+
 	//printf("Processing time is: %lf\n", t1 - t0);
-        fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
-        fprintf(time_file, "%lf\n", t1 - t0 );
+        //fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
+        //fprintf(time_file, "%lf\n", t1 - t0 );
 /*
 	if(i > 0){
             double t1 = what_time_is_it_now();
@@ -135,8 +148,8 @@ inline void forward_network_dist_test(network *netp)
 */
     }
 
-    fclose(time_file);
-    fclose(data_file);
+    //fclose(time_file);
+    //fclose(data_file);
     //printf("Writing time is: %lf, reading time is: %lf\n", read_t, write_t);
     //calc_network_cost(netp);
 }
