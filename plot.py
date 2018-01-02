@@ -137,7 +137,7 @@ def load_data(filename=""):
         content = [float(x.strip()) for x in content] 
     return content
 
-def test_plot_bar(ax, filename=""):
+def test_plot_bar1(ax, filename=""):
     """Plot two bar graphs side by side, with letters as x-tick labels.
     """
     #y =  load_data("layer_data.log")
@@ -149,6 +149,27 @@ def test_plot_bar(ax, filename=""):
     width = 0.5
     ax.bar(x, y, width)
     #ax.bar(x + width, yb, width, color='C2')
+    #ax.bar(ind + width + xtra_space, lwipg9[8:20] ,width, edgecolor=colorsgreen[2],  fill=False,  hatch=hatches[2], bottom=compg9[8:20])
+
+    #ax.set_xticks(x + width)
+    #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
+    return ax
+
+def test_plot_bar2(ax, filename1="", filename2=""):
+    """Plot two bar graphs side by side, with letters as x-tick labels.
+    """
+    #y =  load_data("layer_data.log")
+    y1 =  load_data(filename1)
+    y2 =  load_data(filename2)
+    x = np.arange(len(y1))
+    print x
+
+
+    width = 0.5
+    ax.bar(x, y1, width)
+    #ax.bar(x + width, yb, width, color='C2')
+    ax.bar(x, y2, width, bottom=y1)
+
 
     #ax.set_xticks(x + width)
     #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
@@ -167,13 +188,18 @@ def test_plot_figure(style_label=""):
     (fig_width, fig_height) = plt.rcParams['figure.figsize']
     fig_size = [fig_width * 2, fig_height / 2]
 
-    fig, axes = plt.subplots(ncols=1, nrows=2, num=style_label,
+    fig, axes = plt.subplots(ncols=1, nrows=3, num=style_label,
                              figsize=fig_size, squeeze=True)
-    axes[0].set_ylabel("layer_data_time.log")
-    axes[1].set_ylabel("layer_exe_time.log")
+    axes[0].set_ylabel("Layer input data (byte)")
+    axes[1].set_ylabel("Layer input data commu. time (s)")
+    axes[2].set_ylabel("Commu./comp. (s)")
+    #axes[0].set_ylim(0,9)
+    #axes[1].set_ylim(0,9)
 
-    test_plot_bar(axes[0], "./profile/layer_data_time.log")
-    test_plot_bar(axes[1], "./profile/layer_exe_time.log")
+    test_plot_bar1(axes[0], "./profile/layer_data_byte_num.log")
+    test_plot_bar1(axes[1], "./profile/layer_data_time.log")
+    test_plot_bar2(axes[2], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
+
 
     fig.tight_layout()
 
