@@ -1,7 +1,7 @@
 #include "yolo_dist.h"
 
 
-
+network *net;
 int main(int argc, char **argv)
 {
 

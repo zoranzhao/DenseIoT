@@ -1,6 +1,6 @@
 #include "darknet_dist.h"
 
-
+extern network *net;
 //    Busy         idle stealer  
 //     b0 <---steal--- o0
 //      \              /
@@ -114,7 +114,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
-    network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(net, 1);
 
 
