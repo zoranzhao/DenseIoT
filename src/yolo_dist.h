@@ -225,9 +225,8 @@ void produce_consume_serve(){
 void consume_serve(){
     unsigned int layers = 32;
     std::thread lc(local_consumer, 1, "local_consumer1");//pushing 
-    //std::thread rc(remote_consumer, layers, "remote_consumer1");
-    //rc.join();
-	serve_steal(32, PORTNO);
+    std::thread rc(remote_consumer, layers, "remote_consumer1");
+    rc.join();
     lc.join();
 }
 void steal_only(){
