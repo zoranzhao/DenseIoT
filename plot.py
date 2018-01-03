@@ -193,15 +193,14 @@ def test_plot_figure(style_label=""):
     axes[0].set_ylabel("Layer input data (byte)")
     axes[1].set_ylabel("Layer input data commu. time (s)")
     axes[2].set_ylabel("Commu./comp. (s)")
-    #axes[0].set_ylim(0,9)
-    #axes[1].set_ylim(0,9)
+
 
     test_plot_bar1(axes[0], "./profile/layer_data_byte_num.log")
     test_plot_bar1(axes[1], "./profile/layer_data_time.log")
     test_plot_bar2(axes[2], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
 
 
-    fig.tight_layout()
+    #fig.tight_layout()
 
     return fig
 
