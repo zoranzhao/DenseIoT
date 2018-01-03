@@ -114,7 +114,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
-    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+
     set_batch_network(net, 1);
 
 
@@ -224,6 +224,7 @@ void produce_consume_serve(){
 //layer-based communication profiling
 void consume_serve(){
     unsigned int layers = 32;
+    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     std::thread lc(local_consumer, 1, "local_consumer1");//pushing 
     std::thread rc(remote_consumer, layers, "remote_consumer1");
     rc.join();

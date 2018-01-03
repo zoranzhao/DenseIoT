@@ -158,7 +158,11 @@ inline void forward_network_dist_test(network *netp)
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
-	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
+
+
+        
+ 	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
+
         net.layers[i].forward(net.layers[i], net);
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
