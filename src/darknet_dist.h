@@ -160,7 +160,7 @@ inline void forward_network_dist_test(network *netp)
         }
 
 
-        
+        if(i > 4)
  	put_job(net.input, net.layers[i].inputs*sizeof(float), i);
 
         net.layers[i].forward(net.layers[i], net);
