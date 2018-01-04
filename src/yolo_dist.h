@@ -11,8 +11,8 @@ void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 
 void remote_producer(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
-	std::cout << SRV << "   " << "Steal only " << i <<std::endl;
-   	steal_and_free(SRV, PORTNO);
+	std::cout << AP << "   " << "Steal only " << i <<std::endl;
+   	steal_and_free(AP, PORTNO);
    }
 }
 
