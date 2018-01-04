@@ -61,4 +61,4 @@ obj:
 .PHONY: clean
 
 clean:
-	rm -rf $(EXEC) $(EXECOBJ) *.log *.png
+	rm -rf $(EXEC) $(EXECOBJ) *.log *.png *.dat
