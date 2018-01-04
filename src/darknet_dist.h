@@ -95,10 +95,6 @@ inline void forward_network_dist_prof_exe(network *netp)
 {
     network net = *netp;
     int i;
-    //Network input
-    //net.input
-    //double read_t = 0;
-    //double write_t = 0;
     double t0 = 0;
     double t1 = 0;
     FILE *time_file;
@@ -121,31 +117,12 @@ inline void forward_network_dist_prof_exe(network *netp)
         t1 = what_time_is_it_now();
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-
-
-	//printf("Processing time is: %lf\n", t1 - t0);
         fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
         fprintf(time_file, "%lf\n", t1 - t0 );
-/*
-	if(i > 0){
-            double t1 = what_time_is_it_now();
-	    read_layer(netp, i);
-            double t2 = what_time_is_it_now();
-	    read_t = read_t + t2 - t1; 
-	}
-	if(i < (net.n-1)){
-            double t1 = what_time_is_it_now();
-	    write_layer(netp, i);
-            double t2 = what_time_is_it_now();
-	    write_t = write_t + t2 - t1; 
-	}
-*/
     }
 
     fclose(time_file);
     fclose(data_file);
-    //printf("Writing time is: %lf, reading time is: %lf\n", read_t, write_t);
-    //calc_network_cost(netp);
 }
 
 inline void forward_network_dist_test(network *netp)

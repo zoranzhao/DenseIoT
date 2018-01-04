@@ -1,31 +1,11 @@
 #include "darknet_dist.h"
 
 extern network *net;
-//    Busy         idle stealer  
-//     b0 <---steal--- o0
-//      \              /
-//       \            /
-//        \          /
-//         \        /
-//          \      /
-//           \    /
-//            \  /
-//	       p0    //Final output
-
 
 void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 	serve_steal(number_of_jobs, PORTNO);
-/*
-	unsigned int bytes_length;
-	char* blob_buffer;
-	int job_id;
-	unsigned int id;
-	for(id = 0; id < number_of_jobs; id ++){
-		get_job((void**)&blob_buffer, &bytes_length, &job_id);
-		std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
-		//free(blob_buffer);
-	}
-*/
+	//serve_steal_fake(number_of_jobs, PORTNO);
+
 }
 
 
@@ -114,7 +94,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
-
+    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(net, 1);
 
 
@@ -182,7 +162,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 	}
         free_image(im);
 #endif
-        free_image(sized);
+        //free_image(sized);
 
 /*      if(outfile){
             save_image(im, outfile);
@@ -224,11 +204,17 @@ void produce_consume_serve(){
 //layer-based communication profiling
 void consume_serve(){
     unsigned int layers = 32;
-    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+/*
+    local_consumer(1, "local_consumer1");
+    remote_consumer(layers, "remote_consumer1");
+*/
+
     std::thread lc(local_consumer, 1, "local_consumer1");//pushing 
     std::thread rc(remote_consumer, layers, "remote_consumer1");
     rc.join();
     lc.join();
+
+
 }
 void steal_only(){
     unsigned int layers = 32;

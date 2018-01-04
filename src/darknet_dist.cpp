@@ -5,6 +5,7 @@ network *net;
 int main(int argc, char **argv)
 {
 
+
     consume_serve();
     //steal_only();
     //consume_only();
