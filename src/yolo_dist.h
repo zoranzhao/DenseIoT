@@ -1,6 +1,6 @@
 #include "darknet_dist.h"
 
-extern network *net;
+
 
 void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 	serve_steal(number_of_jobs, PORTNO);
@@ -94,7 +94,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
-    net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    network *net = load_network((char*)"cfg/tiny-yolo.cfg", (char*)"tiny-yolo.weights", 0);
     set_batch_network(net, 1);
 
 
@@ -125,11 +125,6 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
 	id = cnt;
         load_image_by_number(&sized, id);
-        //printf("Input image size is %d\n", sized.w*sized.h*sized.c);
-        //printf("Input image w is %d\n", sized.w);
-        //printf("Input image h is %d\n", sized.h);
-        //printf("Input image c is %d\n", sized.c);
-
         float *X = sized.data;
         double t1=what_time_is_it_now();
 	//network_predict_dist_prof_exe(net, X);
@@ -162,25 +157,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 	}
         free_image(im);
 #endif
-        //free_image(sized);
-
-/*      if(outfile){
-            save_image(im, outfile);
-        }
-        else{
-            save_image(im, "predictions");
-#ifdef OPENCV
-            cvNamedWindow("predictions", CV_WINDOW_NORMAL); 
-            if(fullscreen){
-                cvSetWindowProperty("predictions", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-            }
-            show_image(im, "predictions");
-            cvWaitKey(0);
-            cvDestroyAllWindows();
-#endif
-        }
-*/
-
+        free_image(sized);
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
