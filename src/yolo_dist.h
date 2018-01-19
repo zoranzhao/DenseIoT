@@ -162,7 +162,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
-    network *net = load_network((char*)"cfg/tiny-yolo.cfg", (char*)"tiny-yolo.weights", 0);
+    network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(net, 1);
 
 

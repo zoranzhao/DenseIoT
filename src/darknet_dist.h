@@ -99,8 +99,8 @@ inline void forward_network_dist_prof_exe(network *netp)
     double t1 = 0;
     FILE *conv11;
     FILE *conv33;
-    conv11 = fopen("conv11.log", "w");
-    conv33 = fopen("conv33.log", "w");
+    conv11 = fopen("conv11_data.log", "w");
+    conv33 = fopen("conv33_data.log", "w");
     //data_file = fopen("layer_data_byte_num.log", "w");
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
@@ -121,12 +121,14 @@ inline void forward_network_dist_prof_exe(network *netp)
 
         //fprintf(data_file, "%ld\n", net.layers[i].inputs*sizeof(float) );
         //fprintf(time_file, "%lf\n", t1 - t0 );
-	if(net.layers[i].type==CONVOLUTIONAL){
-	   if(net.layers[i].size==1)
-        	fprintf(conv11, "%lf\n", t1 - t0 );
-	   if(net.layers[i].size==3)
-        	fprintf(conv33, "%lf\n", t1 - t0 );
-	}
+	//if(net.layers[i].type==CONVOLUTIONAL){
+	   //if(net.layers[i].size==1)
+        	//fprintf(conv11, "%ld\n", net.layers[i].inputs*sizeof(float)  );
+        	//fprintf(conv11, "%lf\n", t1 - t0 );
+	   //if(net.layers[i].size==3)
+        	//fprintf(conv33, "%ld\n", net.layers[i].inputs*sizeof(float)  );
+        	//fprintf(conv33, "%lf\n", t1 - t0 );
+	//}
     }
 
     fclose(conv11);

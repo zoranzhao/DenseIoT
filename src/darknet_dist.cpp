@@ -5,10 +5,10 @@
 int main(int argc, char **argv)
 {
 
-    run_densenet();
+    //run_densenet();
     //consume_serve();
     //steal_only();
-    //consume_only();
+    consume_only();
     //produce_consume_serve();
     //produce_serve();
     //steal_consume();
