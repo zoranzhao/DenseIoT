@@ -138,6 +138,19 @@ void reshape_output(float* input, float* output, int w, int h, int c, int dw1, i
 }
 
 
+void print_array(char* filename, float* stage_out, int stage_outs, int line){
+    FILE *layerfile;
+    char layerdata[30];
+    int ii;
+    sprintf(layerdata, filename);
+    layerfile = fopen(layerdata, "w");  
+    for(ii = 0; ii < stage_outs; ii++){
+       fprintf(layerfile, "%.1f", stage_out[ii]);
+       if((ii+1)%line == 0) fprintf(layerfile, "\n");
+    }
+    fclose(layerfile);
+}
+
 
 inline void forward_network_dist_prof_exe(network *netp)
 {
@@ -145,11 +158,11 @@ inline void forward_network_dist_prof_exe(network *netp)
     int i;
     double t0 = 0;
     double t1 = 0;
-
-
-
-    FILE *layerfile;
     int ii;
+    FILE *layerfile;
+
+
+
     int partition=2;
     int p;
     
@@ -169,15 +182,18 @@ inline void forward_network_dist_prof_exe(network *netp)
 		}
 
 		if(i==0&&p==0){
+			//print_array("1.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
 			net.layers[i].h = 307; net.layers[i].out_h = 307; 
 			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 608, 0, 306);}
+			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 0, 306);
+			//print_array("2.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
+		}
 		if(i==0&&p==1){
 			net.layers[i].h = 307; net.layers[i].out_h = 307; 
 			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 608, 301, 607);}
+			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 301, 607);}
 		if(i==1){net.layers[i].h = 306; net.layers[i].out_h = 153; 
 			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; }
@@ -193,6 +209,8 @@ inline void forward_network_dist_prof_exe(network *netp)
 		net.layers[i].forward(net.layers[i], net);
 
 		net.input = net.layers[i].output;  //Layer output
+		if(i==2&&p==0){print_array("FuckYou.txt", net.layers[i].output, net.layers[i].outputs, net.layers[i].out_w);}
+
 		if(i==3&&p==0){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 0, 75);}
 		if(i==3&&p==1){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 76, 151);}
 		if(net.layers[i].truth) {
@@ -205,11 +223,12 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 
+    //print_array("fuck.txt",stage_out, stage_outs, net.layers[upto].out_w);
 
 
    
 /*
-    for(i = 0; i < net.n; ++i){//Iteratively execute the layers
+    for(i = 0; i < 4; ++i){//Iteratively execute the layers
 
         t0 = what_time_is_it_now();
         net.index = i;
@@ -222,18 +241,17 @@ inline void forward_network_dist_prof_exe(network *netp)
 
 
 
-	if(i==3){
+	if(i>0){
 		layer l = net.layers[i];
 		char layerdata[30];
 		sprintf(layerdata, "earlylayerdata%d.txt",i);
 		//=============================================   
 		layerfile = fopen(layerdata, "w");  
 		for(ii = 0; ii < l.outputs; ii++){
-		    fprintf(layerfile, "%.1f", l.output[ii]);
+		    fprintf(layerfile, "%.1f", l.output[ii] );
 		    if((ii+1)%l.out_w == 0) fprintf(layerfile, "\n");
 		}
 		fclose(layerfile);
-		break;
 		//=============================================    
 	}
 
@@ -259,6 +277,7 @@ inline void forward_network_dist_prof_exe(network *netp)
 
     //fclose(conv11);
     //fclose(conv33);
+
 */
 }
 
