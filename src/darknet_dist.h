@@ -61,7 +61,7 @@ extern "C"{
 #define BLUE1    "192.168.42.12"
 #define ORANGE1  "192.168.42.13"
 
-#define DEBUG_DIST 1
+#define DEBUG_DIST 0
 
 void write_layer_test(network *netp, int idx)
 {
@@ -91,18 +91,124 @@ void read_layer_test(network *netp, int idx)
 
 }
 
+//input(w*h) [dh1, dh2]    copy into ==> output  [0, dh2 - dh1]
+//	     [dw1, dw2]			         [0, dw2 - dw1]
+
+float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh1, int dh2){
+
+   int out_w = dw2 - dw1 + 1;
+   int out_h = dh2 - dh1 + 1;
+   int i,j,k;
+   float* output = (float*) malloc( sizeof(float)*out_w*out_h*c );  
+
+   for(k = 0; k < c; ++k){
+     for(j = dh1; j < dh2+1; ++j){
+       for(i = dw1; i < dw2+1; ++i){
+           int in_index  = i + w*(j + h*k);
+           int out_index  = (i - dw1) + out_w*(j - dh1) + out_w*out_h*k;
+	   output[out_index] = input[in_index];
+       }
+     }
+   }
+
+   return output;
+
+}
+
+
+//input [0, dh2 - dh1]    copy into ==> output(w*h)   [dh1, dh2]
+//	[0, dw2 - dw1]			              [dw1, dw2]
+
+void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2){
+
+   int in_w = dw2 - dw1 + 1;
+   int in_h = dh2 - dh1 + 1;
+   int i,j,k;
+
+   for(k = 0; k < c; ++k){
+     for(j = 0; j < in_h; ++j){
+       for(i = 0; i < in_w; ++i){
+           int in_index  = i + in_w*(j + in_h*k);
+           int out_index  = (i + dw1) + w*(j + dh1) + w*h*k;
+	   output[out_index] = input[in_index];
+       }
+     }
+   }
+
+}
+
+
+
 inline void forward_network_dist_prof_exe(network *netp)
 {
     network net = *netp;
     int i;
     double t0 = 0;
     double t1 = 0;
-    FILE *conv11;
-    FILE *conv33;
-    conv11 = fopen("conv11_data.log", "w");
-    conv33 = fopen("conv33_data.log", "w");
-    //data_file = fopen("layer_data_byte_num.log", "w");
 
+
+
+    FILE *layerfile;
+    int ii;
+    int partition=2;
+    int p;
+    
+    int upto = 3;
+    //A memory space to store the output of the fusion block
+    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    //A memory space to hold the input of the fusion block
+    float* stage_in = net.input;
+    printf("%d, %d, %d\n", (net.layers[upto].out_w), (net.layers[upto].out_h), (net.layers[upto].out_c));
+    for(p=0; p < partition; p++){
+	for(i = 0; i < (upto+1); ++i){//Iteratively execute the layers
+		net.index = i;
+		layer l = net.layers[i];
+		if(net.layers[i].delta){	       
+		    fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
+		}
+
+		if(i==0&&p==0){
+			net.layers[i].h = 307; net.layers[i].out_h = 307; 
+			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
+			net.input = reshape_input(stage_in, 608, 608, 3, 0, 608, 0, 306);}
+		if(i==0&&p==1){
+			net.layers[i].h = 307; net.layers[i].out_h = 307; 
+			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
+			net.input = reshape_input(stage_in, 608, 608, 3, 0, 608, 301, 607);}
+		if(i==1){net.layers[i].h = 306; net.layers[i].out_h = 153; 
+			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
+			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; }
+		if(i==2){net.layers[i].h = 153; net.layers[i].out_h = 153; 
+			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
+			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  }
+		if(i==3){net.layers[i].h = 152; net.layers[i].out_h = 76; 
+			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
+			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;}
+
+
+
+		net.layers[i].forward(net.layers[i], net);
+
+		net.input = net.layers[i].output;  //Layer output
+		if(i==3&&p==0){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 0, 75);}
+		if(i==3&&p==1){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 76, 151);}
+		if(net.layers[i].truth) {
+		    net.truth = net.layers[i].output;
+		}
+		//printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
+			//i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
+	}
+
+    }
+
+
+
+
+   
+/*
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
 
         t0 = what_time_is_it_now();
@@ -110,7 +216,27 @@ inline void forward_network_dist_prof_exe(network *netp)
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
+
+
         net.layers[i].forward(net.layers[i], net);
+
+
+
+	if(i==3){
+		layer l = net.layers[i];
+		char layerdata[30];
+		sprintf(layerdata, "earlylayerdata%d.txt",i);
+		//=============================================   
+		layerfile = fopen(layerdata, "w");  
+		for(ii = 0; ii < l.outputs; ii++){
+		    fprintf(layerfile, "%.1f", l.output[ii]);
+		    if((ii+1)%l.out_w == 0) fprintf(layerfile, "\n");
+		}
+		fclose(layerfile);
+		break;
+		//=============================================    
+	}
+
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
@@ -131,8 +257,9 @@ inline void forward_network_dist_prof_exe(network *netp)
 	//}
     }
 
-    fclose(conv11);
-    fclose(conv33);
+    //fclose(conv11);
+    //fclose(conv33);
+*/
 }
 
 inline void forward_network_dist_test(network *netp)
@@ -140,7 +267,7 @@ inline void forward_network_dist_test(network *netp)
     network net = *netp;
     int i;
 
-    for(i = 0; i < net.n; ++i){//Iteratively execute the layers
+    for(i = 0; i < 4; ++i){//Iteratively execute the layers
         net.index = i;
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
@@ -156,6 +283,7 @@ inline void forward_network_dist_test(network *netp)
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
     }
+
 
 }
 
