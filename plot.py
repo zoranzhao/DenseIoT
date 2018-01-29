@@ -133,8 +133,17 @@ def load_data(filename=""):
         sys.exit()
     with open(filename) as f:
         content = f.readlines()
-        print content
+        #print content
         content = [float(x.strip()) for x in content] 
+
+
+    if filename == "./profile/layer_data_byte_num.log":
+	content = [float(x)/1024.0/1024.0 for x in content] 
+    if filename == "./profile/layer_gemm_byte_num.log":
+	content = [float(x)/1024.0/1024.0 for x in content] 
+    if filename == "./profile/layer_weight.log":
+	content = [float(x)*4/1024.0/1024.0 for x in content] 
+    print sum(content)
     return content
 
 def test_plot_bar1(ax, filename=""):
@@ -143,11 +152,12 @@ def test_plot_bar1(ax, filename=""):
     #y =  load_data("layer_data.log")
     y =  load_data(filename)
     x = np.arange(len(y))
-    print x
+    #print x
 
 
     width = 0.5
     ax.bar(x, y, width)
+
     #ax.bar(x + width, yb, width, color='C2')
     #ax.bar(ind + width + xtra_space, lwipg9[8:20] ,width, edgecolor=colorsgreen[2],  fill=False,  hatch=hatches[2], bottom=compg9[8:20])
 
@@ -175,6 +185,28 @@ def test_plot_bar2(ax, filename1="", filename2=""):
     #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
     return ax
 
+def test_plot_bar3(ax, filename1="./profile/layer_data_byte_num.log", filename2="./profile/layer_data_time.log"):
+    """Plot two bar graphs side by side, with letters as x-tick labels.
+    """
+    #y =  load_data("layer_data.log")
+    y1 =  load_data(filename1)
+    y2 =  load_data(filename2)
+    x = np.arange(len(y1))
+    print x
+
+    y3=[]
+    for y in zip(y1, y2):
+	y3.append((y[0]/y[1])/1024.0/1024.0)
+    
+
+
+    width = 0.5
+    ax.bar(x, y3, width)
+
+
+
+    return ax
+
 def test_plot_figure(style_label=""):
     """Setup and plot the demonstration figure with a given style.
     """
@@ -188,18 +220,25 @@ def test_plot_figure(style_label=""):
     (fig_width, fig_height) = plt.rcParams['figure.figsize']
     fig_size = [fig_width * 2, fig_height / 2]
 
-    fig, axes = plt.subplots(ncols=1, nrows=3, num=style_label,
+    fig, axes = plt.subplots(ncols=1, nrows=2, num=style_label,
                              figsize=fig_size, squeeze=True)
-    axes[0].set_ylabel("Layer input data (byte)")
-    axes[1].set_ylabel("Layer input data commu. time (s)")
-    axes[2].set_ylabel("Commu./comp. (s)")
+    axes[0].set_ylabel("Layer input data/weight data (MB)")
+    #axes[1].set_ylabel("Layer weight data (MB)")
+    axes[1].set_ylabel("Layer execution time (s)")
+    #axes[2].set_ylabel("Layer GEMM data (MB)")
+    #axes[3].set_ylabel("Layer GEMM data (MB)")
 
 
-    test_plot_bar1(axes[0], "./profile/layer_data_byte_num.log")
-    test_plot_bar1(axes[1], "./profile/layer_data_time.log")
-    test_plot_bar2(axes[2], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
-
-
+    #test_plot_bar1(axes[0], "conv11.log")
+    #test_plot_bar1(axes[1], "conv33.log")
+    #test_plot_bar1(axes[2], "conv11_data.log")
+    #test_plot_bar1(axes[3], "conv33_data.log")
+    #test_plot_bar1(axes[1], "./profile/layer_weight.log")
+    test_plot_bar2(axes[0], "./profile/layer_weight.log", "./profile/layer_data_byte_num.log")
+    #test_plot_bar1(axes[2], "./profile/layer_gemm_byte_num.log")
+    #test_plot_bar1(axes[1], "./profile/layer_exe_time.log")
+    test_plot_bar2(axes[1], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
+    #test_plot_bar3(axes[2])
     #fig.tight_layout()
 
     return fig
@@ -212,7 +251,7 @@ if __name__ == "__main__":
     style_list = list(plt.style.available)  # *new* list: avoids side effects.
     style_list.remove('classic')  # `classic` is in the list: first remove it.
     style_list.sort()
-    print style_list
+    #print style_list
     style_list.insert(0, u'default')
     style_list.insert(1, u'classic')
 
