@@ -186,20 +186,25 @@ inline void forward_network_dist_prof_exe(network *netp)
 			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 0, 306);
 			//print_array("2.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
 		}
+
 		if(i==0&&p==1){
 			net.layers[i].h = 307; net.layers[i].out_h = 307; 
 			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 301, 607);}
+			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 301, 607);
+		}
 
 		if(i==1){net.layers[i].h = 306; net.layers[i].out_h = 153; 
 			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; 
 			 net.input = reshape_input(net.input, 608, 307, 32, 0, 607, 0+p, 305+p);
-			}
+		}
+
 		if(i==2){net.layers[i].h = 153; net.layers[i].out_h = 153; 
 			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  }
+			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  
+		}
+
 		if(i==3){net.layers[i].h = 152; net.layers[i].out_h = 76; 
 			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;
