@@ -259,12 +259,19 @@ inline void forward_network_dist_prof_exe(network *netp)
 	    net.layers[i].w = (ranges[p][i].w2 - ranges[p][i].w1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
 	    net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
 	    net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-	    if(i == 0) {net.input = reshape_input(stage_in, (input_range.w2 - input_range.w1 + 1), (input_range.h2 - input_range.h1 + 1), net.layers[i].c, 
+	    if(i == 0) { net.input = reshape_input(stage_in, (input_range.w2 - input_range.w1 + 1), (input_range.h2 - input_range.h1 + 1), net.layers[i].c, 
 					input_range.w1, input_range.w2, input_range.h1, input_range.h2);}
-	    else if(0){ net.input = reshape_input(net.input, (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
+	    
+	    else if(1) {
+ 		printf("%d, %d, %d, %d, %d, %d, %d\n", (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
 							(ranges[p][i-1].h2 - ranges[p][i-1].h1 + 1)/net.layers[i-1].stride, 
 							net.layers[i-1].out_c, 
-							0 , (ranges[p][i].w2 - ranges[p][i].w1 + 1), 0, (ranges[p][i].h2 - ranges[p][i].h1 + 1));
+							(p % PARTITIONS_W)*(ranges[p][i].w2 - ranges[p][i].w1 + 1), (p % PARTITIONS_W + 1)*(ranges[p][i].w2 - ranges[p][i].w1 + 1), 
+							(p / PARTITIONS_W)*(ranges[p][i].h2 - ranges[p][i].h1 + 1), (p / PARTITIONS_W + 1)*(ranges[p][i].h2 - ranges[p][i].h1 + 1) ); 
+		//net.input = reshape_input(net.input, (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
+		//					(ranges[p][i-1].h2 - ranges[p][i-1].h1 + 1)/net.layers[i-1].stride, 
+		//					net.layers[i-1].out_c, 
+		//					0 , (ranges[p][i].w2 - ranges[p][i].w1 + 1), 0, (ranges[p][i].h2 - ranges[p][i].h1 + 1));
   
 	    }
 	}
