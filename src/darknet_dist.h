@@ -254,7 +254,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     //Execute each partition of the data input
     for(p=0; p < PARTITIONS; p++){
 	for(i = 0; i < (upto+1); ++i){
-	    print_subindex(ranges[p][i]);
+
 	    net.layers[i].h = (ranges[p][i].h2 - ranges[p][i].h1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
 	    net.layers[i].w = (ranges[p][i].w2 - ranges[p][i].w1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
 	    net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
@@ -263,11 +263,14 @@ inline void forward_network_dist_prof_exe(network *netp)
 					input_range.w1, input_range.w2, input_range.h1, input_range.h2);}
 	    
 	    else if(1) {
- 		printf("%d, %d, %d, %d, %d, %d, %d\n", (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
+	    print_subindex(ranges[p][i]);
+ 		printf("layer%d:  %d, %d, %d, %d, %d, %d, %d\n",i, (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
 							(ranges[p][i-1].h2 - ranges[p][i-1].h1 + 1)/net.layers[i-1].stride, 
 							net.layers[i-1].out_c, 
-							(p % PARTITIONS_W)*(ranges[p][i].w2 - ranges[p][i].w1 + 1), (p % PARTITIONS_W + 1)*(ranges[p][i].w2 - ranges[p][i].w1 + 1), 
-							(p / PARTITIONS_W)*(ranges[p][i].h2 - ranges[p][i].h1 + 1), (p / PARTITIONS_W + 1)*(ranges[p][i].h2 - ranges[p][i].h1 + 1) ); 
+							(p % PARTITIONS_W)*(ranges[p][i].w2 - ranges[p][i].w1 + 1), 
+							(p % PARTITIONS_W )*(ranges[p][i].w2 - ranges[p][i].w1 + 1)+(ranges[p][i].w2 - ranges[p][i].w1), 
+							(p / PARTITIONS_W)*(ranges[p][i].h2 - ranges[p][i].h1 + 1), 
+							(p / PARTITIONS_W )*(ranges[p][i].h2 - ranges[p][i].h1 + 1)+(ranges[p][i].w2 - ranges[p][i].w1) ); 
 		//net.input = reshape_input(net.input, (ranges[p][i-1].w2 - ranges[p][i-1].w1 + 1)/net.layers[i-1].stride, 
 		//					(ranges[p][i-1].h2 - ranges[p][i-1].h1 + 1)/net.layers[i-1].stride, 
 		//					net.layers[i-1].out_c, 
@@ -275,6 +278,7 @@ inline void forward_network_dist_prof_exe(network *netp)
   
 	    }
 	}
+        printf("\n");
     }
 
     
