@@ -490,7 +490,7 @@ inline void forward_network_dist_test(network *netp)
 {
     network net = *netp;
     int i;
-    double t0 = 0;
+    double t0 = what_time_is_it_now();
     double t1 = 0;
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
