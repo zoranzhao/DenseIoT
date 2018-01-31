@@ -490,6 +490,8 @@ inline void forward_network_dist_test(network *netp)
 {
     network net = *netp;
     int i;
+    double t0 = 0;
+    double t1 = 0;
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
         net.index = i;
@@ -506,6 +508,7 @@ inline void forward_network_dist_test(network *netp)
         }
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
+        if(i==(STAGES-1))    printf("Time overhead is %f\n", (what_time_is_it_now() - t0) );
     }
 
 
@@ -532,8 +535,8 @@ inline float *network_predict_dist_prof_exe(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_prof_exe(net);
-    //forward_network_dist_test(net);
+    //forward_network_dist_prof_exe(net);
+    forward_network_dist_test(net);
     float *out = net->output;
     *net = orig;
     return out;
