@@ -316,7 +316,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     //Calculate the ranges after partition     
     layer l = net.layers[upto];
 
-
+    t0 = what_time_is_it_now();
     //Assumption l.out_w and l.out_h are all even numbers here
     for(p_h = 0; p_h < partition_h; p_h++){
 	   for(p_w = 0; p_w < partition_w; p_w++){ 
@@ -358,23 +358,23 @@ inline void forward_network_dist_prof_exe(network *netp)
 	    //printf("conv   %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n",  l.size, l.size, l.stride, l.w, l.h, l.c, l.out_w, l.out_h, l.out_c);
 	}
     }
-
+    t1 = t1 + what_time_is_it_now() - t0;
 
     //Execute each layer in the network
     for(p=0; p < PARTITIONS; p++){
 	for(i = 0; i < (upto+1); ++i){
-
+            t0 = what_time_is_it_now();
 	    //Prepare the input data for each partition   
     	    if(i == 0) { net.input = reshape_input(stage_in, (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 					input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 	    }
-
+	    t1 = t1 + what_time_is_it_now() - t0;
 
 	    net.layers[i].forward(net.layers[i], net);
 
-
+            t0 = what_time_is_it_now();
 	    //Prepare the data for next layer   
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
@@ -388,13 +388,14 @@ inline void forward_network_dist_prof_exe(network *netp)
 	        //printf("\n\n");
 
 	    } else {net.input = net.layers[i].output;}  
-
+	    t1 = t1 + what_time_is_it_now() - t0;
 
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
 	    }
 	}
 	//print_subindex(output_ranges[p][upto]);
+        t0 = what_time_is_it_now();
 	reshape_output(net.input, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
 			(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
 			output_ranges[p][upto].w1, output_ranges[p][upto].w2,
@@ -403,6 +404,7 @@ inline void forward_network_dist_prof_exe(network *netp)
 			//(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
 			//output_ranges[p][upto].w1, output_ranges[p][upto].w2,
 			//output_ranges[p][upto].h1, output_ranges[p][upto].h2);
+	t1 = t1 + what_time_is_it_now() - t0;
     }
 
 
@@ -423,7 +425,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 
-
+    t0 = what_time_is_it_now();
     for(i = 0; i < upto+1; ++i){
 	layer l = net.layers[i];
 	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
@@ -431,9 +433,9 @@ inline void forward_network_dist_prof_exe(network *netp)
 	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
 	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
     }
-
-
-
+    t1 = t1 + what_time_is_it_now() - t0;
+    printf("Time overhead is %f\n", t1); 
+    
 
 
 
