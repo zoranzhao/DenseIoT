@@ -532,8 +532,8 @@ inline float *network_predict_dist_prof_exe(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    //forward_network_dist_prof_exe(net);
-    forward_network_dist_test(net);
+    forward_network_dist_prof_exe(net);
+    //forward_network_dist_test(net);
     float *out = net->output;
     *net = orig;
     return out;
