@@ -156,12 +156,32 @@ typedef struct partition_range{
     int w2;
     int h1;
     int h2;
+    int h;
+    int w;
 } sub_index;
 
-typedef struct input_dimension{
-    int w;
-    int h;
-} input_dim;
+//typedef struct input_dimension{
+//    int w;
+//    int h;
+//} input_dim;
+//input_dim dims[STAGES];
+    //Partition overlap
+    //int overlap[STAGES];
+    //int output_overlap = 0;
+    //overlap[upto] = calculate_overlap(output_overlap, net.layers[upto]);
+    //for(i = upto-1; i >= 0; i--){
+    //     layer l = net.layers[i];
+    //     overlap[i] = calculate_overlap(overlap[i+1], l);
+    //}
+//int calculate_overlap(int cur_overlap, layer l){
+//    int next_overlap;
+//    if(l.type == CONVOLUTIONAL){
+//	next_overlap = cur_overlap*l.stride + l.size/2; 
+//    }else if(l.type == MAXPOOL){
+//	next_overlap = cur_overlap*l.stride;
+//    }
+//    return next_overlap;
+//}
 
 
 void print_subindex(sub_index index){
@@ -185,25 +205,9 @@ sub_index calculate_range(sub_index output, layer l){
     return input;
 }
 
-/*
-    //Partition overlap
-    int overlap[STAGES];
-    int output_overlap = 0;
-    overlap[upto] = calculate_overlap(output_overlap, net.layers[upto]);
-    for(i = upto-1; i >= 0; i--){
-         layer l = net.layers[i];
-         overlap[i] = calculate_overlap(overlap[i+1], l);
-    }
-*/
-int calculate_overlap(int cur_overlap, layer l){
-    int next_overlap;
-    if(l.type == CONVOLUTIONAL){
-	next_overlap = cur_overlap*l.stride + l.size/2; 
-    }else if(l.type == MAXPOOL){
-	next_overlap = cur_overlap*l.stride;
-    }
-    return next_overlap;
-}
+
+
+
 
 sub_index calculate_layeroutput_range(sub_index input, layer l){
     sub_index output; 
@@ -237,9 +241,25 @@ sub_index crop_range(sub_index large, sub_index small){
     return output;
 }
 
+/*
+    0 conv     32  3 x 3 / 1   608 x 608 x   3   ->   608 x 608 x  32
+    1 max          2 x 2 / 2   608 x 608 x  32   ->   304 x 304 x  32
+    2 conv     64  3 x 3 / 1   304 x 304 x  32   ->   304 x 304 x  64
+    3 max          2 x 2 / 2   304 x 304 x  64   ->   152 x 152 x  64
+    4 conv    128  3 x 3 / 1   152 x 152 x  64   ->   152 x 152 x 128
+    5 conv     64  1 x 1 / 1   152 x 152 x 128   ->   152 x 152 x  64
+    6 conv    128  3 x 3 / 1   152 x 152 x  64   ->   152 x 152 x 128
+    7 max          2 x 2 / 2   152 x 152 x 128   ->    76 x  76 x 128
+    8 conv    256  3 x 3 / 1    76 x  76 x 128   ->    76 x  76 x 256
+    9 conv    128  1 x 1 / 1    76 x  76 x 256   ->    76 x  76 x 128
+   10 conv    256  3 x 3 / 1    76 x  76 x 128   ->    76 x  76 x 256
+   11 max          2 x 2 / 2    76 x  76 x 256   ->    38 x  38 x 256
+
+*/
 
 
-#define STAGES 4
+
+#define STAGES 12
 #define PARTITIONS_W 2
 #define PARTITIONS_H 2 
 #define PARTITIONS 4
@@ -253,7 +273,8 @@ inline void forward_network_dist_prof_exe(network *netp)
     int ii;
     FILE *layerfile;
 
-    //Number of partition assum it is even number
+
+    //Number of partition assume it is even number
     //Network parameters that are required for processing partition
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
@@ -264,11 +285,11 @@ inline void forward_network_dist_prof_exe(network *netp)
     int p_h;
     int p;
 
+
     //Network
-      
-    //input_dim dims[STAGES];
-    sub_index input_ranges[PARTITIONS][STAGES];//input ranges for each layer
-    sub_index output_ranges[PARTITIONS][STAGES];//input ranges for each layer
+    sub_index original_ranges[STAGES];//Corrrect output ranges for each layer
+    sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
+    sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
     sub_index stage_input_range;
     stage_input_range.w1 = 0;
     stage_input_range.w2 = net.layers[0].w-1;
@@ -280,45 +301,53 @@ inline void forward_network_dist_prof_exe(network *netp)
     stage_output_range.h1 = 0;
     stage_output_range.h2 = net.layers[upto].out_h-1;
 
-     
+
+    //Record the original ranges
+    for(i = 0; i < upto+1; i++){
+	original_ranges[i].w = net.layers[i].w;
+	original_ranges[i].h = net.layers[i].h; 
+	original_ranges[i].w1 = 0;
+	original_ranges[i].w2 = net.layers[i].w - 1;
+	original_ranges[i].h1 = 0; 
+	original_ranges[i].h2 = net.layers[i].h - 1;
+    }
+
+
+    //Calculate the ranges after partition     
     layer l = net.layers[upto];
-    //The required range in layers[upto].output
 
 
-
-
+    //Assumption l.out_w and l.out_h are all even numbers here
     for(p_h = 0; p_h < partition_h; p_h++){
 	   for(p_w = 0; p_w < partition_w; p_w++){ 
+	      printf("=========%d=========\n", p_w+p_h*partition_h);
 	      sub_index stage_range;
 	      stage_range.w1 = p_w*(l.out_w/partition_w);
 	      stage_range.w2 = p_w*(l.out_w/partition_w) + l.out_w/partition_w - 1;
-
 	      stage_range.h1 = p_h*(l.out_h/partition_h);
 	      stage_range.h2 = p_h*(l.out_h/partition_h) + l.out_h/partition_h - 1;
-
 	      sub_index tmp_range = stage_range;
 	      for(i = upto; i >= 0; i--){
     		  layer l = net.layers[i];
 		  tmp_range = calculate_range(tmp_range, l);
 		  input_ranges[p_w+p_h*partition_h][i] = tmp_range;
-    	          //print_subindex(input_ranges[p_w+p_h*partition_h][i]);
+    	          print_subindex(input_ranges[p_w+p_h*partition_h][i]);
 	      }
-
-	      //printf("\n\n");
-
+	      printf("====================\n");
 	   }
     }
     for(p = 0; p < partition; p++)
     	for(i = upto; i >= 0; i--)
 	    output_ranges[p][i] = calculate_layeroutput_range(input_ranges[p][i], net.layers[i]);
-	    
 
+    
     //Prepare the input and output of the current stage;
     size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input;
 
-    //Reshape the partitioned layers
+
+    //Reshape the input data dims for partitioned layers
     for(p=0; p < PARTITIONS; p++){
 	for(i = 0; i < (upto+1); ++i){
 	    net.layers[i].h = (input_ranges[p][i].h2 - input_ranges[p][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
@@ -331,45 +360,46 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 
-    
+    //Execute each layer in the network
     for(p=0; p < PARTITIONS; p++){
 	for(i = 0; i < (upto+1); ++i){
     	    if(i == 0) { net.input = reshape_input(stage_in, (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 					input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
-			 printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
-					input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
+			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
+			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 	    }
-	    //Assume the convolutional stride is 1
-	    else if(net.layers[i-1].type == CONVOLUTIONAL){
-		layer l = net.layers[i-1];
+	    net.layers[i].forward(net.layers[i], net);
+	    if(net.layers[i].type == CONVOLUTIONAL){
+		layer l = net.layers[i];
 		//printf("layer %d\n", i);
-	        //print_subindex(input_ranges[p][i-1]);
-	        //print_subindex(output_ranges[p][i-1]);
+	        //print_subindex(input_ranges[p][i]);
+	        //print_subindex(output_ranges[p][i]);
 		//printf("%2d, %2d, %2d\n", l.out_w, l.out_h, l.out_c);
-		//print_subindex(crop_range(input_ranges[p][i-1], output_ranges[p][i-1]));   
-		sub_index tmp = crop_range(input_ranges[p][i-1], output_ranges[p][i-1]);              
-		net.input = reshape_input(net.input, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+		//print_subindex(crop_range(input_ranges[p][i], output_ranges[p][i]));   
+		sub_index tmp = crop_range(input_ranges[p][i], output_ranges[p][i]);              
+		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 	        //printf("\n\n");
 
 	    }
-	    net.layers[i].forward(net.layers[i], net);
-	    net.input = net.layers[i].output;  //Layer output
+	    else net.input = net.layers[i].output;  //Layer output
 
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
 	    }
 	}
 	//print_subindex(output_ranges[p][upto]);
-        if(p==1) print_array("tmp.txt", net.layers[upto].output, net.layers[upto].outputs, net.layers[upto].out_w);
-	reshape_output(net.layers[upto].output, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
+	reshape_output(net.input, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
 			(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
 			output_ranges[p][upto].w1, output_ranges[p][upto].w2,
 			output_ranges[p][upto].h1, output_ranges[p][upto].h2);
+			//printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_output_range.w2-stage_output_range.w1 + 1), 
+			//(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
+			//output_ranges[p][upto].w1, output_ranges[p][upto].w2,
+			//output_ranges[p][upto].h1, output_ranges[p][upto].h2);
     }
 
 
     //print_array("tmp.txt",stage_out, stage_outs, (stage_output_range.w2 - stage_output_range.w1 + 1));
-
     net.input = stage_out;
 
 
@@ -386,40 +416,17 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 
-/*
-    net.layers[0].w = stage_input_range.w2 - stage_input_range.w1 + 1; 
-    net.layers[0].out_w = net.layers[0].w/net.layers[0].stride; 
-    net.layers[0].h = stage_input_range.h2 - stage_input_range.h1 + 1; 
-    net.layers[0].out_h = net.layers[0].h/net.layers[0].stride; 
-    net.layers[0].outputs = net.layers[0].out_h * net.layers[0].out_w * net.layers[0].out_c; 
-    net.layers[0].inputs = net.layers[0].h * net.layers[0].w * net.layers[0].c; 
-*/
 
-    for(i = 0; i <  net.n; ++i){
-		layer l = net.layers[i];
-		if(i==0){
-			net.layers[i].h = 608; net.layers[i].out_h = 608; 
-			net.layers[i].w = 608; net.layers[i].out_w = 608; 
-			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-		}
-		if(i==1){net.layers[i].h = 608; net.layers[i].out_h = 304; 
-			net.layers[i].w = 608; net.layers[i].out_w = 304; 
-			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-		}
-		if(i==2){net.layers[i].h = 304; net.layers[i].out_h = 304; 
-			net.layers[i].w = 304; net.layers[i].out_w = 304; 
-			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-		}
-		if(i==3){net.layers[i].h = 304; net.layers[i].out_h = 152; 
-			net.layers[i].w = 304; net.layers[i].out_w = 152; 
-			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-		}
-
+    for(i = 0; i < upto+1; ++i){
+	layer l = net.layers[i];
+	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
+	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
+	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
     }
+
+
+
 
 
 
