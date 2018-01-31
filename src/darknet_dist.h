@@ -246,7 +246,7 @@ sub_index crop_range(sub_index large, sub_index small){
  
 inline void forward_network_dist_prof_exe(network *netp)
 {
-    network net = *netp;
+    network net = *netp;//Be careful because we are using a shallow copy here
     int i;
     double t0 = 0;
     double t1 = 0;
@@ -254,19 +254,17 @@ inline void forward_network_dist_prof_exe(network *netp)
     FILE *layerfile;
 
     //Number of partition assum it is even number
-
+    //Network parameters that are required for processing partition
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
-
-    int p_w;
-    int p_h;
-
     int partition = partition_h*partition_w;
-    int p;
-
     int upto = STAGES-1; //This stage execute upto this layer
      
+    int p_w;
+    int p_h;
+    int p;
 
+    //Network
       
     //input_dim dims[STAGES];
     sub_index input_ranges[PARTITIONS][STAGES];//input ranges for each layer
@@ -372,74 +370,10 @@ inline void forward_network_dist_prof_exe(network *netp)
 
     //print_array("tmp.txt",stage_out, stage_outs, (stage_output_range.w2 - stage_output_range.w1 + 1));
 
-/*
-    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input;
-    for(p=0; p < partition; p++){
-	for(i = 0; i < (upto+1); ++i){//Iteratively execute the layers
-		net.index = i;
-		layer l = net.layers[i];
-		if(net.layers[i].delta){	       
-		    fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-		}
-
-		if(i==0&&p==0){
-			//print_array("1.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
-			net.layers[i].h = 307; net.layers[i].out_h = 307; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 0, 306);
-			//print_array("2.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
-		}
-
-		if(i==0&&p==1){
-			net.layers[i].h = 307; net.layers[i].out_h = 307; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 301, 607);
-		}
-
-		if(i==1){net.layers[i].h = 306; net.layers[i].out_h = 153; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; 
-			 net.input = reshape_input(net.input, 608, 307, 32, 0, 607, 0+p, 305+p);
-		}
-
-		if(i==2){net.layers[i].h = 153; net.layers[i].out_h = 153; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  
-		}
-
-		if(i==3){net.layers[i].h = 152; net.layers[i].out_h = 76; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;
-			 net.input = reshape_input(net.input, 304, 153, 64, 0, 303, 0+p, 151+p);		
-		}
-
-		//printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
-		//		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-
-		net.layers[i].forward(net.layers[i], net);
-		if(i==0){free(net.input);}
-		net.input = net.layers[i].output;  //Layer output
-
-		if(i==3&&p==0){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 0, 75);}
-		if(i==3&&p==1){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 76, 151);}
-		if(net.layers[i].truth) {
-		    net.truth = net.layers[i].output;
-		}
-		//printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
-			//i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-	}
-
-    }
-
     net.input = stage_out;
 
-    //print_array("tmp.txt",stage_out, stage_outs, net.layers[upto].out_w);
+
     for(i = (upto+1); i <  net.n; ++i){//Iteratively execute the layers
-        t0 = what_time_is_it_now();
         net.index = i;
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
@@ -449,136 +383,47 @@ inline void forward_network_dist_prof_exe(network *netp)
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
         }
-        t1 = what_time_is_it_now();
     }
 
-    free(stage_out);
 
-    for(i = 0; i <  net.n; ++i){
-		layer l = net.layers[i];
-		if(i==0){
-			net.layers[i].h = 608; net.layers[i].out_h = 608; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-		}
-		if(i==1){net.layers[i].h = 608; net.layers[i].out_h = 304; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; 
-		}
-		if(i==2){net.layers[i].h = 304; net.layers[i].out_h = 304; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  
-		}
-		if(i==3){net.layers[i].h = 304; net.layers[i].out_h = 152; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;
-		}
-    }
-*/
-    
 /*
-    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input;
-    for(p=0; p < partition; p++){
-	for(i = 0; i < (upto+1); ++i){//Iteratively execute the layers
-		net.index = i;
-		layer l = net.layers[i];
-		if(net.layers[i].delta){	       
-		    fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-		}
-
-		if(i==0&&p==0){
-			//print_array("1.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
-			net.layers[i].h = 307; net.layers[i].out_h = 307; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 0, 306);
-			//print_array("2.txt", net.input, net.layers[i].inputs, net.layers[i].w);printf("====%d=%d===\n",net.layers[i].inputs, net.layers[i].w);
-		}
-
-		if(i==0&&p==1){
-			net.layers[i].h = 307; net.layers[i].out_h = 307; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
-			net.input = reshape_input(stage_in, 608, 608, 3, 0, 607, 301, 607);
-		}
-
-		if(i==1){net.layers[i].h = 306; net.layers[i].out_h = 153; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; 
-			 net.input = reshape_input(net.input, 608, 307, 32, 0, 607, 0+p, 305+p);
-		}
-
-		if(i==2){net.layers[i].h = 153; net.layers[i].out_h = 153; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  
-		}
-
-		if(i==3){net.layers[i].h = 152; net.layers[i].out_h = 76; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;
-			 net.input = reshape_input(net.input, 304, 153, 64, 0, 303, 0+p, 151+p);		
-		}
-
-		//printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
-		//		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-
-		net.layers[i].forward(net.layers[i], net);
-		if(i==0){free(net.input);}
-		net.input = net.layers[i].output;  //Layer output
-
-		if(i==3&&p==0){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 0, 75);}
-		if(i==3&&p==1){reshape_output(net.layers[i].output, stage_out, 152, 152, 64, 0, 151, 76, 151);}
-		if(net.layers[i].truth) {
-		    net.truth = net.layers[i].output;
-		}
-		//printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
-			//i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-	}
-
-    }
-
-    net.input = stage_out;
-
-    //print_array("tmp.txt",stage_out, stage_outs, net.layers[upto].out_w);
-    for(i = (upto+1); i <  net.n; ++i){//Iteratively execute the layers
-        t0 = what_time_is_it_now();
-        net.index = i;
-        if(net.layers[i].delta){	       
-            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-        }
-        net.layers[i].forward(net.layers[i], net);
-        net.input = net.layers[i].output;  //Layer output
-        if(net.layers[i].truth) {
-            net.truth = net.layers[i].output;
-        }
-        t1 = what_time_is_it_now();
-    }
-
-    free(stage_out);
+    net.layers[0].w = stage_input_range.w2 - stage_input_range.w1 + 1; 
+    net.layers[0].out_w = net.layers[0].w/net.layers[0].stride; 
+    net.layers[0].h = stage_input_range.h2 - stage_input_range.h1 + 1; 
+    net.layers[0].out_h = net.layers[0].h/net.layers[0].stride; 
+    net.layers[0].outputs = net.layers[0].out_h * net.layers[0].out_w * net.layers[0].out_c; 
+    net.layers[0].inputs = net.layers[0].h * net.layers[0].w * net.layers[0].c; 
+*/
 
     for(i = 0; i <  net.n; ++i){
 		layer l = net.layers[i];
 		if(i==0){
 			net.layers[i].h = 608; net.layers[i].out_h = 608; 
-			net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			net.layers[i].inputs = net.layers[i].h * l.w * l.c; 
+			net.layers[i].w = 608; net.layers[i].out_w = 608; 
+			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
 		}
 		if(i==1){net.layers[i].h = 608; net.layers[i].out_h = 304; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c; 
+			net.layers[i].w = 608; net.layers[i].out_w = 304; 
+			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
 		}
 		if(i==2){net.layers[i].h = 304; net.layers[i].out_h = 304; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;  
+			net.layers[i].w = 304; net.layers[i].out_w = 304; 
+			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
 		}
 		if(i==3){net.layers[i].h = 304; net.layers[i].out_h = 152; 
-			 net.layers[i].outputs = net.layers[i].out_h * l.out_w * l.out_c; 
-			 net.layers[i].inputs = l.w * net.layers[i].h * l.c;
+			net.layers[i].w = 304; net.layers[i].out_w = 152; 
+			net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+			net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
 		}
+
     }
-*/
+
+
+
+//Example code for profiling
 /*
     for(i = 0; i <  net.n; ++i){//Iteratively execute the layers
         t0 = what_time_is_it_now();
@@ -587,9 +432,6 @@ inline void forward_network_dist_prof_exe(network *netp)
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
         net.layers[i].forward(net.layers[i], net);
-
-
-
 	if(0){
 		layer l = net.layers[i];
 		char layerdata[30];

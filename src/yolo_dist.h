@@ -282,7 +282,7 @@ void produce_serve(){
 
 
 void consume_only(){
-    std::thread lc(local_consumer, 1, "local_consumer1");
+    std::thread lc(local_consumer, 5, "local_consumer1");
     lc.join();
 }
 
