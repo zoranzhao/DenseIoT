@@ -370,11 +370,11 @@ inline void forward_network_dist_prof_exe(network *netp)
 			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 	    }
-	    t1 = t1 + what_time_is_it_now() - t0;
+
 
 	    net.layers[i].forward(net.layers[i], net);
 
-            t0 = what_time_is_it_now();
+
 	    //Prepare the data for next layer   
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
