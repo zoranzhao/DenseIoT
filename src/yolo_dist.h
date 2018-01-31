@@ -1,5 +1,5 @@
 #include "darknet_dist.h"
-
+#define  THREAD_NUM 1
 
 
 void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
@@ -102,7 +102,7 @@ void run_densenet()
 
 #ifdef NNPACK
     nnp_initialize();
-    net->threadpool = pthreadpool_create(4);
+    net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
     list *options = read_data_cfg("cfg/imagenet1k.data");
 
@@ -169,7 +169,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();
-    net->threadpool = pthreadpool_create(4);
+    net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
 
 #ifdef DEBUG_DIST
