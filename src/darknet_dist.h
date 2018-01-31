@@ -254,12 +254,33 @@ sub_index crop_range(sub_index large, sub_index small){
     9 conv    128  1 x 1 / 1    76 x  76 x 256   ->    76 x  76 x 128
    10 conv    256  3 x 3 / 1    76 x  76 x 128   ->    76 x  76 x 256
    11 max          2 x 2 / 2    76 x  76 x 256   ->    38 x  38 x 256
-
+   12 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512
+   13 conv    256  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x 256
+   14 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512
+   15 conv    256  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x 256 
+/////////////////////////////////////////////////////////////////////////
+   16 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512 ~~
+/////////////////////////////////////////////////////////////////////////
+   17 max          2 x 2 / 2    38 x  38 x 512   ->    19 x  19 x 512
+   18 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
+   19 conv    512  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 512
+   20 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
+   21 conv    512  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 512
+   22 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
+   23 conv   1024  3 x 3 / 1    19 x  19 x1024   ->    19 x  19 x1024
+   24 conv   1024  3 x 3 / 1    19 x  19 x1024   ->    19 x  19 x1024
+   25 route  16
+   26 conv     64  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x  64
+   27 reorg              / 2    38 x  38 x  64   ->    19 x  19 x 256
+   28 route  27 24
+   29 conv   1024  3 x 3 / 1    19 x  19 x1280   ->    19 x  19 x1024
+   30 conv    425  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 425
+   31 detection
 */
 
 
 
-#define STAGES 12
+#define STAGES 17
 #define PARTITIONS_W 2
 #define PARTITIONS_H 2 
 #define PARTITIONS 4
@@ -327,6 +348,7 @@ inline void forward_network_dist_prof_exe(network *netp)
 	      stage_range.h1 = p_h*(l.out_h/partition_h);
 	      stage_range.h2 = p_h*(l.out_h/partition_h) + l.out_h/partition_h - 1;
 	      sub_index tmp_range = stage_range;
+    	      //print_subindex(stage_range);
 	      for(i = upto; i >= 0; i--){
     		  layer l = net.layers[i];
 		  tmp_range = calculate_range(tmp_range, l);
@@ -407,7 +429,17 @@ inline void forward_network_dist_prof_exe(network *netp)
 	t1 = t1 + what_time_is_it_now() - t0;
     }
 
+    //Recover the network
+    for(i = 0; i < upto+1; ++i){
+	layer l = net.layers[i];
+	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
+	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
+	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
+    }
 
+
+    net.layers[upto].output = stage_out;
     //print_array("tmp.txt",stage_out, stage_outs, (stage_output_range.w2 - stage_output_range.w1 + 1));
     net.input = stage_out;
 
@@ -425,15 +457,9 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 
-    t0 = what_time_is_it_now();
-    for(i = 0; i < upto+1; ++i){
-	layer l = net.layers[i];
-	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
-	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
-	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-    }
-    t1 = t1 + what_time_is_it_now() - t0;
+
+
+
     printf("Time overhead is %f\n", t1); 
     
 
@@ -535,8 +561,8 @@ inline float *network_predict_dist_prof_exe(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    //forward_network_dist_prof_exe(net);
-    forward_network_dist_test(net);
+    forward_network_dist_prof_exe(net);
+    //forward_network_dist_test(net);
     float *out = net->output;
     *net = orig;
     return out;
