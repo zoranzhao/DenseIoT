@@ -198,9 +198,8 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 	network_predict_dist_prof_exe(net, X);
 	//network_predict_dist_test(net, X);
         double t2=what_time_is_it_now();
+
 #ifdef DEBUG_DIST
-
-
 	sprintf(filename, "data/val2017/%d.jpg", id);
 	sprintf(outfile, "%d", id);
         layer l = net->layers[net->n-1];
@@ -276,8 +275,6 @@ void produce_serve(){
     lp.join();
     rc.join();
 }
-
-
 
 
 

@@ -336,10 +336,10 @@ inline void forward_network_dist_prof_exe(network *netp)
 	      printf("====================\n");
 	   }
     }
+
     for(p = 0; p < partition; p++)
     	for(i = upto; i >= 0; i--)
 	    output_ranges[p][i] = calculate_layeroutput_range(input_ranges[p][i], net.layers[i]);
-
     
     //Prepare the input and output of the current stage;
     size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
@@ -363,12 +363,19 @@ inline void forward_network_dist_prof_exe(network *netp)
     //Execute each layer in the network
     for(p=0; p < PARTITIONS; p++){
 	for(i = 0; i < (upto+1); ++i){
+
+	    //Prepare the input data for each partition   
     	    if(i == 0) { net.input = reshape_input(stage_in, (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 					input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
 			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
 	    }
+
+
 	    net.layers[i].forward(net.layers[i], net);
+
+
+	    //Prepare the data for next layer   
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
 		//printf("layer %d\n", i);
@@ -380,8 +387,8 @@ inline void forward_network_dist_prof_exe(network *netp)
 		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 	        //printf("\n\n");
 
-	    }
-	    else net.input = net.layers[i].output;  //Layer output
+	    } else {net.input = net.layers[i].output;}  
+
 
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
