@@ -407,9 +407,9 @@ inline void forward_network_dist_prof_exe(network *netp)
 */   
 
    
-    for(i = upto; i >= 0; i--){
+    for(i = upto; i > 0; i--){
         print_subindex(input_ranges[0][i]);
-	print_subindex(reuse_overlap_range(0, 1, i, &output_ranges[0], output_ranges[part_id[0][1]][i]));
+	print_subindex(reuse_overlap_range(0, 1, i-1, &output_ranges[0], output_ranges[part_id[0][1]][i]));
 
     }
 
