@@ -280,11 +280,42 @@ sub_index crop_range(sub_index large, sub_index small){
 
 
 
-#define STAGES 17
+#define STAGES 4
 #define PARTITIONS_W 2
 #define PARTITIONS_H 2 
 #define PARTITIONS 4
  
+//A table for partition ID
+//A mapping of partition IDs
+int part_id[PARTITIONS_W][PARTITIONS_H] = {
+   {0, 1},
+   {2, 3}
+};
+//crop_ranges[part_id[p_w][p_h]][i]
+sub_index reuse_overlap_range(int p_w, int p_h, int i, sub_index output_ranges[][STAGES], sub_index required_range) {
+    printf("Partition %d, %d, %d\n", part_id[p_w][p_h], part_id[(p_w-1)>0?(p_w-1):0][p_h], part_id[p_w][(p_h-1)>0?(p_h-1):0]);
+    int p_id = part_id[p_w][p_h];
+    int p_id_nearby;
+    print_subindex(required_range);
+    sub_index crop_range = required_range;
+    //Processing the block on the left
+    if(p_w > 0) {
+			p_id_nearby = part_id[p_w-1][p_h]; 
+			print_subindex(output_ranges[p_id_nearby][i]);
+			crop_range.w1 = output_ranges[p_id_nearby][i].w2 + 1;
+    }
+    //Processing the block above
+    if(p_h > 0) {
+			p_id_nearby = part_id[p_w][p_h-1]; 
+			print_subindex(output_ranges[p_id_nearby][i]);
+			crop_range.h1 = output_ranges[p_id_nearby][i].h2 + 1;
+    }
+    printf("After cropping ... ...: \n");
+    return crop_range;
+    //print_subindex(crop_range);
+    //printf("Partition %d, %d, %d\n", part_id[p_w][p_h], part_id[(p_w-1)>0?(p_w-1):0][p_h], part_id[p_w][(p_h-1)>0?(p_h-1):0]);
+}
+
 inline void forward_network_dist_prof_exe(network *netp)
 {
     network net = *netp;//Be careful because we are using a shallow copy here
@@ -311,6 +342,8 @@ inline void forward_network_dist_prof_exe(network *netp)
     sub_index original_ranges[STAGES];//Corrrect output ranges for each layer
     sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
     sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
+    sub_index crop_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
+
     sub_index stage_input_range;
     stage_input_range.w1 = 0;
     stage_input_range.w2 = net.layers[0].w-1;
@@ -341,7 +374,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     //Assumption l.out_w and l.out_h are all even numbers here
     for(p_h = 0; p_h < partition_h; p_h++){
 	   for(p_w = 0; p_w < partition_w; p_w++){ 
-	      printf("=========%d=========\n", p_w+p_h*partition_h);
+	      //printf("=========%d=========\n", p_w+p_h*partition_h);
 	      sub_index stage_range;
 	      stage_range.w1 = p_w*(l.out_w/partition_w);
 	      stage_range.w2 = p_w*(l.out_w/partition_w) + l.out_w/partition_w - 1;
@@ -352,17 +385,37 @@ inline void forward_network_dist_prof_exe(network *netp)
 	      for(i = upto; i >= 0; i--){
     		  layer l = net.layers[i];
 		  tmp_range = calculate_range(tmp_range, l);
-		  input_ranges[p_w+p_h*partition_h][i] = tmp_range;
-    	          print_subindex(input_ranges[p_w+p_h*partition_h][i]);
+		  input_ranges[part_id[p_w][p_h]][i] = tmp_range;
+    	          //print_subindex(input_ranges[p_w+p_h*partition_h][i]);
 	      }
-	      printf("====================\n");
+	      //printf("====================\n");
 	   }
     }
 
-    for(p = 0; p < partition; p++)
-    	for(i = upto; i >= 0; i--)
+    for(p = 0; p < partition; p++){
+    	for(i = upto; i >= 0; i--){
 	    output_ranges[p][i] = calculate_layeroutput_range(input_ranges[p][i], net.layers[i]);
-    
+	}
+    }
+
+/*
+    for(p_h = 0; p_h < partition_h; p_h++){
+	for(p_w = 0; p_w < partition_w; p_w++){ 
+	    print_subindex(reuse_overlap_range(p_w, p_h, 0, &output_ranges[0]));
+	}
+    }
+*/   
+
+   
+    for(i = upto; i >= 0; i--){
+        print_subindex(input_ranges[0][i]);
+	print_subindex(reuse_overlap_range(0, 1, i, &output_ranges[0], output_ranges[part_id[0][1]][i]));
+
+    }
+
+        
+   
+
     //Prepare the input and output of the current stage;
     size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
