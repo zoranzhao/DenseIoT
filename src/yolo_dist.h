@@ -96,7 +96,13 @@ void get_image(image* im, int* im_id){
 void run_densenet()
 {
     int top = 5;
-    network *net = load_network("cfg/densenet201.cfg", "densenet201.weights", 0);
+
+    //network *net = load_network("cfg/alexnet.cfg", "alexnet.weights", 0);
+    //network *net = load_network("cfg/vgg-16.cfg", "vgg-16.weights", 0);
+    network *net = load_network("cfg/resnet50.cfg", "resnet50.weights", 0);
+    //network *net = load_network("cfg/resnet152.cfg", "resnet152.weights", 0);
+    //network *net = load_network("cfg/densenet201.cfg", "densenet201.weights", 0);
+    //network *net = load_network("cfg/densenet201.cfg", "densenet201.weights", 0);
     set_batch_network(net, 1);
     srand(2222222);
 
@@ -133,7 +139,7 @@ void run_densenet()
 
         float *X = r.data;
         time=clock();
-        float *predictions = network_predict_dist_prof_exe(net, X);
+        float *predictions = network_predict_dist_test(net, X);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
         top_k(predictions, net->outputs, top, indexes);
         fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -162,6 +168,7 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 
     //load_images("local_producer");
 
+    //network *net = load_network((char*)"cfg/tiny-yolo.cfg", (char*)"tiny-yolo.weights", 0);
     network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(net, 1);
 
