@@ -358,7 +358,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
     int partition = partition_h*partition_w;
-    int startfrom = 0
+    int startfrom = 0;
     int upto = startfrom + STAGES-1; //This stage execute upto this layer
      
     int p_w;
