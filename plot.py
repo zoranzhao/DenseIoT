@@ -185,7 +185,29 @@ def test_plot_bar2(ax, filename1="", filename2=""):
     #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
     return ax
 
-def test_plot_bar3(ax, filename1="./profile/layer_data_byte_num.log", filename2="./profile/layer_data_time.log"):
+
+#test_plot_bar3(ax, "layer_output.log", "layer_weight.log", "layer_input.log"):
+def test_plot_bar3(ax, filename1="", filename2="", filename3=""):
+    """Plot two bar graphs side by side, with letters as x-tick labels.
+    """
+    #y =  load_data("layer_data.log")
+    y1 =  load_data(filename1)
+    y2 =  load_data(filename2)
+    y3 =  load_data(filename3)
+    x = np.arange(len(y1))
+    print x
+
+
+    width = 0.5
+    ax.bar(x, y1, width)
+    ax.bar(x, y2, width, bottom=y1)
+    ax.bar(x, y3, width, bottom=[sum(x) for x in zip(y1, y2)])
+
+    #ax.set_xticks(x + width)
+    #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
+    return ax
+
+def test_plot_barX(ax, filename1="./profile/layer_data_byte_num.log", filename2="./profile/layer_data_time.log"):
     """Plot two bar graphs side by side, with letters as x-tick labels.
     """
     #y =  load_data("layer_data.log")
@@ -234,9 +256,10 @@ def test_plot_figure(style_label=""):
     #test_plot_bar1(axes[2], "conv11_data.log")
     #test_plot_bar1(axes[3], "conv33_data.log")
     #test_plot_bar1(axes[1], "./profile/layer_weight.log")
-    test_plot_bar2(axes[0], "./profile/layer_weight.log", "./profile/layer_data_byte_num.log")
+    #test_plot_bar2(axes[0], "./profile/layer_weight.log", "./profile/layer_data_byte_num.log")
     #test_plot_bar1(axes[2], "./profile/layer_gemm_byte_num.log")
     #test_plot_bar1(axes[1], "./profile/layer_exe_time.log")
+    test_plot_bar3(axes[0], "layer_output.log", "layer_input.log", "layer_weight.log")
     test_plot_bar2(axes[1], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
     #test_plot_bar3(axes[2])
     #fig.tight_layout()
