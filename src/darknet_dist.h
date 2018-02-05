@@ -49,17 +49,21 @@ extern "C"{
 
 
 #define PORTNO 11111
-#define SRV "10.145.85.169"
+#define SRV "10.145.80.46"
 
-#define AP "192.168.42.1"
+#define AP "192.168.4.1"
 
-#define PINK0    "192.168.42.16"
-#define BLUE0    "192.168.42.14"
-#define ORANGE0  "192.168.42.15"
+#define PINK0    "192.168.4.16"
+#define BLUE0    "192.168.4.14"
+#define ORANGE0  "192.168.4.15"
 
-#define PINK1    "192.168.42.11"
-#define BLUE1    "192.168.42.12"
-#define ORANGE1  "192.168.42.13"
+#define PINK1    "192.168.4.4"
+#define BLUE1    "192.168.4.9"
+#define ORANGE1  "192.168.4.8"
+
+
+
+
 
 #define DEBUG_DIST 0
 
@@ -510,13 +514,9 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 {
     int i;
     int ii;
-
     net.input = input;
-
     for(i = startfrom; i < (upto+1); ++i){
 	    net.layers[i].forward(net.layers[i], net);
-
-
 	    //Prepare the data for next layer   
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
@@ -528,31 +528,11 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 		sub_index tmp = crop_ranges(input_ranges[part][i], output_ranges[part][i]);              
 		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 	        //printf("\n\n");
-
 	    } else {net.input = net.layers[i].output;}  
-
-
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
 	    }
     }
-    //print_subindex(output_ranges[p][upto]);
-
-    //reshape_output(net.input, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
-	//		(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
-	//		output_ranges[part][upto].w1, output_ranges[part][upto].w2,
-	//		output_ranges[part][upto].h1, output_ranges[part][upto].h2);
-
-    //Recover the network
-    //for(i = startfrom; i < upto+1; ++i){
-	//layer l = net.layers[i];
-	//net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
-	//net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
-	//net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-	//net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-    //}
-    //print_array("tmp.txt",stage_out, stage_outs, (stage_output_range.w2 - stage_output_range.w1 + 1));
-
     return net; 
 }
 
@@ -565,22 +545,22 @@ inline void forward_network_dist_prof_exe(network *netp)
 
     int startfrom = 0;
     int upto = 7;
+
+    net = reshape_network(startfrom, upto, net);
+
     size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
-    net = reshape_network(startfrom, upto, net);
+
     fork_input(startfrom, stage_in, net);
 
-    for(part = 0; part < 4; part ++){
+    for(part = 0; part < PARTITIONS; part ++){
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*sizeof(float), part);
     }
 
     float* data;
     int part_id;
     unsigned int size;
-
-
-
     for(part = 0; 1; part ++){
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {printf("%d parts of the total (%d) are processes locally\n", part, PARTITIONS); break;}
@@ -625,6 +605,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
 }
+
 
 
 inline void forward_network_dist_test(network *netp)

@@ -12,7 +12,7 @@ void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
 void remote_producer(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
 	std::cout << AP << "   " << "Steal only " << i <<std::endl;
-   	steal_and_free(AP, PORTNO);
+   	dataBlob* data = steal_and_return(AP, PORTNO);
    }
 }
 
@@ -162,6 +162,9 @@ void run_densenet()
 
 
 
+
+
+
 //"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
 void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 {
@@ -240,7 +243,51 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
 }
 
 
+inline void steal_forward(network *netp){
 
+    int part;
+    network net = *netp;
+
+    int startfrom = 0;
+    int upto = 7;
+
+    net = reshape_network(startfrom, upto, net);
+
+    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+    dataBlob* blob = steal_and_return(AP, PORTNO);
+    data = (float*)(blob -> getDataPtr());
+    part_id = blob -> getID();
+    size = blob -> getSize();
+
+    net = forward_stage(part_id, data, startfrom, upto, net);
+
+    
+    free(data);
+    delete blob;
+
+    //results
+    
+    
+
+
+
+    //Recover the network
+    for(int i = 0; i < upto+1; ++i){
+	layer l = net.layers[i];
+	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
+	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
+	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
+    }
+
+}
 
 
 void produce_consume_serve(){
