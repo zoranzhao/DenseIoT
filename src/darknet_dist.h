@@ -558,7 +558,7 @@ inline void forward_network_dist_prof_exe(network *netp)
 
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);
-      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*sizeof(float), part);
+      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
     }
 
     float* data;
