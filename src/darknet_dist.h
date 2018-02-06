@@ -574,7 +574,7 @@ inline void forward_network_dist_prof_exe(network *netp)
     }
 
     for(part =part; part < PARTITIONS; part ++){
-       printf("Waiting part %d from other stealers\n", part);
+       //printf("Waiting part %d from other stealers\n", part);
        get_result((void**)&data, &size, &part_id);
        printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
@@ -598,58 +598,6 @@ inline void forward_network_dist_prof_exe(network *netp)
 
     //Recover the network
     //for(int i = startfrom; i < upto+1; ++i){
-	//layer l = net.layers[i];
-	//net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
-	//net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
-	//net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-	//net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-    //}
-
-}
-
-
-inline void steal_forward_test(network *netp, std::string thread_name){
-
-
-    netp->truth = 0;
-    netp->train = 0;
-    netp->delta = 0;
-
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = 7;
-
-    size_t stage_outs =  (original_ranges[upto].w/net.layers[upto].stride)*(original_ranges[upto].h/net.layers[upto].stride)*(net.layers[upto].out_c);
-    //size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
-
-    //net = reshape_network(startfrom, upto, net);
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-    //dataBlob* blob = steal_and_return(AP, PORTNO);
-    //data = (float*)(blob -> getDataPtr());
-    //part_id = blob -> getID();
-    //size = blob -> getSize();
-
-    while(1){
-	get_job((void**)&data, &size, &part_id);
-	net = forward_stage(part_id, data, startfrom, upto, net);
-	//free(data);
-	put_result((void*)(net.layers[upto].output), net.layers[upto].outputs, part_id);  
-    }
-    //blob -> setData((void*)(net.layers[upto].output));
-    //blob -> setSize(net.layers[upto].outputs);
-    //send_result(blob, AP, PORTNO);
-    //delete blob;
-
-    //Recover the network
-    //for(int i = 0; i < upto+1; ++i){
 	//layer l = net.layers[i];
 	//net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
 	//net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 

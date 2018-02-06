@@ -291,7 +291,7 @@ inline void steal_forward(network *netp, std::string thread_name){
 	net = forward_stage(part_id, data, startfrom, upto, net);
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
-	blob -> setSize(net.layers[upto].outputs);
+	blob -> setSize(net.layers[upto].outputs*sizeof(float));
 	send_result(blob, AP, PORTNO);
 	delete blob;
     }
