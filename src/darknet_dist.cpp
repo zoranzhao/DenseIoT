@@ -8,9 +8,9 @@ int main(int argc, char **argv)
 
     //compute_local();
 
-    client();
+    //client();
 
-    //ap_server();
+    ap_server();
 
     return 0;
 }
