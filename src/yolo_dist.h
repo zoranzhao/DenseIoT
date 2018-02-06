@@ -2,19 +2,37 @@
 #define  THREAD_NUM 1
 
 
-void remote_consumer(unsigned int number_of_jobs, std::string thread_name){
-	serve_steal(number_of_jobs, PORTNO);
-	//serve_steal_fake(number_of_jobs, PORTNO);
+void server(unsigned int number_of_jobs, std::string thread_name){
+   
+   char* data;
+
+
+   for(int i = 0; i < number_of_jobs; i++){
+        data = (char*)malloc(i+10);
+        put_job((void*)data, i+10, i);
+   }
+   serve_steal(number_of_jobs, PORTNO);
+      
 
 }
 
 
-void remote_producer(unsigned int number_of_jobs, std::string thread_name){
+void steal(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
-	std::cout << AP << "   " << "Steal only " << i <<std::endl;
+	std::cout << AP << "   " << "Steal " << i << "th task!" <<std::endl;
    	dataBlob* data = steal_and_return(AP, PORTNO);
    }
 }
+
+void send_result(unsigned int number_of_jobs, std::string thread_name){
+   for(unsigned int i = 0; i < number_of_jobs; i++){
+	std::cout << AP << "   " << "Send result " << i << "th task!" <<std::endl;
+        char* data = (char*)malloc(i+10);
+	dataBlob* blob = new dataBlob((void*)data, i+10, i);
+	send_result(blob, AP, PORTNO);
+   }
+}
+
 
 
 
@@ -160,21 +178,14 @@ void run_densenet()
 #endif
 }
 
-
-
-
-
-
 //"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
-void local_consumer(unsigned int number_of_jobs, std::string thread_name)
+void local_consumer(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
 
-    //load_images("local_producer");
-
-    network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     //network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(net, 1);
-
+    //network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    //set_batch_network(net, 1);
+    network *net = netp;
 
     srand(2222222);
 #ifdef NNPACK
@@ -240,118 +251,47 @@ void local_consumer(unsigned int number_of_jobs, std::string thread_name)
     pthreadpool_destroy(net->threadpool);
     nnp_deinitialize();
 #endif
-}
-
-
-inline void steal_forward(network *netp){
-
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = 7;
-
-    net = reshape_network(startfrom, upto, net);
-
-    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-    dataBlob* blob = steal_and_return(AP, PORTNO);
-    data = (float*)(blob -> getDataPtr());
-    part_id = blob -> getID();
-    size = blob -> getSize();
-
-    net = forward_stage(part_id, data, startfrom, upto, net);
-
-    
-    free(data);
-    delete blob;
-
-    //results
-    
-    
-
-
-
-    //Recover the network
-    for(int i = 0; i < upto+1; ++i){
-	layer l = net.layers[i];
-	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
-	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
-	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-    }
-
-}
-
-
-void produce_consume_serve(){
-    std::thread lp(local_producer, 40, "local_producer1");
-    std::thread lc(local_consumer, 20, "local_consumer1");
-    std::thread rc(remote_consumer, 20, "remote_consumer1");
-    lp.join();
-    lc.join();
-    rc.join();
-}
-
-//layer-based communication profiling
-void consume_serve(){
-    unsigned int layers = 32;
-/*
-    local_consumer(1, "local_consumer1");
-    remote_consumer(layers, "remote_consumer1");
-*/
-
-    std::thread lc(local_consumer, 1, "local_consumer1");//pushing 
-    std::thread rc(remote_consumer, layers, "remote_consumer1");
-    rc.join();
-    lc.join();
 
 
 }
-void steal_only(){
-    unsigned int layers = 32;
-    std::thread rp(remote_producer, layers, "remote_producer1");
-    rp.join();
+
+void compute_local(){
+    unsigned int number_of_jobs = 5;
+    network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp1, 1);
+    //local_consumer(net, number_of_jobs, "local_consumer1");
+    //steal_forward(net);
+
+    network net1 = reshape_network(0, 7, *netp1);
+
+    network *netp2 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp2, 1);
+    //local_consumer(net, number_of_jobs, "local_consumer1");
+    //steal_forward(net);
+
+    network net2 = reshape_network(0, 7, *netp2);
+
+    std::thread t1(local_consumer, &net1, number_of_jobs, "local_consumer");
+    std::thread t2(steal_forward, &net2,"steal_forward");
+    t1.join();
+    t2.join();
 }
-//layer-based communication profiling
 
+void client(){
+    unsigned int number_of_jobs = 2;
+    steal(number_of_jobs, "steal");
+    send_result(number_of_jobs, "send_result");
+}
 
-
-void produce_serve(){
-    std::thread lp(local_producer, 20, "local_producer1");
-    std::thread rc(remote_consumer, 20, "remote_consumer1");
-    lp.join();
-    rc.join();
+void ap_server(){
+    int number_of_jobs = 4;
+    std::thread t1(server, number_of_jobs, "server");
 }
 
 
 
-void consume_only(){
-    std::thread lc(local_consumer, 5, "local_consumer1");
-    lc.join();
-}
 
 
-void steal_consume(){
-    std::thread rp(remote_producer, 20, "remote_producer1");
-    std::thread lc(local_consumer, 20, "local_consumer1");
-    rp.join();
-    lc.join();
-}
-
-
-void produce_consume(){
-    std::thread lp(local_producer, 1, "local_producer1");
-    std::thread lc(local_consumer, 1, "local_consumer1");
-    lp.join();
-    lc.join();
-}
 
 
 

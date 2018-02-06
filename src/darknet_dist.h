@@ -250,6 +250,9 @@ sub_index crop_ranges(sub_index large, sub_index small){
     output.h1 = small.h1 - large.h1; 
     output.h2 = small.h1 - large.h1 + (small.h2 - small.h1);
     
+
+    output.w = output.w2 -output.w1 + 1;
+    output.h = output.h2 -output.h1 + 1;
     return output;
 }
 
@@ -292,7 +295,7 @@ sub_index crop_ranges(sub_index large, sub_index small){
 
 
 
-#define STAGES 12
+#define STAGES 8
 #define PARTITIONS_W 2
 #define PARTITIONS_H 2 
 #define PARTITIONS 4
@@ -520,12 +523,11 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 	    //Prepare the data for next layer   
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
-		//printf("layer %d\n", i);
 	        //print_subindex(input_ranges[p][i]);
 	        //print_subindex(output_ranges[p][i]);
 		//printf("%2d, %2d, %2d\n", l.out_w, l.out_h, l.out_c);
 		//print_subindex(crop_range(input_ranges[p][i], output_ranges[p][i]));   
-		sub_index tmp = crop_ranges(input_ranges[part][i], output_ranges[part][i]);              
+		sub_index tmp = crop_ranges(input_ranges[part][i], output_ranges[part][i]);   
 		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 	        //printf("\n\n");
 	    } else {net.input = net.layers[i].output;}  
@@ -542,47 +544,46 @@ inline void forward_network_dist_prof_exe(network *netp)
     int part;
     network net = *netp;
 
-
     int startfrom = 0;
     int upto = 7;
 
-    net = reshape_network(startfrom, upto, net);
-
-    size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
+    size_t stage_outs =  (original_ranges[upto].w/net.layers[upto].stride)*(original_ranges[upto].h/net.layers[upto].stride)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
+
+    //net = reshape_network(startfrom, upto, net);
+
 
     fork_input(startfrom, stage_in, net);
 
     for(part = 0; part < PARTITIONS; part ++){
+      printf("Putting jobs %d\n", part);
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*sizeof(float), part);
     }
 
     float* data;
     int part_id;
     unsigned int size;
+
+
     for(part = 0; 1; part ++){
        try_get_job((void**)&data, &size, &part_id);
-       if(data == NULL) {printf("%d parts of the total (%d) are processes locally\n", part, PARTITIONS); break;}
+       if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
        net = forward_stage( part_id, data, startfrom, upto, net);
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
     }
 
-
-    for(part = part; part < PARTITIONS; part ++){
+    for(part =part; part < PARTITIONS; part ++){
        printf("Waiting part %d from other stealers\n", part);
        get_result((void**)&data, &size, &part_id);
+       printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
     }
-    
 
     net.input = stage_out;
 
 
-
-
-    int i;
-    for(i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
+    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
         net.index = i;
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
@@ -596,15 +597,68 @@ inline void forward_network_dist_prof_exe(network *netp)
 
 
     //Recover the network
-    for(i = 0; i < upto+1; ++i){
-	layer l = net.layers[i];
-	net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
-	net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
-	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
-	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
-    }
+    //for(int i = startfrom; i < upto+1; ++i){
+	//layer l = net.layers[i];
+	//net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
+	//net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
+	//net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+	//net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
+    //}
 
 }
+
+
+inline void steal_forward(network *netp, std::string thread_name){
+
+
+    netp->truth = 0;
+    netp->train = 0;
+    netp->delta = 0;
+
+    int part;
+    network net = *netp;
+
+    int startfrom = 0;
+    int upto = 7;
+
+    size_t stage_outs =  (original_ranges[upto].w/net.layers[upto].stride)*(original_ranges[upto].h/net.layers[upto].stride)*(net.layers[upto].out_c);
+    //size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+
+    //net = reshape_network(startfrom, upto, net);
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+    //dataBlob* blob = steal_and_return(AP, PORTNO);
+    //data = (float*)(blob -> getDataPtr());
+    //part_id = blob -> getID();
+    //size = blob -> getSize();
+
+    while(1){
+	get_job((void**)&data, &size, &part_id);
+	net = forward_stage(part_id, data, startfrom, upto, net);
+	//free(data);
+	put_result((void*)(net.layers[upto].output), net.layers[upto].outputs, part_id);  
+    }
+    //blob -> setData((void*)(net.layers[upto].output));
+    //blob -> setSize(net.layers[upto].outputs);
+    //send_result(blob, AP, PORTNO);
+    //delete blob;
+
+    //Recover the network
+    //for(int i = 0; i < upto+1; ++i){
+	//layer l = net.layers[i];
+	//net.layers[i].h = original_ranges[i].h; net.layers[i].out_h = original_ranges[i].h/l.stride; 
+	//net.layers[i].w = original_ranges[i].w; net.layers[i].out_w = original_ranges[i].w/l.stride; 
+	//net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * l.out_c; 
+	//net.layers[i].inputs = net.layers[i].h * net.layers[i].w * l.c; 
+    //}
+
+}
+
 
 
 
@@ -628,7 +682,6 @@ inline void forward_network_dist_test(network *netp)
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
-
 
         fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
         fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
