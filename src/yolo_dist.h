@@ -284,7 +284,7 @@ void client(){
 }
 
 void ap_server(){
-    int number_of_jobs = 100;
+    int number_of_jobs = 10;
     std::thread t1(server, number_of_jobs, "server");
     t1.join();
 }
