@@ -608,7 +608,7 @@ inline void forward_network_dist_prof_exe(network *netp)
 }
 
 
-inline void steal_forward(network *netp, std::string thread_name){
+inline void steal_forward_test(network *netp, std::string thread_name){
 
 
     netp->truth = 0;

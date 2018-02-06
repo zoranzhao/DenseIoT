@@ -5,12 +5,13 @@
 void server(unsigned int number_of_jobs, std::string thread_name){
    
    char* data;
-
+/*
 
    for(int i = 0; i < number_of_jobs; i++){
         data = (char*)malloc(i+10);
         put_job((void*)data, i+10, i);
    }
+*/
    serve_steal(number_of_jobs, PORTNO);
       
 
@@ -255,6 +256,51 @@ void local_consumer(network *netp, unsigned int number_of_jobs, std::string thre
 
 }
 
+
+inline void steal_forward(network *netp, std::string thread_name){
+
+
+    netp->truth = 0;
+    netp->train = 0;
+    netp->delta = 0;
+
+    int part;
+    network net = *netp;
+
+    int startfrom = 0;
+    int upto = 7;
+
+    size_t stage_outs =  (original_ranges[upto].w/net.layers[upto].stride)*(original_ranges[upto].h/net.layers[upto].stride)*(net.layers[upto].out_c);
+    //size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+
+    //net = reshape_network(startfrom, upto, net);
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+
+    while(1){
+	dataBlob* blob = steal_and_return(AP, PORTNO);
+	data = (float*)(blob -> getDataPtr());
+	part_id = blob -> getID();
+	size = blob -> getSize();
+	net = forward_stage(part_id, data, startfrom, upto, net);
+	free(data);
+	blob -> setData((void*)(net.layers[upto].output));
+	blob -> setSize(net.layers[upto].outputs);
+	send_result(blob, AP, PORTNO);
+	delete blob;
+    }
+
+
+
+}
+
+
+
 void compute_local(){
     unsigned int number_of_jobs = 5;
     network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
@@ -277,21 +323,39 @@ void compute_local(){
     t2.join();
 }
 
-void client(){
+void client_test(){
     unsigned int number_of_jobs = 2;
     steal(number_of_jobs, "steal");
     send_result_data(number_of_jobs, "send_result");
 }
 
-void ap_server(){
+void server_test(){
     int number_of_jobs = 10;
     std::thread t1(server, number_of_jobs, "server");
     t1.join();
 }
 
 
+void victim_test(){
+    unsigned int number_of_jobs = 5;
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, 7, *netp);
+    std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
+    std::thread t2(server, 100, "server");
+    t1.join();
+    t2.join();
+}
 
 
+void stealer_test(){
+    unsigned int number_of_jobs = 5;
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, 7, *netp);
+    std::thread t1(steal_forward, &net,"steal_forward");
+    t1.join();
+}
 
 
 

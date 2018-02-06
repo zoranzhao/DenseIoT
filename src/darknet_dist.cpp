@@ -7,11 +7,8 @@ int main(int argc, char **argv)
 
 
     //compute_local();
-
-    client();
-
-    //ap_server();
-
+    //victim_test();
+    stealer_test();
     return 0;
 }
 
