@@ -51,7 +51,7 @@ extern "C"{
 #define PORTNO 11111
 #define SRV "10.145.80.46"
 
-#define AP "192.168.4.1"
+#define AP "10.157.89.51"//"192.168.4.1"
 
 #define PINK0    "192.168.4.16"
 #define BLUE0    "192.168.4.14"

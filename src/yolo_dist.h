@@ -24,7 +24,7 @@ void steal(unsigned int number_of_jobs, std::string thread_name){
    }
 }
 
-void send_result(unsigned int number_of_jobs, std::string thread_name){
+void send_result_data(unsigned int number_of_jobs, std::string thread_name){
    for(unsigned int i = 0; i < number_of_jobs; i++){
 	std::cout << AP << "   " << "Send result " << i << "th task!" <<std::endl;
         char* data = (char*)malloc(i+10);
@@ -280,7 +280,7 @@ void compute_local(){
 void client(){
     unsigned int number_of_jobs = 2;
     steal(number_of_jobs, "steal");
-    send_result(number_of_jobs, "send_result");
+    send_result_data(number_of_jobs, "send_result");
 }
 
 void ap_server(){
