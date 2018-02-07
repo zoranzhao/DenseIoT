@@ -382,14 +382,20 @@ void stealer_test(){
 
 
 
-void client_gateway(){
+void client_register_gateway(){
         char reg[10] = "register";
         char steal[10] = "steals";
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
 	ask_gateway(reg, AP, SMART_GATEWAY);
-	ask_gateway(steal, AP, SMART_GATEWAY);
+}
+
+void client_steal_gateway(){
+        struct sockaddr_in addr;
+	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
+	std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
+
 }
 
 void smart_gateway(){
