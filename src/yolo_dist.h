@@ -393,7 +393,7 @@ void client_register_gateway(){
 
 void client_steal_gateway(){
         struct sockaddr_in addr;
-	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
+	addr.sin_addr.s_addr = ask_gateway("steal", AP, SMART_GATEWAY);
 	std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
 
 }
