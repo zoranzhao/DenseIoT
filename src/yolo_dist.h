@@ -257,8 +257,6 @@ void local_consumer(network *netp, unsigned int number_of_jobs, std::string thre
 
 
 inline void steal_forward(network *netp, std::string thread_name){
-
-
     netp->truth = 0;
     netp->train = 0;
     netp->delta = 0;
@@ -384,7 +382,6 @@ void stealer_test(){
 
 void client_register_gateway(){
         char reg[10] = "register";
-        char steal[10] = "steals";
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
@@ -392,12 +389,10 @@ void client_register_gateway(){
 }
 
 void client_steal_gateway(){
-        char reg[10] = "register";
         char steal[10] = "steals";
         struct sockaddr_in addr;
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
 	std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
-
 }
 
 void smart_gateway(){
