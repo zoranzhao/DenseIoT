@@ -158,7 +158,7 @@ void run_densenet()
 
         float *X = r.data;
         time=clock();
-        float *predictions = network_predict_dist_test(net, X);
+        float *predictions = network_predict_dist(net, X);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
         top_k(predictions, net->outputs, top, indexes);
         fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
@@ -217,8 +217,7 @@ void local_consumer(network *netp, unsigned int number_of_jobs, std::string thre
         load_image_by_number(&sized, id);
         float *X = sized.data;
         double t1=what_time_is_it_now();
-	network_predict_dist_prof_exe(net, X);
-	//network_predict_dist_test(net, X);
+	network_predict_dist(net, X);
         double t2=what_time_is_it_now();
 
 #ifdef DEBUG_DIST
@@ -270,7 +269,7 @@ inline void steal_forward(network *netp, std::string thread_name){
     int startfrom = 0;
     int upto = 7;
 
-    size_t stage_outs =  (original_ranges[upto].w/net.layers[upto].stride)*(original_ranges[upto].h/net.layers[upto].stride)*(net.layers[upto].out_c);
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     //size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
@@ -301,38 +300,61 @@ inline void steal_forward(network *netp, std::string thread_name){
 }
 
 
+inline void steal_forward_local(network *netp, std::string thread_name){
+
+    netp->truth = 0;
+    netp->train = 0;
+    netp->delta = 0;
+
+    int part;
+    network net = *netp;
+
+    int startfrom = 0;
+    int upto = 7;
+
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+    while(1){
+        get_job((void**)&data, &size, &part_id);
+	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	net = forward_stage(part_id, data, startfrom, upto, net);
+	free(data);
+        put_result((void*)(net.layers[upto].output), net.layers[upto].outputs*sizeof(float), part_id);
+    }
+
+}
+
+
+void compute_with_local_stealer(){
+    unsigned int number_of_jobs = 5;
+    network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp1, 1);
+    network net1 = reshape_network(0, 7, *netp1);
+
+    network *netp2 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp2, 1);
+    network net2 = reshape_network(0, 7, *netp2);
+
+    std::thread t1(local_consumer, &net1, number_of_jobs, "local_consumer");
+    std::thread t2(steal_forward_local, &net2, "steal_forward");
+    t1.join();
+    t2.join();
+}
+
 
 void compute_local(){
     unsigned int number_of_jobs = 5;
     network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp1, 1);
-    //local_consumer(net, number_of_jobs, "local_consumer1");
-    //steal_forward(net);
-
     network net1 = reshape_network(0, 7, *netp1);
 
-    network *netp2 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(netp2, 1);
-    //local_consumer(net, number_of_jobs, "local_consumer1");
-    //steal_forward(net);
-
-    network net2 = reshape_network(0, 7, *netp2);
-
     std::thread t1(local_consumer, &net1, number_of_jobs, "local_consumer");
-    std::thread t2(steal_forward, &net2,"steal_forward");
-    t1.join();
-    t2.join();
-}
-
-void client_test(){
-    unsigned int number_of_jobs = 2;
-    steal(number_of_jobs, "steal");
-    send_result_data(number_of_jobs, "send_result");
-}
-
-void server_test(){
-    int number_of_jobs = 10;
-    std::thread t1(server, number_of_jobs, "server");
     t1.join();
 }
 
@@ -354,11 +376,24 @@ void stealer_test(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
-    std::thread t1(steal_forward, &net,"steal_forward");
+    std::thread t1(steal_forward, &net,  "steal_forward");
     t1.join();
 }
 
 
 
+void client_gateway(){
+        char reg[10] = "register";
+        char steal[10] = "steals";
+        put_job((void*)reg, 10, 0);
+        put_job((void*)reg, 10, 0);
+        put_job((void*)reg, 10, 0);
+	ask_gateway(reg, AP, SMART_GATEWAY);
+	ask_gateway(steal, AP, SMART_GATEWAY);
+}
+
+void smart_gateway(){
+   task_recorder(SMART_GATEWAY);
+}
 
 
