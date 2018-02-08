@@ -1,6 +1,7 @@
 NNPACK=1
 ARM_NEON=1
-DEBUG=1
+OPENMP=0
+DEBUG=0
 VPATH=./src
 EXEC=darknet_dist
 OBJDIR=./obj/
@@ -13,10 +14,14 @@ ARFLAGS=rcs
 LDFLAGS= -lm -pthread 
 CFLAGS=-Wall -fPIC
 DARKNET= ../darknet-nnpack
-RIOT= ../riot
-COMMON= -I$(DARKNET)/include/ -I$(DARKNET)/src/ -I$(RIOT)/include/ -I$(RIOT)/src/  -Iinclude/ -Isrc/ 
-LDLIB=-L$(DARKNET) -l:libdarknet.a -L$(RIOT) -l:libriot.a 
+DISTRIOT= ../DistrIoT
+COMMON= -I$(DARKNET)/include/ -I$(DARKNET)/src/ -I$(DISTRIOT)/include/ -I$(DISTRIOT)/src/  -Iinclude/ -Isrc/ 
+LDLIB=-L$(DARKNET) -l:libdarknet.a -L$(DISTRIOT) -l:libdistriot.a 
 
+
+ifeq ($(OPENMP), 1) 
+CFLAGS+= -fopenmp
+endif
 
 ifeq ($(DEBUG), 1) 
 OPTS+=-O0 -g -std=c++11

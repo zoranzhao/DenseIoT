@@ -1,2 +1,2 @@
 #cmd to update dependency repo
-git pull && cd ../darknet-nnpack && git pull && cd ../riot && git pull && cd ../DenseIoT
+git pull && cd ../darknet-nnpack && git pull && cd ../DistrIoT && git pull && cd ../DenseIoT

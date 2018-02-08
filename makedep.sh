@@ -1,2 +1,2 @@
 #Recompile the dependencies
-cd ../darknet-nnpack/ && make && cd ../riot && make && cd ../DenseIoT && make clean && make
+cd ../darknet-nnpack/ && make && cd ../DistrIoT && make && cd ../DenseIoT && make clean && make

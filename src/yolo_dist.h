@@ -177,15 +177,11 @@ void run_densenet()
 #endif
 }
 
-//"cfg/coco.data" "cfg/yolo.cfg" "yolo.weights" "data/dog.jpg"
+
 void local_consumer(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
 
-    //network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    //network *net = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    //set_batch_network(net, 1);
     network *net = netp;
-
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();

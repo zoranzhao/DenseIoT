@@ -44,23 +44,8 @@ extern "C"{
 #include <time.h>
 #include <assert.h>
 
-#include "riot.h"
+#include "distriot.h"
 
-
-
-#define PORTNO 11111
-#define SMART_GATEWAY 11112
-#define SRV "10.145.80.46"
-
-#define AP "10.157.89.51"//"192.168.4.1"
-
-#define PINK0    "192.168.4.16"
-#define BLUE0    "192.168.4.14"
-#define ORANGE0  "192.168.4.15"
-
-#define PINK1    "192.168.4.4"
-#define BLUE1    "192.168.4.9"
-#define ORANGE1  "192.168.4.8"
 
 #define DEBUG_DIST 0
 
