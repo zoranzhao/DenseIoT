@@ -356,16 +356,12 @@ inline network reshape_network(int startfrom, int upto, network net){
     //Assumption l.out_w and l.out_h are all even numbers here
     for(p_h = 0; p_h < partition_h; p_h++){
 	   for(p_w = 0; p_w < partition_w; p_w++){ 
-	      //printf("=========%d=========\n", p_w+p_h*partition_h);
 	      sub_index tmp_range = stage_output_partition_ranges[part_id[p_h][p_w]];
-    	      print_subindex(tmp_range);
 	      for(i = upto; i >= startfrom; i--){
     		  layer l = net.layers[i];
 		  tmp_range = calculate_range(tmp_range, l);
 		  input_ranges[part_id[p_h][p_w]][i] = tmp_range;
-    	          //print_subindex(input_ranges[p_w+p_h*partition_h][i]);
 	      }
-	      //printf("====================\n");
 	   }
     }
 
@@ -457,7 +453,6 @@ inline void forward_network_dist(network *netp, network orig)
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
-    //net = reshape_network(startfrom, upto, net);
 
     fork_input(startfrom, stage_in, net);
 
@@ -496,10 +491,66 @@ inline void forward_network_dist(network *netp, network orig)
             net.truth = net.layers[i].output;
         }
     }
-
 }
 
+inline void forward_network_dist_gateway(network *netp, network orig)
+{
+    int part;
+    network net = *netp;
 
+    int startfrom = 0;
+    int upto = 7;
+
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+
+    fork_input(startfrom, stage_in, net);
+    char reg[10] = "register";
+    //ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
+
+
+    for(part = 0; part < PARTITIONS; part ++){
+      printf("Putting jobs %d\n", part);
+      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
+    }
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+    for(part = 0; 1; part ++){
+       try_get_job((void**)&data, &size, &part_id);
+       if(data == NULL) {
+	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
+	   //ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
+	   break;
+       }
+       net = forward_stage( part_id, data, startfrom, upto, net);
+       join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
+    }
+
+    for(part = part; part < PARTITIONS; part ++){
+       get_result((void**)&data, &size, &part_id);
+       printf("Getting result %d from other stealers\n", part_id);
+       join_output(part_id, data,  stage_out, upto, net);
+    }
+
+    net.input = stage_out;
+
+    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
+        net.index = i;
+        if(net.layers[i].delta){	       
+            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
+        }
+        net.layers[i].forward(net.layers[i], net);
+        net.input = net.layers[i].output; //Layer output
+        if(net.layers[i].truth) {
+            net.truth = net.layers[i].output;
+        }
+    }
+
+}
 
 
 inline void forward_network_dist_prof(network *netp)
@@ -557,7 +608,8 @@ inline float *network_predict_dist(network *net, float *input)
     net->train = 0;
     net->delta = 0;
     //forward_network_dist_prof(net);
-    forward_network_dist(net, orig);
+    //forward_network_dist(net, orig);
+    forward_network_dist_gateway(net, orig);
     float *out = net->output;
     *net = orig;
     return out;

@@ -2,17 +2,15 @@
 #define  THREAD_NUM 1
 
 
-void server(unsigned int number_of_jobs, std::string thread_name){
-   
+void steal_server(std::string thread_name){
+/* 
    char* data;
-/*
-
    for(int i = 0; i < number_of_jobs; i++){
         data = (char*)malloc(i+10);
         put_job((void*)data, i+10, i);
    }
 */
-   serve_steal(number_of_jobs, PORTNO);
+   serve_steal_and_gather_result( PORTNO );
       
 
 }
@@ -280,6 +278,7 @@ inline void steal_forward(network *netp, std::string thread_name){
 
 
     while(1){
+
 	dataBlob* blob = steal_and_return(AP, PORTNO);
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
@@ -295,6 +294,53 @@ inline void steal_forward(network *netp, std::string thread_name){
 
 
 
+}
+
+inline void steal_forward_with_gateway(network *netp, std::string thread_name){
+    netp->truth = 0;
+    netp->train = 0;
+    netp->delta = 0;
+    int part;
+    network net = *netp;
+    int startfrom = 0;
+    int upto = 7;
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+    float* stage_in = net.input; 
+    float* data;
+    int part_id;
+    unsigned int size;
+    char steal[10] = "steals";
+    struct sockaddr_in addr;
+    while(1){
+	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
+	std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
+	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
+		//If the stolen address is a broadcast address, steal again 
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::cout << "Nothing is registered in the gateway device, sleep for a while" << std::endl;
+		continue;
+	}
+	dataBlob* blob = steal_and_return(inet_ntoa(addr.sin_addr), PORTNO);
+        if(blob->getID() == -1){
+		//Have stolen nothing, this can happen if a registration remote call happens
+		//after an check call happens to the gateway
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::cout << "The victim has already finished current job list" << std::endl;
+		std::cout << "Wait for a while until next stealing iteration" << std::endl;
+		continue;
+	}
+	data = (float*)(blob -> getDataPtr());
+	part_id = blob -> getID();
+	size = blob -> getSize();
+	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	net = forward_stage(part_id, data, startfrom, upto, net);
+	free(data);
+	blob -> setData((void*)(net.layers[upto].output));
+	blob -> setSize(net.layers[upto].outputs*sizeof(float));
+	send_result(blob, AP, PORTNO);
+	delete blob;
+    }
 }
 
 
@@ -357,17 +403,6 @@ void compute_local(){
 }
 
 
-void victim_test(){
-    unsigned int number_of_jobs = 5;
-    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(netp, 1);
-    network net = reshape_network(0, 7, *netp);
-    std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
-    std::thread t2(server, 100, "server");
-    t1.join();
-    t2.join();
-}
-
 
 void stealer_test(){
     unsigned int number_of_jobs = 5;
@@ -380,11 +415,13 @@ void stealer_test(){
 
 
 
+
 void client_register_gateway(){
         char reg[10] = "register";
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
         put_job((void*)reg, 10, 0);
+
 	ask_gateway(reg, AP, SMART_GATEWAY);
 }
 
@@ -399,4 +436,23 @@ void smart_gateway(){
    task_recorder(SMART_GATEWAY);
 }
 
+void idle_client(){
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, 7, *netp);
+    std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
+    t1.join();
+}
+
+
+void victim_client(){
+    unsigned int number_of_jobs = 10;
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, 7, *netp);
+    std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
+    std::thread t2(steal_server, "server");
+    t1.join();
+    t2.join();
+}
 
