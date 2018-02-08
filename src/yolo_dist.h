@@ -338,7 +338,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
-	send_result(blob, AP, PORTNO);
+	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
 	delete blob;
     }
 }
