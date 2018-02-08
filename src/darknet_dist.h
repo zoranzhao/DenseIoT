@@ -507,13 +507,15 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 
     fork_input(startfrom, stage_in, net);
     char reg[10] = "register";
-    //ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
+
 
 
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
     }
+    ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
+
 
     float* data;
     int part_id;
@@ -523,7 +525,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {
 	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
-	   //ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
+	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
 	   break;
        }
        net = forward_stage( part_id, data, startfrom, upto, net);
