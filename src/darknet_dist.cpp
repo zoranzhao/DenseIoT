@@ -5,6 +5,7 @@
 int main(int argc, char **argv)
 {
     idle_client();
+    //toggle_gateway();
     //victim_client();
     //smart_gateway();
     //client_register_gateway();

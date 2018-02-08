@@ -413,31 +413,47 @@ void stealer_test(){
 
 
 void client_register_gateway(){
-        char reg[10] = "register";
-        put_job((void*)reg, 10, 0);
-        put_job((void*)reg, 10, 0);
-        put_job((void*)reg, 10, 0);
-
-	ask_gateway(reg, AP, SMART_GATEWAY);
+    char reg[10] = "register";
+    put_job((void*)reg, 10, 0);
+    put_job((void*)reg, 10, 0);
+    put_job((void*)reg, 10, 0);
+    ask_gateway(reg, AP, SMART_GATEWAY);
 }
 
 void client_steal_gateway(){
-        char steal[10] = "steals";
-        struct sockaddr_in addr;
-	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
-	std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
+    char steal[10] = "steals";
+    struct sockaddr_in addr;
+    addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
+    std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
+}
+
+void gateway_service(std::string thread_name){
+    task_recorder(SMART_GATEWAY);
+}
+
+
+void toggle_gateway(){
+    char start_msg[10] = "start_gw";
+    ask_gateway(start_msg, AP, START_CTRL);
+
 }
 
 void smart_gateway(){
-   task_recorder(SMART_GATEWAY);
+    std::thread t1(gateway_service, "server");
+    exec_control(START_CTRL);
+    t1.join();
 }
+
+
+
 
 void idle_client(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
-    std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
-    t1.join();
+    exec_control(START_CTRL);
+    //std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
+    //t1.join();
 }
 
 
