@@ -344,7 +344,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
 		//If the stolen address is a broadcast address, steal again 
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		std::cout << "Nothing is registered in the gateway device, sleep for a while" << std::endl;
 		continue;
 	}
@@ -352,7 +352,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
         if(blob->getID() == -1){
 		//Have stolen nothing, this can happen if a registration remote call happens
 		//after an check call happens to the gateway
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		std::cout << "The victim has already finished current job list" << std::endl;
 		std::cout << "Wait for a while until next stealing iteration" << std::endl;
 		continue;
