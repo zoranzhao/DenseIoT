@@ -455,12 +455,14 @@ inline void forward_network_dist(network *netp, network orig)
        if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
        net = forward_stage( part_id, data, startfrom, upto, net);
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
+       free(data);
     }
 
     for(part = part; part < PARTITIONS; part ++){
        get_result((void**)&data, &size, &part_id);
        printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
+       free(data);
     }
 
     net.input = stage_out;
