@@ -245,8 +245,76 @@ void local_consumer(network *netp, unsigned int number_of_jobs, std::string thre
     pthreadpool_destroy(net->threadpool);
     nnp_deinitialize();
 #endif
+}
 
 
+void local_consumer_prof(network *netp, unsigned int number_of_jobs, std::string thread_name)
+{
+
+    network *net = netp;
+    srand(2222222);
+#ifdef NNPACK
+    nnp_initialize();
+    net->threadpool = pthreadpool_create(THREAD_NUM);
+#endif
+
+#ifdef DEBUG_DIST
+    image **alphabet = load_alphabet();
+    list *options = read_data_cfg((char*)"cfg/coco.data");
+    char *name_list = option_find_str(options, (char*)"names", (char*)"data/names.list");
+    char **names = get_labels(name_list);
+    char filename[256];
+    char outfile[256];
+    float thresh = .24;
+    float hier_thresh = .5;
+    float nms=.3;
+#endif
+
+    int j;
+    int id = 0;//5000 > id > 0
+    unsigned int cnt = 0;//5000 > id > 0
+    for(cnt = 0; cnt < number_of_jobs; cnt ++){
+        image sized;
+	sized.w = net->w; sized.h = net->h; sized.c = net->c;
+
+	id = cnt;
+        load_image_by_number(&sized, id);
+        float *X = sized.data;
+        double t1=what_time_is_it_now();
+	network_predict_dist_prof(net, X);
+        double t2=what_time_is_it_now();
+
+#ifdef DEBUG_DIST
+	sprintf(filename, "data/val2017/%d.jpg", id);
+	sprintf(outfile, "%d", id);
+        layer l = net->layers[net->n-1];
+        float **masks = 0;
+        if (l.coords > 4){
+            masks = (float **)calloc(l.w*l.h*l.n, sizeof(float*));
+            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = (float *)calloc(l.coords-4, sizeof(float *));
+        }
+        float **probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes + 1, sizeof(float *));
+	printf("%s: Predicted in %f s.\n", filename, t2 - t1);
+        image im = load_image_color(filename,0,0);
+        box *boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
+        get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
+        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
+        save_image(im, outfile);
+        free(boxes);
+        free_ptrs((void **)probs, l.w*l.h*l.n);
+        if (l.coords > 4){
+        	free_ptrs((void **)masks, l.w*l.h*l.n);
+	}
+        free_image(im);
+#endif
+        free_image(sized);
+    }
+#ifdef NNPACK
+    pthreadpool_destroy(net->threadpool);
+    nnp_deinitialize();
+#endif
 }
 
 
@@ -476,6 +544,6 @@ void victim_client_local(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
-    std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
+    std::thread t1(local_consumer_prof, &net, number_of_jobs, "local_consumer_prof");
     t1.join();
 }

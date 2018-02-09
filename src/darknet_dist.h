@@ -599,7 +599,20 @@ inline void forward_network_dist_prof(network *netp)
 //    fclose(layer_output);
 }
 
-
+inline float *network_predict_dist_prof(network *net, float *input)
+{
+    network orig = *net;
+    net->input = input;
+    net->truth = 0;
+    net->train = 0;
+    net->delta = 0;
+    forward_network_dist_prof(net);
+    //forward_network_dist(net, orig);
+    //forward_network_dist_gateway(net, orig);
+    float *out = net->output;
+    *net = orig;
+    return out;
+}
 
 inline float *network_predict_dist(network *net, float *input)
 {
