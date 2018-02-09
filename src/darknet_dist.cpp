@@ -4,10 +4,12 @@
 
 int main(int argc, char **argv)
 {
-    idle_client();
-    //toggle_gateway();
-    //victim_client();
+    //victim_client_local();
+    //idle_client();
+    victim_client();
     //smart_gateway();
+
+    //toggle_gateway();
     //client_register_gateway();
     //client_steal_gateway();
     //compute_local();

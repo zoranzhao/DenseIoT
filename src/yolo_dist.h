@@ -457,6 +457,7 @@ void idle_client(){
 }
 
 
+
 void victim_client(){
     unsigned int number_of_jobs = 10;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
@@ -469,3 +470,12 @@ void victim_client(){
     t2.join();
 }
 
+
+void victim_client_local(){
+    unsigned int number_of_jobs = 10;
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, 7, *netp);
+    std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
+    t1.join();
+}

@@ -409,8 +409,14 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 	    net.layers[i].inputs = net.layers[i].h * net.layers[i].w * net.layers[i].c; 
     }
 
+    int to_free = 0;
+
     for(int i = startfrom; i < (upto+1); ++i){
 	    net.layers[i].forward(net.layers[i], net);
+	    if (to_free == 1) {
+		free(net.input); 
+		to_free = 0; //Free the memory allocated by the reshape_input function call;
+	    }
 	    if(net.layers[i].type == CONVOLUTIONAL){
 		layer l = net.layers[i];
 	        //print_subindex(input_ranges[part][i]);
@@ -419,11 +425,13 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 		//print_subindex(crop_ranges(input_ranges[part][i], output_ranges[part][i]));   
 		sub_index tmp = crop_ranges(input_ranges[part][i], output_ranges[part][i]);   
 		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+		to_free = 1;
 	    } else {net.input = net.layers[i].output;}  
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
 	    }
     }
+    if (to_free == 1) free(net.input);
     return net; 
 }
 
@@ -478,6 +486,7 @@ inline void forward_network_dist(network *netp, network orig)
             net.truth = net.layers[i].output;
         }
     }
+    free(stage_out);
 }
 
 inline void forward_network_dist_gateway(network *netp, network orig)
@@ -517,12 +526,14 @@ inline void forward_network_dist_gateway(network *netp, network orig)
        }
        net = forward_stage( part_id, data, startfrom, upto, net);
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
+       free(data);
     }
 
     for(part = part; part < PARTITIONS; part ++){
        get_result((void**)&data, &size, &part_id);
        printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
+       free(data);
     }
 
     net.input = stage_out;
@@ -539,6 +550,8 @@ inline void forward_network_dist_gateway(network *netp, network orig)
         }
     }
 
+    free(stage_out);
+
 }
 
 
@@ -549,13 +562,13 @@ inline void forward_network_dist_prof(network *netp)
     double t0 = what_time_is_it_now();
     double t1 = 0;
 
-    FILE *layer_input;
-    FILE *layer_output;
-    FILE *layer_weight; 
-
-    layer_input  = fopen("layer_input.log", "w"); 
-    layer_output = fopen("layer_output.log", "w");  
-    layer_weight = fopen("layer_weight.log", "w");
+//    FILE *layer_input;
+//    FILE *layer_output;
+//    FILE *layer_weight; 
+//
+//    layer_input  = fopen("layer_input.log", "w"); 
+//    layer_output = fopen("layer_output.log", "w");  
+//    layer_weight = fopen("layer_weight.log", "w");
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
         net.index = i;
@@ -563,15 +576,14 @@ inline void forward_network_dist_prof(network *netp)
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
 
-        fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-        fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
+        //fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
+        //fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
 
-        if(net.layers[i].type == CONNECTED)
-           fprintf(layer_weight, "%f\n", (float)(net.layers[i].outputs*net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-	else
-           fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
+        //if(net.layers[i].type == CONNECTED)
+          // fprintf(layer_weight, "%f\n", (float)(net.layers[i].outputs*net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
+	//else
+          // fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
 
- 	//put_job(net.input, net.layers[i].inputs*sizeof(float), i);
 
         net.layers[i].forward(net.layers[i], net);
         net.input = net.layers[i].output;  //Layer output
@@ -582,9 +594,9 @@ inline void forward_network_dist_prof(network *netp)
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
     }
 
-    fclose(layer_input);
-    fclose(layer_weight);
-    fclose(layer_output);
+//    fclose(layer_input);
+//    fclose(layer_weight);
+//    fclose(layer_output);
 }
 
 
