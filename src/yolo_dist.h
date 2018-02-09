@@ -338,6 +338,8 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
     int part_id;
     unsigned int size;
     char steal[10] = "steals";
+    double t0;
+    double t1 = 0; 
     struct sockaddr_in addr;
     while(1){
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
@@ -357,6 +359,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 		std::cout << "Wait for a while until next stealing iteration" << std::endl;
 		continue;
 	}
+        t0 = get_real_time_now();
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
@@ -365,7 +368,9 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
+        t1 = t1 + get_real_time_now() - t0;
 	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+        std::cout << "Processing cost is: "<<t1<< std::endl;
 	delete blob;
     }
 #ifdef NNPACK
