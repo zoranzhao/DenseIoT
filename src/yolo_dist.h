@@ -434,7 +434,7 @@ void gateway_service(std::string thread_name){
 
 void toggle_gateway(){
     char start_msg[10] = "start_gw";
-    ask_gateway(start_msg, AP, START_CTRL);
+    ask_gateway(start_msg, GATEWAY, START_CTRL);
 
 }
 
@@ -452,8 +452,8 @@ void idle_client(){
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
     exec_control(START_CTRL);
-    //std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
-    //t1.join();
+    std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
+    t1.join();
 }
 
 
@@ -462,6 +462,7 @@ void victim_client(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
+    exec_control(START_CTRL);
     std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
     std::thread t2(steal_server, "server");
     t1.join();
