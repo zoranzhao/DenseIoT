@@ -456,6 +456,9 @@ inline void forward_network_dist(network *netp, network orig)
     int part_id;
     unsigned int size;
 
+    double t1 = 0.0;
+    double t0 = get_real_time_now();
+
     for(part = 0; 1; part ++){
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
@@ -470,6 +473,9 @@ inline void forward_network_dist(network *netp, network orig)
        join_output(part_id, data,  stage_out, upto, net);
        free(data);
     }
+    t1 = t1 + get_real_time_now() - t0;
+    std::cout << "Processing overhead is: " << t1 << std::endl;
+
 
     net.input = stage_out;
 
