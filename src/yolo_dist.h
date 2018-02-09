@@ -326,7 +326,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
     int part;
 #ifdef NNPACK
     nnp_initialize();
-    net->threadpool = pthreadpool_create(THREAD_NUM);
+    netp->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
     network net = *netp;
     int startfrom = 0;
@@ -369,7 +369,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	delete blob;
     }
 #ifdef NNPACK
-    pthreadpool_destroy(net->threadpool);
+    pthreadpool_destroy(netp->threadpool);
     nnp_deinitialize();
 #endif
 }
