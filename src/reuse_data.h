@@ -1,5 +1,8 @@
 #include "darknet_dist.h"
 
+sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
+sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
+
 
 typedef struct input_dimension{
     int w;
@@ -14,23 +17,21 @@ int output_overlap = 0;
     //     layer l = net.layers[i];
     //     overlap[i] = calculate_overlap(overlap[i+1], l);
     //}
-//int calculate_overlap(int cur_overlap, layer l){
-//    int next_overlap;
-//    if(l.type == CONVOLUTIONAL){
-//	next_overlap = cur_overlap*l.stride + l.size/2; 
-//    }else if(l.type == MAXPOOL){
-//	next_overlap = cur_overlap*l.stride;
-//    }
-//    return next_overlap;
-//}
+int calculate_overlap(int cur_overlap, layer l){
+   int next_overlap;
+   if(l.type == CONVOLUTIONAL){	
+	next_overlap = cur_overlap*l.stride + l.size/2;     
+   }else if(l.type == MAXPOOL){
+	next_overlap = cur_overlap*l.stride;
+   }
+   return next_overlap;
+}
 
 
 
 
 typedef struct overlapped_data{
-   float *up;
    float *down;
-   float *left;
    float *right;
    
 } ir_data;

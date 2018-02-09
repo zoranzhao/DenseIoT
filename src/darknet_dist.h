@@ -272,8 +272,6 @@ int part_id[PARTITIONS_H][PARTITIONS_W] = {
 //Partitioned DNN parameters 
 sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
 sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
-sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
-sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 sub_index stage_input_range;
 sub_index stage_output_range;
 sub_index stage_output_partition_ranges[PARTITIONS];
