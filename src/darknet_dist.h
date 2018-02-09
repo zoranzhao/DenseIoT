@@ -547,7 +547,6 @@ inline void forward_network_dist_gateway(network *netp, network orig)
             net.truth = net.layers[i].output;
         }
     }
-
     free(stage_out);
 
 }
@@ -604,8 +603,8 @@ inline float *network_predict_dist_prof(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_prof(net);
-    //forward_network_dist(net, orig);
+    //forward_network_dist_prof(net);
+    forward_network_dist(net, orig);
     //forward_network_dist_gateway(net, orig);
     float *out = net->output;
     *net = orig;
