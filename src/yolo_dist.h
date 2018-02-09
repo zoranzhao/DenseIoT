@@ -318,47 +318,6 @@ void local_consumer_prof(network *netp, unsigned int number_of_jobs, std::string
 }
 
 
-inline void steal_forward(network *netp, std::string thread_name){
-    netp->truth = 0;
-    netp->train = 0;
-    netp->delta = 0;
-
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = 7;
-
-    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
-    //size_t stage_outs =  (net.layers[upto].out_w)*(net.layers[upto].out_h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
-
-    //net = reshape_network(startfrom, upto, net);
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-
-    while(1){
-
-	dataBlob* blob = steal_and_return(AP, PORTNO);
-	data = (float*)(blob -> getDataPtr());
-	part_id = blob -> getID();
-	size = blob -> getSize();
-	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
-	net = forward_stage(part_id, data, startfrom, upto, net);
-	free(data);
-	blob -> setData((void*)(net.layers[upto].output));
-	blob -> setSize(net.layers[upto].outputs*sizeof(float));
-	send_result(blob, AP, PORTNO);
-	delete blob;
-    }
-
-
-
-}
 
 inline void steal_forward_with_gateway(network *netp, std::string thread_name){
     netp->truth = 0;
@@ -467,15 +426,6 @@ void compute_local(){
 }
 
 
-
-void stealer_test(){
-    unsigned int number_of_jobs = 5;
-    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(netp, 1);
-    network net = reshape_network(0, 7, *netp);
-    std::thread t1(steal_forward, &net,  "steal_forward");
-    t1.join();
-}
 
 
 
