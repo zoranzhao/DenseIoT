@@ -542,7 +542,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 
     g_t1  =  what_time_is_it_now() - g_t0;
     //std::cout << "At time " << g_t1 << ", get task " << part_id << " from res_queue" <<std::endl;  
-    std::cout << "At time " << g_t1 << "stage1 is finished" <<std::endl;  
+    std::cout << "At time " << g_t1 << " stage1 is finished" <<std::endl;  
 
     net.input = stage_out;
 
@@ -558,7 +558,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
         }
     }
     g_t1  =  what_time_is_it_now() - g_t0;
-    std::cout << "At time " << g_t1 << "stage2 is finished" <<std::endl;  
+    std::cout << "At time " << g_t1 << " stage2 is finished" <<std::endl;  
 
     free(stage_out);
 
