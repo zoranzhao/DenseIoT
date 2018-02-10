@@ -360,6 +360,8 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 		//std::cout << "Wait for a while until next stealing iteration" << std::endl;
 		continue;
 	}
+        t1 = t1 + get_real_time_now() - t0;
+        std::cout << "Steal cost is: "<<t1<< std::endl;
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
@@ -368,9 +370,11 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
+        t1 = t1 + get_real_time_now() - t0;
+        std::cout << "Exec cost is: "<<t1<< std::endl;
 	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
         t1 = t1 + get_real_time_now() - t0;
-        std::cout << "Processing cost is: "<<t1<< std::endl;
+        std::cout << "Send result cost is: "<<t1<< std::endl;
 	delete blob;
     }
 #ifdef NNPACK
