@@ -490,13 +490,14 @@ void idle_client(){
 
 
 void victim_client(){
-    g_t1 = 0;
-    g_t0 = what_time_is_it_now();
+
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, 7, *netp);
     exec_control(START_CTRL);
+    g_t1 = 0;
+    g_t0 = what_time_is_it_now();
     std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
     std::thread t2(steal_server, "server");
     t1.join();

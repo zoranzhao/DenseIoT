@@ -535,13 +535,14 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 
     for(part = part; part < PARTITIONS; part ++){
        get_result((void**)&data, &size, &part_id);
-
-       g_t1  =  what_time_is_it_now() - g_t0;
-       std::cout << "At time " << g_t1 << ", get task " << part_id << " from res_queue" <<std::endl;  
        //printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
        free(data);
     }
+
+    g_t1  =  what_time_is_it_now() - g_t0;
+    //std::cout << "At time " << g_t1 << ", get task " << part_id << " from res_queue" <<std::endl;  
+    std::cout << "At time " << g_t1 << "stage1 is finished" <<std::endl;  
 
     net.input = stage_out;
 
@@ -556,6 +557,9 @@ inline void forward_network_dist_gateway(network *netp, network orig)
             net.truth = net.layers[i].output;
         }
     }
+    g_t1  =  what_time_is_it_now() - g_t0;
+    std::cout << "At time " << g_t1 << "stage2 is finished" <<std::endl;  
+
     free(stage_out);
 
 }
