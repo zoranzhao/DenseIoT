@@ -535,7 +535,10 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 
     for(part = part; part < PARTITIONS; part ++){
        get_result((void**)&data, &size, &part_id);
-       printf("Getting result %d from other stealers\n", part_id);
+
+       g_t1  =  what_time_is_it_now() - g_t0;
+       std::cout << "At time " << g_t1 << ", get task " << part_id << " from res_queue" <<std::endl;  
+       //printf("Getting result %d from other stealers\n", part_id);
        join_output(part_id, data,  stage_out, upto, net);
        free(data);
     }
@@ -565,13 +568,13 @@ inline void forward_network_dist_prof(network *netp)
     double t0 = what_time_is_it_now();
     double t1 = 0;
 
-//    FILE *layer_input;
-//    FILE *layer_output;
-//    FILE *layer_weight; 
+//  FILE *layer_input;
+//  FILE *layer_output;
+//  FILE *layer_weight; 
 //
-//    layer_input  = fopen("layer_input.log", "w"); 
-//    layer_output = fopen("layer_output.log", "w");  
-//    layer_weight = fopen("layer_weight.log", "w");
+//  layer_input  = fopen("layer_input.log", "w"); 
+//  layer_output = fopen("layer_output.log", "w");  
+//  layer_weight = fopen("layer_weight.log", "w");
 
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
         net.index = i;

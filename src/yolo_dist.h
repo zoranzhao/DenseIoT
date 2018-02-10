@@ -490,6 +490,8 @@ void idle_client(){
 
 
 void victim_client(){
+    g_t1 = 0;
+    g_t0 = what_time_is_it_now();
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
