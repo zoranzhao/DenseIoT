@@ -341,9 +341,9 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
     double t0;
     double t1 = 0; 
     struct sockaddr_in addr;
-    t0 = get_real_time_now();
-    while(1){
 
+    while(1){
+        t0 = get_real_time_now();
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
 	//std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
@@ -363,6 +363,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	}
         t1 =  get_real_time_now() - t0;
         std::cout << "Steal cost is: "<<t1<< std::endl;
+        t0 = get_real_time_now();
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
@@ -373,6 +374,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
         t1 =  get_real_time_now() - t0;
         std::cout << "Exec cost is: "<<t1<< std::endl;
+        t0 =  get_real_time_now();
 	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
         t1 =  get_real_time_now() - t0;
         std::cout << "Send result cost is: "<<t1<< std::endl;
