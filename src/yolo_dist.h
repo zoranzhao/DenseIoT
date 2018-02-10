@@ -342,34 +342,34 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
     double t1 = 0; 
     struct sockaddr_in addr;
     while(1){
+        t0 = get_real_time_now();
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
-	std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
+	//std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
 		//If the stolen address is a broadcast address, steal again 
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		std::cout << "Nothing is registered in the gateway device, sleep for a while" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		//std::cout << "Nothing is registered in the gateway device, sleep for a while" << std::endl;
 		continue;
 	}
 	dataBlob* blob = steal_and_return(inet_ntoa(addr.sin_addr), PORTNO);
         if(blob->getID() == -1){
 		//Have stolen nothing, this can happen if a registration remote call happens
 		//after an check call happens to the gateway
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		std::cout << "The victim has already finished current job list" << std::endl;
-		std::cout << "Wait for a while until next stealing iteration" << std::endl;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		//std::cout << "The victim has already finished current job list" << std::endl;
+		//std::cout << "Wait for a while until next stealing iteration" << std::endl;
 		continue;
 	}
-        t0 = get_real_time_now();
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	//std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
 	net = forward_stage(part_id, data, startfrom, upto, net);
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
-        t1 = t1 + get_real_time_now() - t0;
 	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+        t1 = t1 + get_real_time_now() - t0;
         std::cout << "Processing cost is: "<<t1<< std::endl;
 	delete blob;
     }
