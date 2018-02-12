@@ -1,93 +1,6 @@
-
-#include "darknet.h"
-
-extern "C"{
-#include "image.h"
-#include "layer.h"
-#include "data.h"
-#include "tree.h"
-#include "network.h"
-#include "image.h"
-#include "data.h"
-#include "utils.h"
-#include "blas.h"
-
-#include "crop_layer.h"
-#include "connected_layer.h"
-#include "gru_layer.h"
-#include "rnn_layer.h"
-#include "crnn_layer.h"
-#include "local_layer.h"
-#include "convolutional_layer.h"
-#include "activation_layer.h"
-#include "detection_layer.h"
-#include "region_layer.h"
-#include "normalization_layer.h"
-#include "batchnorm_layer.h"
-#include "maxpool_layer.h"
-#include "reorg_layer.h"
-#include "avgpool_layer.h"
-#include "cost_layer.h"
-#include "softmax_layer.h"
-#include "dropout_layer.h"
-#include "route_layer.h"
-#include "shortcut_layer.h"
-#include "parser.h"
-#include "data.h"
-#include "option_list.h"
-}
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <time.h>
-#include <assert.h>
-
+#include "darknet_util.h"
+#include "reuse_data.h"
 #include "distriot.h"
-
-
-#define DEBUG_DIST 0
-
-
-/*
-    0 conv     32  3 x 3 / 1   608 x 608 x   3   ->   608 x 608 x  32
-    1 max          2 x 2 / 2   608 x 608 x  32   ->   304 x 304 x  32
-    2 conv     64  3 x 3 / 1   304 x 304 x  32   ->   304 x 304 x  64
-    3 max          2 x 2 / 2   304 x 304 x  64   ->   152 x 152 x  64
-    4 conv    128  3 x 3 / 1   152 x 152 x  64   ->   152 x 152 x 128
-    5 conv     64  1 x 1 / 1   152 x 152 x 128   ->   152 x 152 x  64
-    6 conv    128  3 x 3 / 1   152 x 152 x  64   ->   152 x 152 x 128
-    7 max          2 x 2 / 2   152 x 152 x 128   ->    76 x  76 x 128
-    8 conv    256  3 x 3 / 1    76 x  76 x 128   ->    76 x  76 x 256
-    9 conv    128  1 x 1 / 1    76 x  76 x 256   ->    76 x  76 x 128
-   10 conv    256  3 x 3 / 1    76 x  76 x 128   ->    76 x  76 x 256
-   11 max          2 x 2 / 2    76 x  76 x 256   ->    38 x  38 x 256
-   12 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512
-   13 conv    256  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x 256
-   14 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512
-   15 conv    256  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x 256 
-/////////////////////////////////////////////////////////////////////////
-   16 conv    512  3 x 3 / 1    38 x  38 x 256   ->    38 x  38 x 512
-/////////////////////////////////////////////////////////////////////////
-   17 max          2 x 2 / 2    38 x  38 x 512   ->    19 x  19 x 512
-   18 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
-   19 conv    512  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 512
-   20 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
-   21 conv    512  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 512
-   22 conv   1024  3 x 3 / 1    19 x  19 x 512   ->    19 x  19 x1024
-   23 conv   1024  3 x 3 / 1    19 x  19 x1024   ->    19 x  19 x1024
-   24 conv   1024  3 x 3 / 1    19 x  19 x1024   ->    19 x  19 x1024
-   25 route  16
-   26 conv     64  1 x 1 / 1    38 x  38 x 512   ->    38 x  38 x  64
-   27 reorg              / 2    38 x  38 x  64   ->    19 x  19 x 256
-   28 route  27 24
-   29 conv   1024  3 x 3 / 1    19 x  19 x1280   ->    19 x  19 x1024
-   30 conv    425  1 x 1 / 1    19 x  19 x1024   ->    19 x  19 x 425
-   31 detection
-*/
-
-
 void write_layer_test(network *netp, int idx)
 {
     network net = *netp;
@@ -174,20 +87,10 @@ void print_array(char* filename, float* stage_out, int stage_outs, int line){
 }
 
 
-//Calculate the input partition range
-typedef struct partition_range{
-    int w1;
-    int w2;
-    int h1;
-    int h2;
-    int h;
-    int w;
-} sub_index;
 
-void print_subindex(sub_index index){
-    printf("[[%d, %d][%d],\n", index.w1, index.w2, (index.w2 - index.w1 + 1));
-    printf(" [%d, %d][%d]]\n", index.h1, index.h2, (index.h2 - index.h1 + 1));
-}
+
+
+
 
 sub_index calculate_range(sub_index output, layer l){
     sub_index input; 
@@ -251,31 +154,6 @@ sub_index crop_ranges(sub_index large, sub_index small){
     output.h = output.h2 -output.h1 + 1;
     return output;
 }
-
-
-
-#define STAGES 8
-#define PARTITIONS_W 4
-#define PARTITIONS_H 4 
-#define PARTITIONS 16
-
-
-//A table for partition ID
-//A mapping of partition IDs
-int part_id[PARTITIONS_H][PARTITIONS_W] = {
-   {0, 1, 2, 3},
-   {4, 5, 6, 7},  
-   {8, 9, 10, 11},  
-   {12, 13, 14, 15}
-};
-
-//Partitioned DNN parameters 
-sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
-sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
-sub_index stage_input_range;
-sub_index stage_output_range;
-sub_index stage_output_partition_ranges[PARTITIONS];
-float* part_data[PARTITIONS];
 
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2){
@@ -354,6 +232,205 @@ inline network reshape_network(int startfrom, int upto, network net){
 	}
     }
 
+
+    for(p_h = 0; p_h < partition_h; p_h++){
+	for(p_w = 0; p_w < partition_w; p_w++){
+	    for(int i = 0; i < STAGES; i++){
+		ir_output[i][p_h][p_w].down_range.w = 0;
+		ir_output[i][p_h][p_w].down_range.h = 0;
+		ir_output[i][p_h][p_w].right_range.w = 0;
+		ir_output[i][p_h][p_w].right_range.h = 0;
+		ir_output[i][p_h][p_w].corner_range.w = 0;
+		ir_output[i][p_h][p_w].corner_range.h = 0;
+            }
+        }
+    }
+//--------------------------------------------------------------------------------------------------------------
+    for(p_h = 0; p_h < partition_h; p_h++){
+	for(p_w = 0; p_w < partition_w; p_w++){ 
+	    reuse_input_ranges[part_id[p_h][p_w]][upto] = input_ranges[part_id[p_h][p_w]][upto];//Cropped output ranges without overlap for each layer
+	    reuse_output_ranges[part_id[p_h][p_w]][upto] = output_ranges[part_id[p_h][p_w]][upto];
+
+	    sub_index tmp = cal_new_range(p_h, p_w, upto-1, &output_ranges[0], input_ranges[part_id[p_h][p_w]][upto]);
+	    tmp = calculate_range(tmp, net.layers[upto-1]);
+	    //printf("Required range at input of layer %d\n", upto-1);
+	    //print_subindex(tmp);
+	    reuse_input_ranges[part_id[p_h][p_w]][upto-1]  = tmp; 
+	    //reuse_output_ranges[part_id[p_h][p_w]][upto-1] = calculate_layeroutput_range(tmp, net.layers[upto-1]);
+
+	    for(i = upto-1; i > 0; i--){
+		tmp = cal_new_range(p_h, p_w, i-1, &output_ranges[0], tmp);
+		tmp = calculate_range(tmp, net.layers[i-1]);
+		//printf("Required range at input of layer %d\n", i-1);
+		//print_subindex(tmp);
+		reuse_input_ranges[part_id[p_h][p_w]][i-1]  = tmp; 
+	        //reuse_output_ranges[part_id[p_h][p_w]][i-1] = calculate_layeroutput_range(tmp, net.layers[i-1]);
+	    }
+	 }
+    }
+    for(int p = 0; p < partition; p++){
+    	for(i = upto; i >= startfrom; i--){
+	    reuse_output_ranges[p][i] = calculate_layeroutput_range(reuse_input_ranges[p][i], net.layers[i]);
+	}
+    }
+//--------------------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------------------
+    for(p_h = 0; p_h < partition_h; p_h++){
+	for(p_w = 0; p_w < partition_w; p_w++){ 
+	    for(i = upto; i > 0; i--){
+		cal_reuse_overlap_range(p_h, p_w, i-1, &reuse_output_ranges[0], reuse_input_ranges[part_id[p_h][p_w]][i] );
+	    }
+	 }
+    }
+
+//--------------------------------------------------------------------------------------------------------------
+
+/*
+
+    for(i = startfrom; i <= upto; i++){
+       std::cout << "-----------At layer----------: " << i << std::endl;
+       for(p_h = 0; p_h < partition_h; p_h++){
+	   for(p_w = 0; p_w < partition_w; p_w++){ 
+	         std::cout << "part: " << part_id[p_h][p_w] << std::endl;
+		  std::cout << "Input is: "<< std::endl;
+		  print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i]);
+		  std::cout << "Output is: "<< std::endl;
+		  print_subindex(reuse_output_ranges[part_id[p_h][p_w]][i]);
+
+	          if (i < upto){
+		    std::cout << "Next layer input is ..." << std::endl;
+   		    print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i+1]);
+		    if((p_h>0)&&(ir_output[i][p_h-1][p_w].down_range.w>0)&&(ir_output[i][p_h-1][p_w].down_range.h>0)){
+			     std::cout << "Require input from above part in last layer: " << std::endl;
+			     print_subindex(ir_output[i][p_h-1][p_w].down_range);
+
+	            }
+		    if((p_w>0)&&(ir_output[i][p_h][p_w-1].right_range.w>0)&&(ir_output[i][p_h][p_w-1].right_range.h>0)){
+			     std::cout << "Require input from left part in last layer: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w-1].right_range);
+
+		    }
+		    if(p_h > 0 && p_w > 0&&(ir_output[i][p_h-1][p_w-1].corner_range.w>0)&&(ir_output[i][p_h-1][p_w-1].corner_range.h>0)) {
+			     std::cout << "Require input from left above part in last layer: " << std::endl;
+			     print_subindex(ir_output[i][p_h-1][p_w-1].corner_range);
+		    }
+		  }
+
+
+	      std::cout << "==========overlap=============: " << part_id[p_h][p_w] << std::endl;
+	      std::cout << "==========overlap=============: " << part_id[p_h][p_w] << std::endl;
+	   }
+       }
+    }
+*/ 
+/*
+    for(p_h = 0; p_h < partition_h; p_h++){
+      for(p_w = 0; p_w < partition_w; p_w++){ 
+        std::cout << "==========now we can=============: " << part_id[p_h][p_w] << std::endl;
+        std::cout << "==========now we can=============: " << part_id[p_h][p_w] << std::endl;
+    	for(i = startfrom; i < upto; i++){
+		std::cout << "-----------At layer----------: " << i << std::endl;
+		std::cout << "Input is: "<< std::endl;
+		print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i]);
+		std::cout << "Output is: "<< std::endl;
+		print_subindex(reuse_output_ranges[part_id[p_h][p_w]][i]);
+		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
+			     std::cout << "Down!!!: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].down_range);
+
+		}
+		if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
+			     std::cout << "right: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].right_range);
+
+		}
+		if((ir_output[i][p_h][p_w].corner_range.w>0)&&(ir_output[i][p_h][p_w].corner_range.h>0)) {
+			     std::cout << "corner: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].corner_range);
+		}
+	}
+        std::cout << "==========now we can=============: " << part_id[p_h][p_w] << std::endl;
+        std::cout << "==========now we can=============: " << part_id[p_h][p_w] << std::endl;
+      }
+    }
+*/
+
+
+    for(p_h = 0; p_h < partition_h; p_h++){
+      for(p_w = 0; p_w < partition_w; p_w++){ 
+        std::cout << "==========fake=============: " << part_id[p_h][p_w] << std::endl;
+        std::cout << "==========fake=============: " << part_id[p_h][p_w] << std::endl;
+    	for(i = startfrom; i < upto; i++){
+
+		std::cout << "-----------At layer----------: " << i << std::endl;
+		std::cout << "Input is: "<< std::endl;
+		print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i]);
+		std::cout << "Output is: "<< std::endl;
+		print_subindex(reuse_output_ranges[part_id[p_h][p_w]][i]);
+
+
+
+
+          
+		if(i > 0){
+		   std::cout << "Require input from last layer output: "<< std::endl;
+		   print_subindex(reuse_output_ranges[part_id[p_h][p_w]][i-1]);
+	           if(net.layers[i].type == CONVOLUTIONAL){
+			    std::cout << "Conv! Require input from last layer adj parts output: "<< std::endl;
+			    if((p_h>0)&&(ir_output[i-1][p_h-1][p_w].down_range.w>0)&&(ir_output[i-1][p_h-1][p_w].down_range.h>0)){
+				     std::cout << "Require input from above part in last layer: " << std::endl;
+				     print_subindex(ir_output[i-1][p_h-1][p_w].down_range);
+
+			    }
+			    if((p_w>0)&&(ir_output[i-1][p_h][p_w-1].right_range.w>0)&&(ir_output[i-1][p_h][p_w-1].right_range.h>0)){
+				     std::cout << "Require input from left part in last layer: " << std::endl;
+				     print_subindex(ir_output[i-1][p_h][p_w-1].right_range);
+
+			    }
+			    if(p_h > 0 && p_w > 0&&(ir_output[i-1][p_h-1][p_w-1].corner_range.w>0)&&(ir_output[i-1][p_h-1][p_w-1].corner_range.h>0)) {
+				     std::cout << "Require input from left above part in last layer: " << std::endl;
+				     print_subindex(ir_output[i-1][p_h-1][p_w-1].corner_range);
+			    }
+
+	           }
+		}
+
+
+
+	        if(net.layers[i].type == CONVOLUTIONAL){
+			std::cout<< "We should probably crop the output of the conv layer first..." <<std::endl;
+		}
+
+                
+
+		//What should we record for the current layer
+		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
+			     std::cout << "Down!!!: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].down_range);
+
+		}
+		if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
+			     std::cout << "right: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].right_range);
+
+		}
+		if((ir_output[i][p_h][p_w].corner_range.w>0)&&(ir_output[i][p_h][p_w].corner_range.h>0)) {
+			     std::cout << "corner: " << std::endl;
+			     print_subindex(ir_output[i][p_h][p_w].corner_range);
+		}
+
+
+	}
+        std::cout << "==========fake=============: " << part_id[p_h][p_w] << std::endl;
+        std::cout << "==========fake=============: " << part_id[p_h][p_w] << std::endl;
+      }
+    }
+
+
+
+
+
     stage_input_range.w1 = 0;
     stage_input_range.w2 = net.layers[startfrom].w-1;
     stage_input_range.w = net.layers[startfrom].w;
@@ -400,6 +477,8 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 {
     net.input = input;
 
+
+    //Reshape first
     for(int i = startfrom; i < (upto+1); ++i){
 	    net.layers[i].h = (input_ranges[part][i].h2 - input_ranges[part][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
 	    net.layers[i].w = (input_ranges[part][i].w2 - input_ranges[part][i].w1 + 1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
@@ -409,7 +488,11 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 
     int to_free = 0;
 
+
+    
     for(int i = startfrom; i < (upto+1); ++i){
+
+	    
 	    net.layers[i].forward(net.layers[i], net);
 	    if (to_free == 1) {
 		free(net.input); 
@@ -425,11 +508,14 @@ inline network forward_stage(int part, float *input,int startfrom, int upto,  ne
 		net.input = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 		to_free = 1;
 	    } else {net.input = net.layers[i].output;}  
+
 	    if(net.layers[i].truth) {
 		    net.truth = net.layers[i].output;
 	    }
     }
     if (to_free == 1) free(net.input);
+    //
+
     return net; 
 }
 
@@ -439,7 +525,7 @@ inline void forward_network_dist(network *netp, network orig)
     network net = *netp;
 
     int startfrom = 0;
-    int upto = 7;
+    int upto = STAGES-1;
 
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  

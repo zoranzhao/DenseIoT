@@ -1,5 +1,4 @@
 #include "darknet_dist.h"
-#define  THREAD_NUM 1
 
 
 void steal_server(std::string thread_name){
@@ -439,7 +438,7 @@ void compute_local(){
     unsigned int number_of_jobs = 5;
     network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp1, 1);
-    network net1 = reshape_network(0, 7, *netp1);
+    network net1 = reshape_network(0, STAGES-1, *netp1);
 
     std::thread t1(local_consumer, &net1, number_of_jobs, "local_consumer");
     t1.join();
@@ -488,7 +487,7 @@ void smart_gateway(){
 void idle_client(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    network net = reshape_network(0, 7, *netp);
+    network net = reshape_network(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     std::thread t1(steal_forward_with_gateway, &net,  "steal_forward");
     t1.join();
@@ -497,11 +496,10 @@ void idle_client(){
 
 
 void victim_client(){
-
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    network net = reshape_network(0, 7, *netp);
+    network net = reshape_network(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
@@ -516,7 +514,7 @@ void victim_client_local(){
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    network net = reshape_network(0, 7, *netp);
+    network net = reshape_network(0, STAGES-1, *netp);
     std::thread t1(local_consumer_prof, &net, number_of_jobs, "local_consumer_prof");
     t1.join();
 }
