@@ -42,7 +42,7 @@ endif
 CFLAGS+=$(OPTS)
 
 #OBJ = job_queue.o data_blob.o
-EXECOBJA = darknet_dist.o
+EXECOBJA = darknet_dist.o global_var.o
 
 EXECOBJ = $(addprefix $(OBJDIR), $(EXECOBJA))
 #OBJS = $(addprefix $(OBJDIR), $(OBJ))
