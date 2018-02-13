@@ -65,11 +65,11 @@ typedef struct partition_range{
 } sub_index;
 
 
-#define STAGES 4
-#define PARTITIONS_W 2
-#define PARTITIONS_H 2 
-#define PARTITIONS 4
-#define  THREAD_NUM 1
+#define STAGES 8
+#define PARTITIONS_W 3
+#define PARTITIONS_H 3 
+#define PARTITIONS 9
+#define THREAD_NUM 1
 
 
 typedef struct input_dimension{
@@ -81,6 +81,8 @@ typedef struct overlapped_data{
    float *down;
    float *right;
    float *corner;
+   bool cover;
+   
    sub_index down_range;
    sub_index right_range;
    sub_index corner_range;

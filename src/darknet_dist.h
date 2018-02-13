@@ -263,6 +263,7 @@ inline network reshape_network(int startfrom, int upto, network net){
 		ir_output[i][p_h][p_w].right_range.h = 0;
 		ir_output[i][p_h][p_w].corner_range.w = 0;
 		ir_output[i][p_h][p_w].corner_range.h = 0;
+		ir_output[i][p_h][p_w].cover = false;
             }
         }
     }
@@ -329,7 +330,7 @@ inline network reshape_network(int startfrom, int upto, network net){
 
 inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom, int upto,  network net){
 	int part = part_id[p_h][p_w];
-        std::cout << "==========Begin=============: " << p_h<<"   "<<p_w<< std::endl;
+        //std::cout << "==========Begin=============: " << p_h<<"   "<<p_w<< std::endl;
 
 	//Reshape first
 	net.input = input;
@@ -342,7 +343,7 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 
 
     	for(int i = startfrom; i < upto+1; i++){
-		std::cout << "-----------At layer----------: " << i << std::endl;
+		//std::cout << "-----------At layer----------: " << i << std::endl;
 		//std::cout << "Input is: "<< std::endl;
 		//print_subindex(reuse_input_ranges[part][i]);
 		//std::cout << "Output is: "<< std::endl;
@@ -359,8 +360,6 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		}
 
 
-
-
 		//What should we record for the current layer?
 		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
 			//std::cout << "Down: " << std::endl;
@@ -370,8 +369,8 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 			down_index.w2 -= reuse_output_ranges[part][i].w1;
 			down_index.h1 -= reuse_output_ranges[part][i].h1;
 			down_index.h2 -= reuse_output_ranges[part][i].h1;
-			print_subindex(down_index);
-			ir_output[i][p_h][p_w].down = reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
+			//print_subindex(down_index);
+			ir_output[i][p_h][p_w].down =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							down_index.w1, down_index.w2, 
 							down_index.h1, down_index.h2);
 
@@ -379,14 +378,13 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
 			//std::cout << "Right: " << std::endl;
 			//print_subindex(ir_output[i][p_h][p_w].right_range);
-
 			sub_index right_index = ir_output[i][p_h][p_w].right_range;
 			right_index.w1 -= reuse_output_ranges[part][i].w1;
 			right_index.w2 -= reuse_output_ranges[part][i].w1;
 			right_index.h1 -= reuse_output_ranges[part][i].h1;
 			right_index.h2 -= reuse_output_ranges[part][i].h1;
-			print_subindex(right_index);
-			ir_output[i][p_h][p_w].right = reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
+			//print_subindex(right_index);
+			ir_output[i][p_h][p_w].right =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							right_index.w1, right_index.w2, 
 							right_index.h1, right_index.h2);
 
@@ -394,13 +392,12 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		if((ir_output[i][p_h][p_w].corner_range.w>0)&&(ir_output[i][p_h][p_w].corner_range.h>0)) {
 			//std::cout << "Corner: " << std::endl;
 			//print_subindex(ir_output[i][p_h][p_w].corner_range);
-
 			sub_index corner_index = ir_output[i][p_h][p_w].corner_range;
 			corner_index.w1 -= reuse_output_ranges[part][i].w1;
 			corner_index.w2 -= reuse_output_ranges[part][i].w1;
 			corner_index.h1 -= reuse_output_ranges[part][i].h1;
 			corner_index.h2 -= reuse_output_ranges[part][i].h1;
-			print_subindex(corner_index);
+			//print_subindex(corner_index);
 			ir_output[i][p_h][p_w].corner = reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							corner_index.w1, corner_index.w2, 
 							corner_index.h1, corner_index.h2);
@@ -436,7 +433,7 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		  }
                 }
 
-		std::cout<< ".....................OK, let us do it then....................." <<std::endl;
+		//std::cout<< ".....................OK, let us do it then....................." <<std::endl;
 		if(up == 1 && corner == 0){
 			//std::cout << "Input for next layer is: "<< std::endl;
 			//print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i+1]);
@@ -556,7 +553,7 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		}else {net.input = cropped_output;}
 
 	}
-        std::cout << "==========Finish=============: " << part_id[p_h][p_w] << std::endl;
+        //std::cout << "==========Finish=============: " << part_id[p_h][p_w] << std::endl;
 
 	return net;
 
@@ -657,6 +654,7 @@ inline void forward_network_dist(network *netp, network orig)
     float* stage_in = net.input; 
 
     fork_input_reuse(startfrom, stage_in, net);
+    //fork_input(startfrom, stage_in, net);
 
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);
@@ -675,10 +673,17 @@ inline void forward_network_dist(network *netp, network orig)
        if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
        std::cout << "=======================: " << part_id << std::endl;
        //net = forward_stage( part_id, data, startfrom, upto, net);
+
        if(part_id == 0) net = forward_stage_reuse( 0, 0, data, startfrom, upto, net);
        if(part_id == 1) net = forward_stage_reuse( 0, 1, data, startfrom, upto, net);
-       if(part_id == 2) net = forward_stage_reuse( 1, 0, data, startfrom, upto, net);
-       if(part_id == 3) net = forward_stage_reuse( 1, 1, data, startfrom, upto, net);
+       if(part_id == 2) net = forward_stage_reuse( 0, 2, data, startfrom, upto, net);
+       if(part_id == 3) net = forward_stage_reuse( 1, 0, data, startfrom, upto, net);
+       if(part_id == 4) net = forward_stage_reuse( 1, 1, data, startfrom, upto, net);
+       if(part_id == 5) net = forward_stage_reuse( 1, 2, data, startfrom, upto, net);
+       if(part_id == 6) net = forward_stage_reuse( 2, 0, data, startfrom, upto, net);
+       if(part_id == 7) net = forward_stage_reuse( 2, 1, data, startfrom, upto, net);
+       if(part_id == 8) net = forward_stage_reuse( 2, 2, data, startfrom, upto, net);
+
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);
     }
@@ -715,7 +720,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
     network net = *netp;
 
     int startfrom = 0;
-    int upto = 7;
+    int upto = STAGES-1;
 
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
