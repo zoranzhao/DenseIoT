@@ -438,6 +438,41 @@ void compute_local(){
 
 
 
+void recv_data_prof(int portno)
+{
+   int sockfd, newsockfd;
+   socklen_t clilen;
+
+   struct sockaddr_in serv_addr, cli_addr;
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd < 0) 
+	sock_error("ERROR opening socket");
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_addr.s_addr = INADDR_ANY;
+   serv_addr.sin_port = htons(portno);
+   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+	sock_error("ERROR on binding");
+   listen(sockfd, 10);//back_log numbers 
+   clilen = sizeof(cli_addr);
+
+   unsigned int bytes_length;
+   char* blob_buffer;
+   int job_id;
+   unsigned int id;
+
+   while(1){
+     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if (newsockfd < 0) sock_error("ERROR on accept");
+	read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	blob_buffer = (char*)malloc(bytes_length);
+	read_sock(newsockfd, blob_buffer, bytes_length); 
+     	close(newsockfd);
+   }
+   close(sockfd);
+
+}
+
 
 
 void client_register_gateway(){
@@ -473,6 +508,9 @@ void smart_gateway(){
 }
 
 
+void server_prof(){
+    recv_data_prof(PORTNO);
+}
 
 
 void idle_client(){
@@ -503,9 +541,14 @@ void victim_client(){
 
 void victim_client_local(){
     unsigned int number_of_jobs = 1;
-    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    network *netp = load_network((char*)"cfg/tiny-yolo.cfg", (char*)"tiny-yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
     std::thread t1(local_consumer_prof, &net, number_of_jobs, "local_consumer_prof");
     t1.join();
 }
+
+ 
+
+
+

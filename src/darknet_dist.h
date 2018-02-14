@@ -778,37 +778,94 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 }
 
 
+void send_data_prof(char *blob_buffer, unsigned int bytes_length, const char *dest_ip, int portno)
+{
+     int sockfd;
+     struct sockaddr_in serv_addr;
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        sock_error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
+     serv_addr.sin_port = htons(portno);
+     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+	sock_error("ERROR connecting");
+     write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
+     write_sock(sockfd, blob_buffer, bytes_length);
+     close(sockfd);
+}
+
+
 inline void forward_network_dist_prof(network *netp)
 {
     network net = *netp;
     int i;
     double t0 = what_time_is_it_now();
     double t1 = 0;
+    FILE *layer_exe;
+    layer_exe = fopen("layer_exe_time.log", "w");  
 
-//  FILE *layer_input;
-//  FILE *layer_output;
-//  FILE *layer_weight; 
-//
-//  layer_input  = fopen("layer_input.log", "w"); 
-//  layer_output = fopen("layer_output.log", "w");  
-//  layer_weight = fopen("layer_weight.log", "w");
+    FILE *layer_comm;
+    layer_comm = fopen("layer_comm_time.log", "w");  
 
+
+//Profiling of execution memory footprint
+/*
+    FILE *layer_input;
+    FILE *layer_output;
+    FILE *layer_weight; 
+    FILE *layer_other; 
+
+    layer_input  = fopen("layer_input.log", "w"); 
+    layer_output = fopen("layer_output.log", "w");  
+    layer_weight = fopen("layer_weight.log", "w");
+    layer_other  = fopen("layer_other.log", "w");
+*/
+    
+/*
+    std::cout << "[";
+    for(i = 0; i < net.n; ++i){//print layer list
+	if(net.layers[i].type == CONVOLUTIONAL)
+	  std::cout << "\"conv\", " ;
+	if(net.layers[i].type == MAXPOOL)
+	  std::cout << "\"maxpool\", " ;
+	if(net.layers[i].type == ROUTE)
+	  std::cout << "\"route\", " ;
+	if(net.layers[i].type == REORG)
+	  std::cout << "\"reorg\", "  ;
+	if(net.layers[i].type == REGION)
+	  std::cout << "\"region\""  ;
+    }
+    std::cout << "]"<<std::endl;
+*/
     for(i = 0; i < net.n; ++i){//Iteratively execute the layers
         net.index = i;
         if(net.layers[i].delta){	       
             fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
         }
 
-        //fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-        //fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
+//Profiling of execution memory footprint
+/*
+        fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
+        fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
+        fprintf(layer_other, "%f\n", (float)(net.layers[i].out_c*4*sizeof(float))/1024.0/1024.0 );
 
-        //if(net.layers[i].type == CONNECTED)
-          // fprintf(layer_weight, "%f\n", (float)(net.layers[i].outputs*net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-	//else
-          // fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
-
-
+        if(net.layers[i].type == CONNECTED)
+           fprintf(layer_weight, "%f\n", (float)(net.layers[i].outputs*net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
+	else
+           fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
+*/
+        t0 = what_time_is_it_now();
         net.layers[i].forward(net.layers[i], net);
+        t1 = what_time_is_it_now() - t0;
+        fprintf(layer_exe, "%f\n", t1);
+
+        t0 = what_time_is_it_now();
+	send_data_prof((char*)(net.layers[i].output), net.layers[i].outputs*sizeof(float), BLUE1, PORTNO);
+        t1 = what_time_is_it_now() - t0;
+        fprintf(layer_comm, "%f\n", t1);
+
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
@@ -816,10 +873,17 @@ inline void forward_network_dist_prof(network *netp)
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
     }
+    fclose(layer_comm);
+    fclose(layer_exe);
 
-//    fclose(layer_input);
-//    fclose(layer_weight);
-//    fclose(layer_output);
+
+//Profiling of execution memory footprint
+/*
+    fclose(layer_input);
+    fclose(layer_weight);
+    fclose(layer_output);
+    fclose(layer_other);
+*/
 }
 
 inline float *network_predict_dist_prof(network *net, float *input)
@@ -829,9 +893,8 @@ inline float *network_predict_dist_prof(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    //forward_network_dist_prof(net);
-    forward_network_dist(net, orig);
-    //forward_network_dist_gateway(net, orig);
+    forward_network_dist_prof(net);
+    //forward_network_dist(net, orig);
     float *out = net->output;
     *net = orig;
     return out;
