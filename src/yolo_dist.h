@@ -460,12 +460,11 @@ void recv_data_prof(int portno)
    char* blob_buffer;
    int job_id;
    unsigned int id;
-
+   blob_buffer = (char*)malloc(48000000);
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if (newsockfd < 0) sock_error("ERROR on accept");
 	read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	blob_buffer = (char*)malloc(bytes_length);
 	read_sock(newsockfd, blob_buffer, bytes_length); 
      	close(newsockfd);
    }
