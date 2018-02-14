@@ -541,7 +541,7 @@ void victim_client(){
 
 void victim_client_local(){
     unsigned int number_of_jobs = 1;
-    network *netp = load_network((char*)"cfg/tiny-yolo.cfg", (char*)"tiny-yolo.weights", 0);
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
     std::thread t1(local_consumer_prof, &net, number_of_jobs, "local_consumer_prof");
