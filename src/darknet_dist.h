@@ -263,7 +263,6 @@ inline network reshape_network(int startfrom, int upto, network net){
 		ir_output[i][p_h][p_w].right_range.h = 0;
 		ir_output[i][p_h][p_w].corner_range.w = 0;
 		ir_output[i][p_h][p_w].corner_range.h = 0;
-		ir_output[i][p_h][p_w].cover = false;
             }
         }
     }
@@ -580,10 +579,11 @@ void fork_input_reuse(int startfrom, float* stage_in, network net){
     //Prepare the input data for each partition   
     for(part = 0; part < PARTITIONS; part ++) { 
       part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
-					reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
-					reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
-			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
-			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
+				reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
+				reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
+
+				std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
+	 			print_subindex(reuse_input_ranges[part][startfrom]);
     }
 
 }
@@ -596,11 +596,10 @@ void join_output(int part, float* part_data, float* stage_out, int upto, network
 }
 
 
-inline network forward_stage(int part, float *input,int startfrom, int upto,  network net)
+inline network forward_stage(int p_h, int p_w, float *input,int startfrom, int upto,  network net)
 {
+    int part = part_id[p_h][p_w];
     net.input = input;
-
-
     //Reshape first
     for(int i = startfrom; i < (upto+1); ++i){
 	    net.layers[i].h = (input_ranges[part][i].h2 - input_ranges[part][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
@@ -653,8 +652,8 @@ inline void forward_network_dist(network *netp, network orig)
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
 
-    fork_input_reuse(startfrom, stage_in, net);
-    //fork_input(startfrom, stage_in, net);
+    //fork_input_reuse(startfrom, stage_in, net);
+    fork_input(startfrom, stage_in, net);
 
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);
@@ -672,17 +671,10 @@ inline void forward_network_dist(network *netp, network orig)
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
        std::cout << "=======================: " << part_id << std::endl;
-       //net = forward_stage( part_id, data, startfrom, upto, net);
 
-       if(part_id == 0) net = forward_stage_reuse( 0, 0, data, startfrom, upto, net);
-       if(part_id == 1) net = forward_stage_reuse( 0, 1, data, startfrom, upto, net);
-       if(part_id == 2) net = forward_stage_reuse( 0, 2, data, startfrom, upto, net);
-       if(part_id == 3) net = forward_stage_reuse( 1, 0, data, startfrom, upto, net);
-       if(part_id == 4) net = forward_stage_reuse( 1, 1, data, startfrom, upto, net);
-       if(part_id == 5) net = forward_stage_reuse( 1, 2, data, startfrom, upto, net);
-       if(part_id == 6) net = forward_stage_reuse( 2, 0, data, startfrom, upto, net);
-       if(part_id == 7) net = forward_stage_reuse( 2, 1, data, startfrom, upto, net);
-       if(part_id == 8) net = forward_stage_reuse( 2, 2, data, startfrom, upto, net);
+       net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
+       //net = forward_stage_reuse( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+
 
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);
@@ -749,7 +741,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
 	   break;
        }
-       net = forward_stage( part_id, data, startfrom, upto, net);
+       net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);
     }

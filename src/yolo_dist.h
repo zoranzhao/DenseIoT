@@ -2,16 +2,7 @@
 
 
 void steal_server(std::string thread_name){
-/* 
-   char* data;
-   for(int i = 0; i < number_of_jobs; i++){
-        data = (char*)malloc(i+10);
-        put_job((void*)data, i+10, i);
-   }
-*/
    serve_steal_and_gather_result( PORTNO );
-      
-
 }
 
 
@@ -126,8 +117,8 @@ void run_densenet()
     nnp_initialize();
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
-    list *options = read_data_cfg("cfg/imagenet1k.data");
 
+    list *options = read_data_cfg("cfg/imagenet1k.data");
     char *name_list = option_find_str(options, "names", 0);
     if(!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
     if(top == 0) top = option_find_int(options, "top", 1);
@@ -367,7 +358,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	part_id = blob -> getID();
 	size = blob -> getSize();
 	//std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
-	net = forward_stage(part_id, data, startfrom, upto, net);
+	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
 	blob -> setSize(net.layers[upto].outputs*sizeof(float));
@@ -409,7 +400,7 @@ inline void steal_forward_local(network *netp, std::string thread_name){
     while(1){
         get_job((void**)&data, &size, &part_id);
 	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
-	net = forward_stage(part_id, data, startfrom, upto, net);
+	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
 	free(data);
         put_result((void*)(net.layers[upto].output), net.layers[upto].outputs*sizeof(float), part_id);
     }

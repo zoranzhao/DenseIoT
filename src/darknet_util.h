@@ -66,9 +66,9 @@ typedef struct partition_range{
 
 
 #define STAGES 8
-#define PARTITIONS_W 3
-#define PARTITIONS_H 3 
-#define PARTITIONS 9
+#define PARTITIONS_W 4
+#define PARTITIONS_H 4 
+#define PARTITIONS 16
 #define THREAD_NUM 1
 
 
@@ -81,15 +81,16 @@ typedef struct overlapped_data{
    float *down;
    float *right;
    float *corner;
-   bool cover;
    
    sub_index down_range;
    sub_index right_range;
    sub_index corner_range;
+   sub_index bottom_corner_range;
+   sub_index right_corner_range;
+
 } ir_data;
 
-
-
+extern bool cover[PARTITIONS_H][PARTITIONS_W];
 
 
 
