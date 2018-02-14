@@ -11,6 +11,9 @@ line plot and histogram,
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm           # import colormap stuff!
+layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
+layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
 
 
 def plot_scatter(ax, prng, nb_samples=100):
@@ -136,98 +139,43 @@ def load_data(filename=""):
         #print content
         content = [float(x.strip()) for x in content] 
 
-
-    if filename == "./profile/layer_data_byte_num.log":
-	content = [float(x)/1024.0/1024.0 for x in content] 
-    if filename == "./profile/layer_gemm_byte_num.log":
-	content = [float(x)/1024.0/1024.0 for x in content] 
-    if filename == "./profile/layer_weight.log":
-	content = [float(x)*4/1024.0/1024.0 for x in content] 
     print sum(content)
     return content
 
-def test_plot_bar1(ax, filename=""):
-    """Plot two bar graphs side by side, with letters as x-tick labels.
-    """
-    #y =  load_data("layer_data.log")
-    y =  load_data(filename)
-    x = np.arange(len(y))
-    #print x
-
-
-    width = 0.5
-    ax.bar(x, y, width)
-
-    #ax.bar(x + width, yb, width, color='C2')
-    #ax.bar(ind + width + xtra_space, lwipg9[8:20] ,width, edgecolor=colorsgreen[2],  fill=False,  hatch=hatches[2], bottom=compg9[8:20])
-
-    #ax.set_xticks(x + width)
-    #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
-    return ax
-
-def test_plot_bar2(ax, filename1="", filename2=""):
-    """Plot two bar graphs side by side, with letters as x-tick labels.
-    """
-    #y =  load_data("layer_data.log")
-    y1 =  load_data(filename1)
-    y2 =  load_data(filename2)
-    x = np.arange(len(y1))
-    print x
-
-
-    width = 0.5
-    ax.bar(x, y1, width)
-    #ax.bar(x + width, yb, width, color='C2')
-    ax.bar(x, y2, width, bottom=y1)
-
-
-    #ax.set_xticks(x + width)
-    #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
-    return ax
 
 
 #test_plot_bar3(ax, "layer_output.log", "layer_weight.log", "layer_input.log"):
-def test_plot_bar3(ax, filename1="", filename2="", filename3=""):
+def test_plot_bar4(ax, filename1="", filename2="", filename3="",  filename4=""):
     """Plot two bar graphs side by side, with letters as x-tick labels.
     """
     #y =  load_data("layer_data.log")
     y1 =  load_data(filename1)
     y2 =  load_data(filename2)
     y3 =  load_data(filename3)
+    y4 =  load_data(filename4)
+    print y4
     x = np.arange(len(y1))
     print x
 
 
     width = 0.5
-    ax.bar(x, y1, width)
-    ax.bar(x, y2, width, bottom=y1)
-    ax.bar(x, y3, width, bottom=[sum(x) for x in zip(y1, y2)])
-
-    #ax.set_xticks(x + width)
-    #ax.set_xticklabels(['a', 'b', 'c', 'd', 'e'])
-    return ax
-
-def test_plot_barX(ax, filename1="./profile/layer_data_byte_num.log", filename2="./profile/layer_data_time.log"):
-    """Plot two bar graphs side by side, with letters as x-tick labels.
-    """
-    #y =  load_data("layer_data.log")
-    y1 =  load_data(filename1)
-    y2 =  load_data(filename2)
-    x = np.arange(len(y1))
-    print x
-
-    y3=[]
-    for y in zip(y1, y2):
-	y3.append((y[0]/y[1])/1024.0/1024.0)
-    
 
 
-    width = 0.5
-    ax.bar(x, y3, width)
+    ax.bar(x, y1, width, label='Output data', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
+    ax.bar(x, y2, width, bottom=y1, label='Input data', color=[0.5, 0.5, 0.5], edgecolor=[0.5, 0.5, 0.5])
+    ax.bar(x, y3, width, bottom=[sum(yy) for yy in zip(y1, y2)], label='Weight', color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
+    ax.bar(x, y4, width, bottom=[sum(yy) for yy in zip(y1, y2, y3)], label='Other', color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
 
-
+    ax.set_xticks(x)
+    ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
+    ax.set_xlim([-1,len(x)])
+    plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
 
     return ax
+
+
+
 
 def test_plot_figure(style_label=""):
     """Setup and plot the demonstration figure with a given style.
@@ -236,33 +184,24 @@ def test_plot_figure(style_label=""):
     # across the different figures.
     prng = np.random.RandomState(96917002)
 
+
+    #plt.set_cmap('Greys')
+    #plt.rcParams['image.cmap']='Greys'
+
+
     # Tweak the figure size to be better suited for a row of numerous plots:
     # double the width and halve the height. NB: use relative changes because
     # some styles may have a figure size different from the default one.
     (fig_width, fig_height) = plt.rcParams['figure.figsize']
-    fig_size = [fig_width * 2, fig_height / 2]
+    fig_size = [fig_width * 1.8, fig_height / 2]
 
-    fig, axes = plt.subplots(ncols=1, nrows=2, num=style_label,
-                             figsize=fig_size, squeeze=True)
-    axes[0].set_ylabel("Layer input data/weight data (MB)")
-    #axes[1].set_ylabel("Layer weight data (MB)")
-    axes[1].set_ylabel("Layer execution time (s)")
-    #axes[2].set_ylabel("Layer GEMM data (MB)")
-    #axes[3].set_ylabel("Layer GEMM data (MB)")
+    fig, axes = plt.subplots(ncols=1, nrows=1, num=style_label, figsize=fig_size, squeeze=True)
+    plt.set_cmap('Greys')
 
-
-    #test_plot_bar1(axes[0], "conv11.log")
-    #test_plot_bar1(axes[1], "conv33.log")
-    #test_plot_bar1(axes[2], "conv11_data.log")
-    #test_plot_bar1(axes[3], "conv33_data.log")
-    #test_plot_bar1(axes[1], "./profile/layer_weight.log")
-    #test_plot_bar2(axes[0], "./profile/layer_weight.log", "./profile/layer_data_byte_num.log")
-    #test_plot_bar1(axes[2], "./profile/layer_gemm_byte_num.log")
-    #test_plot_bar1(axes[1], "./profile/layer_exe_time.log")
-    test_plot_bar3(axes[0], "layer_output.log", "layer_input.log", "layer_weight.log")
-    test_plot_bar2(axes[1], "./profile/layer_exe_time.log", "./profile/layer_data_time.log")
-    #test_plot_bar3(axes[2])
-    #fig.tight_layout()
+    axes.set_ylabel("Memory size (MB)")
+    test_plot_bar4(axes, "./profile/yolo608/layer_output.log", "./profile/yolo608/layer_input.log", "./profile/yolo608/layer_weight.log", "./profile/yolo608/layer_other.log")
+    #test_plot_bar4(axes, "./profile/tiny_yolo/layer_output.log", "./profile/tiny_yolo/layer_input.log", "./profile/tiny_yolo/layer_weight.log", "./profile/tiny_yolo/layer_other.log")
+    fig.tight_layout()
 
     return fig
 
