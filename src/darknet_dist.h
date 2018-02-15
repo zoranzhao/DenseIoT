@@ -960,7 +960,8 @@ inline float *network_predict_dist(network *net, float *input)
     net->delta = 0;
     //forward_network_dist_prof(net);
     //forward_network_dist(net, orig);
-    forward_network_dist_gateway(net, orig);
+    //forward_network_dist_gateway(net, orig);
+    forward_network_dist_device_gateway(net, orig);
     float *out = net->output;
     *net = orig;
     return out;

@@ -429,8 +429,8 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Exec cost is: "<<t1<< std::endl;
         //t0 =  get_real_time_now();
-	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
-	send_result(blob, AP, SMART_GATEWAY);
+	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+	//send_result(blob, AP, SMART_GATEWAY);
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
 	delete blob;
@@ -606,7 +606,7 @@ void task_recorder(int portno)
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     int cli_id = 0;
-	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... " <<std::endl;
+	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
              recv_data[cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[cli_id] = recv_counters[cli_id] + 1; 
 	     if(recv_counters[cli_id] == PARTITIONS) {
