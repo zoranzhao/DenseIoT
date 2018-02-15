@@ -1,19 +1,8 @@
-"""
-======================
-Style sheets reference
-======================
-
-This script demonstrates the different available style sheets on a
-common set of example plots: scatter plot, image, bar graph, patches,
-line plot and histogram,
-
-"""
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm           # import colormap stuff!
-layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
-layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
+
+
 
 
 def plot_scatter(ax, prng, nb_samples=100):
@@ -144,8 +133,7 @@ def load_data(filename=""):
 
 
 
-#test_plot_bar3(ax, "layer_output.log", "layer_weight.log", "layer_input.log"):
-def test_plot_bar4(ax, filename1="", filename2="", filename3="",  filename4=""):
+def plot_mem_prof(ax, filename1="", filename2="", filename3="",  filename4=""):
     """Plot two bar graphs side by side, with letters as x-tick labels.
     """
     #y =  load_data("layer_data.log")
@@ -167,6 +155,8 @@ def test_plot_bar4(ax, filename1="", filename2="", filename3="",  filename4=""):
     ax.bar(x, y4, width, bottom=[sum(yy) for yy in zip(y1, y2, y3)], label='Other', color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
 
     ax.set_xticks(x)
+    layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
+    layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
     ax.set_xticklabels(layer_names_yolo_608, rotation=30)
     #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
     ax.set_xlim([-1,len(x)])
@@ -174,10 +164,7 @@ def test_plot_bar4(ax, filename1="", filename2="", filename3="",  filename4=""):
 
     return ax
 
-
-
-
-def test_plot_figure(style_label=""):
+def plot_figure_mem_prof(style_label=""):
     """Setup and plot the demonstration figure with a given style.
     """
     # Use a dedicated RandomState instance to draw the same "random" values
@@ -199,11 +186,61 @@ def test_plot_figure(style_label=""):
     plt.set_cmap('Greys')
 
     axes.set_ylabel("Memory size (MB)")
-    test_plot_bar4(axes, "./profile/yolo608/layer_output.log", "./profile/yolo608/layer_input.log", "./profile/yolo608/layer_weight.log", "./profile/yolo608/layer_other.log")
+    plot_mem_prof(axes, "./profile/yolo608/layer_output.log", "./profile/yolo608/layer_input.log", "./profile/yolo608/layer_weight.log", "./profile/yolo608/layer_other.log")
     #test_plot_bar4(axes, "./profile/tiny_yolo/layer_output.log", "./profile/tiny_yolo/layer_input.log", "./profile/tiny_yolo/layer_weight.log", "./profile/tiny_yolo/layer_other.log")
     fig.tight_layout()
 
     return fig
+
+def plot_time_prof(ax, filename1="", filename2=""):
+    """Plot two bar graphs side by side, with letters as x-tick labels.
+    """
+    y1 =  load_data(filename1)
+    y2 =  load_data(filename2)
+    x = np.arange(len(y1))
+    print x
+    width = 0.5
+
+    ax.bar(x, y1, width, label='Computation', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
+    ax.bar(x, y2, width, bottom=y1, label='Communication', color=[0.3, 0.3, 0.3], edgecolor=[0.3, 0.3, 0.3])
+
+
+    ax.set_xticks(x)
+    layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
+    layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
+    #ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
+    ax.set_xlim([-1,len(x)])
+    plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
+
+    return ax
+
+
+def plot_figure_time_prof(style_label=""):
+
+    prng = np.random.RandomState(96917002)
+
+
+    #plt.set_cmap('Greys')
+    #plt.rcParams['image.cmap']='Greys'
+
+
+    # Tweak the figure size to be better suited for a row of numerous plots:
+    # double the width and halve the height. NB: use relative changes because
+    # some styles may have a figure size different from the default one.
+    (fig_width, fig_height) = plt.rcParams['figure.figsize']
+    fig_size = [fig_width * 1.8, fig_height / 2]
+
+    fig, axes = plt.subplots(ncols=1, nrows=1, num=style_label, figsize=fig_size, squeeze=True)
+    plt.set_cmap('Greys')
+
+    axes.set_ylabel("Memory size (MB)")
+    #plot_time_prof(axes, "./profile/yolo608/layer_exe_time.log", "./profile/yolo608/layer_comm_time.log")
+    plot_time_prof(axes, "./profile/tiny_yolo/layer_exe_time.log", "./profile/tiny_yolo/layer_comm_time.log")
+    fig.tight_layout()
+
+    return fig
+
 
 if __name__ == "__main__":
 
@@ -225,6 +262,7 @@ if __name__ == "__main__":
     #for style_label in style_list:
     #    with plt.style.context(style_label):
     #        fig = plot_figure(style_label=style_label)
-    fig = test_plot_figure()
+    #fig = plot_figure_mem_prof()
+    fig = plot_figure_time_prof()
 
     plt.show()
