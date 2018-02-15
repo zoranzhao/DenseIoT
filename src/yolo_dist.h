@@ -773,7 +773,7 @@ void victim_client(){
     g_t0 = what_time_is_it_now();
     std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
     std::thread t2(steal_server, "steal_server");
-    std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
+    //std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
     t1.join();
     t2.join();
     t3.join();
