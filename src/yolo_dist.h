@@ -776,7 +776,7 @@ void victim_client(){
     //std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
     t1.join();
     t2.join();
-    t3.join();
+    //t3.join();
 }
 
 
