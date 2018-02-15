@@ -421,7 +421,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
-	//std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 	free(data);
 	blob -> setData((void*)(net.layers[upto].output));
