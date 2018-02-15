@@ -1,9 +1,6 @@
 #include "darknet_dist.h"
 
 
-void steal_server(std::string thread_name){
-   serve_steal_and_gather_result( PORTNO );
-}
 
 
 void steal(unsigned int number_of_jobs, std::string thread_name){
@@ -88,6 +85,81 @@ void get_image(image* im, int* im_id){
 }
 
 
+void serve_steal_and_gather_result(int portno)
+{
+   int sockfd, newsockfd;
+   socklen_t clilen;
+
+
+   struct sockaddr_in serv_addr, cli_addr;
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd < 0) 
+	sock_error("ERROR opening socket");
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_addr.s_addr = INADDR_ANY;
+   serv_addr.sin_port = htons(portno);
+   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+	sock_error("ERROR on binding");
+   listen(sockfd, 10);//back_log numbers 
+   clilen = sizeof(cli_addr);
+
+   unsigned int bytes_length;
+   char* blob_buffer;
+   int job_id;
+   unsigned int id;
+
+#ifdef DEBUG_DISTRIOT
+   std::ofstream ofs ("layer_data_time.log", std::ofstream::out);
+#endif 
+
+
+   char request_type[10];
+   while(1){
+	//Recieving stealing request from client devices
+	//TODO Need to handle fail on stealing
+
+     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if (newsockfd < 0) sock_error("ERROR on accept");
+        read_sock(newsockfd, request_type, 10); 
+        if(strcmp (request_type,"result") == 0){
+	     //std::cout << "At time " << g_t1 << ", recv result " << job_id  <<std::endl;  
+	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     //std::cout << "Got result "<< job_id << " from queue, "<<"result size is: "<< bytes_length  << std::endl;
+	     put_result((void*)blob_buffer, bytes_length, job_id);
+	     //std::cout << "At time " << g_t1 << ", put result " << job_id << " into res_queue" <<std::endl;  
+	}else if(strcmp (request_type,"steals") == 0){
+	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     try_get_job((void**)&blob_buffer, &bytes_length, &job_id);
+	     if(blob_buffer == NULL) {bytes_length = 4; blob_buffer = (char*)malloc(bytes_length+1); }
+	     //std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
+	     write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	     write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     write_sock(newsockfd, blob_buffer, bytes_length);
+	     free(blob_buffer);
+        }
+
+#ifdef DEBUG_DISTRIOT
+	ofs  << (t1 - t0) <<std::endl;  
+#endif 
+	//free(blob_buffer);//
+     	close(newsockfd);
+   }
+#ifdef DEBUG_DISTRIOT
+   ofs.close();
+#endif 
+   close(sockfd);
+
+}
+
+
+void steal_server(std::string thread_name){
+   serve_steal_and_gather_result( PORTNO );
+}
 
 
 //"cfg/imagenet1k.data" "cfg/densenet201.cfg" "densenet201.weights" "data/dog.jpg"
@@ -358,7 +430,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
         //std::cout << "Exec cost is: "<<t1<< std::endl;
         //t0 =  get_real_time_now();
 	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
-	send_result(blob, AP, PORTNO);
+	send_result(blob, AP, SMART_GATEWAY);
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
 	delete blob;
@@ -631,7 +703,7 @@ void idle_client(){
 void victim_result_to_gateway(std::string thread_name){
     while(1){
 	dataBlob* blob = result_queue.Dequeue();
-	send_result(blob, AP, PORTNO);
+	send_result(blob, AP, SMART_GATEWAY);
     }
 }
 
