@@ -384,7 +384,7 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
 #endif
     network net = *netp;
     int startfrom = 0;
-    int upto = 7;
+    int upto = STAGES-1;
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
@@ -452,7 +452,7 @@ inline void steal_forward_local(network *netp, std::string thread_name){
     network net = *netp;
 
     int startfrom = 0;
-    int upto = 7;
+    int upto = STAGES-1;
 
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
@@ -477,11 +477,11 @@ void compute_with_local_stealer(){
     unsigned int number_of_jobs = 5;
     network *netp1 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp1, 1);
-    network net1 = reshape_network(0, 7, *netp1);
+    network net1 = reshape_network(0, STAGES-1, *netp1);
 
     network *netp2 = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp2, 1);
-    network net2 = reshape_network(0, 7, *netp2);
+    network net2 = reshape_network(0, STAGES-1, *netp2);
 
     std::thread t1(local_consumer, &net1, number_of_jobs, "local_consumer");
     std::thread t2(steal_forward_local, &net2, "steal_forward");
