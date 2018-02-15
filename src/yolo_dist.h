@@ -656,6 +656,9 @@ void gateway_service(std::string thread_name){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
+    net.truth = 0;
+    net.train = 0;
+    net.delta = 0;
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();
