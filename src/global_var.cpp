@@ -1,8 +1,6 @@
 #include "darknet_util.h"
 
 
-
-
 //A table for partition ID
 //A mapping of partition IDs
 int part_id[PARTITIONS_H][PARTITIONS_W] = {
@@ -11,6 +9,7 @@ int part_id[PARTITIONS_H][PARTITIONS_W] = {
    {8,  9,  10, 11},
    {12, 13, 14, 15}
 };
+
 
 //Partitioned DNN parameters 
 sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
@@ -21,13 +20,7 @@ sub_index stage_output_partition_ranges[PARTITIONS];
 float* part_data[PARTITIONS];
 
 
-
-
-
-
-
 //For data reuse
-
 sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 
@@ -37,3 +30,9 @@ input_dim dims[STAGES];
 int overlaps[STAGES];
 int output_overlap = 0;
 ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
+
+
+//For smart gateway
+
+unsigned int recv_counters[CLI_NUM] = {0,0,0,0,0,0};
+float* recv_data[CLI_NUM][PARTITIONS];

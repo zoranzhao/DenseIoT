@@ -714,6 +714,50 @@ inline void forward_network_dist_gateway(network *netp, network orig)
     int startfrom = 0;
     int upto = STAGES-1;
 
+
+    float* stage_in = net.input; 
+
+    fork_input(startfrom, stage_in, net);
+    char reg[10] = "register";
+
+
+
+    for(part = 0; part < PARTITIONS; part ++){
+      printf("Putting jobs %d\n", part);
+      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
+    }
+    ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
+
+
+    float* data;
+    int part_id;
+    unsigned int size;
+
+    for(part = 0; 1; part ++){
+       try_get_job((void**)&data, &size, &part_id);
+       if(data == NULL) {
+	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
+	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
+	   break;
+       }
+       std::cout<< "Processing task "<< part_id <<std::endl;
+       net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
+       put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
+       free(data);
+    }
+
+
+}
+
+
+inline void forward_network_dist_device_gateway(network *netp, network orig)
+{
+    int part;
+    network net = *netp;
+
+    int startfrom = 0;
+    int upto = STAGES-1;
+
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
     float* stage_in = net.input; 
@@ -741,6 +785,7 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
 	   break;
        }
+       std::cout<< "Processing task "<< part_id <<std::endl;
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);
@@ -772,11 +817,8 @@ inline void forward_network_dist_gateway(network *netp, network orig)
     }
     g_t1  =  what_time_is_it_now() - g_t0;
     std::cout << "At time " << g_t1 << " stage2 is finished" <<std::endl;  
-
     free(stage_out);
-
 }
-
 
 void send_data_prof(char *blob_buffer, unsigned int bytes_length, const char *dest_ip, int portno)
 {
@@ -801,6 +843,8 @@ inline void forward_network_dist_prof(network *netp)
 {
     network net = *netp;
     int i;
+//Profiling of communication and computation time
+/*
     double t0 = what_time_is_it_now();
     double t1 = 0;
     FILE *layer_exe;
@@ -808,7 +852,7 @@ inline void forward_network_dist_prof(network *netp)
 
     FILE *layer_comm;
     layer_comm = fopen("layer_comm_time.log", "w");  
-
+*/
 
 //Profiling of execution memory footprint
 /*
@@ -856,6 +900,9 @@ inline void forward_network_dist_prof(network *netp)
 	else
            fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
 */
+        net.layers[i].forward(net.layers[i], net);
+//Profiling of communication and computation time
+/*
         t0 = what_time_is_it_now();
         net.layers[i].forward(net.layers[i], net);
         t1 = what_time_is_it_now() - t0;
@@ -865,7 +912,7 @@ inline void forward_network_dist_prof(network *netp)
 	send_data_prof((char*)(net.layers[i].output), net.layers[i].outputs*sizeof(float), BLUE1, PORTNO);
         t1 = what_time_is_it_now() - t0;
         fprintf(layer_comm, "%f\n", t1);
-
+*/
         net.input = net.layers[i].output;  //Layer output
         if(net.layers[i].truth) {
             net.truth = net.layers[i].output;
@@ -873,8 +920,12 @@ inline void forward_network_dist_prof(network *netp)
         printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
 		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
     }
+
+//Profiling of communication and computation time
+/*
     fclose(layer_comm);
     fclose(layer_exe);
+*/
 
 
 //Profiling of execution memory footprint
@@ -893,8 +944,8 @@ inline float *network_predict_dist_prof(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_prof(net);
-    //forward_network_dist(net, orig);
+    //forward_network_dist_prof(net);
+    forward_network_dist(net, orig);
     float *out = net->output;
     *net = orig;
     return out;

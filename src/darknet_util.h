@@ -44,9 +44,9 @@ extern "C"{
 #include <time.h>
 #include <assert.h>
 
-//#include "distriot.h"
-#include <iostream>
 
+#include <iostream>
+#include "distriot.h"
 
 #define DEBUG_DIST 0
 
@@ -65,7 +65,7 @@ typedef struct partition_range{
 } sub_index;
 
 
-#define STAGES 8
+#define STAGES 16
 #define PARTITIONS_W 4
 #define PARTITIONS_H 4 
 #define PARTITIONS 16
@@ -93,9 +93,6 @@ typedef struct overlapped_data{
 extern bool cover[PARTITIONS_H][PARTITIONS_W];
 
 
-
-
-
 //A table for partition ID
 //A mapping of partition IDs
 extern int part_id[PARTITIONS_H][PARTITIONS_W];
@@ -110,24 +107,19 @@ extern float* part_data[PARTITIONS];
 
 
 
-
-
-
-
 //For data reuse
-
 extern sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 extern sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
-
-
 extern input_dim dims[STAGES];
+
 //Partition overlap
 extern int overlaps[STAGES];
 extern int output_overlap;
 extern ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
 
-
-
+//For smart gateway
+extern unsigned int recv_counters[CLI_NUM];
+extern float* recv_data[CLI_NUM][PARTITIONS];
 
 #endif
 

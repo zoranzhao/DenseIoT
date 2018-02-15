@@ -13,14 +13,6 @@ void steal(unsigned int number_of_jobs, std::string thread_name){
    }
 }
 
-void send_result_data(unsigned int number_of_jobs, std::string thread_name){
-   for(unsigned int i = 0; i < number_of_jobs; i++){
-	std::cout << AP << "   " << "Send result " << i << "th task!" <<std::endl;
-        char* data = (char*)malloc(i+10);
-	dataBlob* blob = new dataBlob((void*)data, i+10, i);
-	send_result(blob, AP, PORTNO);
-   }
-}
 
 
 
@@ -365,7 +357,8 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Exec cost is: "<<t1<< std::endl;
         //t0 =  get_real_time_now();
-	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+	send_result(blob, AP, PORTNO);
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
 	delete blob;
@@ -474,22 +467,133 @@ void recv_data_prof(int portno)
 
 
 
-void client_register_gateway(){
-    char reg[10] = "register";
-    put_job((void*)reg, 10, 0);
-    put_job((void*)reg, 10, 0);
-    put_job((void*)reg, 10, 0);
-    ask_gateway(reg, AP, SMART_GATEWAY);
+
+void task_recorder(int portno)
+{  
+   int task_total;
+   int sockfd, newsockfd;
+   socklen_t clilen;
+   struct sockaddr_in serv_addr, cli_addr;
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd < 0) 
+	sock_error("ERROR opening socket");
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_addr.s_addr = INADDR_ANY;
+   serv_addr.sin_port = htons(portno);
+   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+	sock_error("ERROR on binding");
+   listen(sockfd, 10);//back_log numbers 
+   clilen = sizeof(cli_addr);
+   unsigned int bytes_length;
+   int job_num;
+   char request_type[10];
+   std::list< std::string > job_list;
+
+   int job_id;
+   char *blob_buffer;
+
+   while(1){
+     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if (newsockfd < 0) sock_error("ERROR on accept");
+        read_sock(newsockfd, request_type, 10); 
+        if(strcmp (request_type,"register") == 0){
+	     //std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     read_sock(newsockfd, (char*)&job_num, sizeof(job_num));
+	     if(job_num > 0){
+		job_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
+		//std::cout << "Register task" << std::endl;
+	     }else{
+		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
+		//std::cout << "Delete task" << std::endl;
+             }
+	     //std::cout << "Task list is ... : " << std::endl;
+	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
+		//std::cout <<  *it << std::endl;
+	     //}
+	}else if(strcmp (request_type,"steals") == 0){
+	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     in_addr_t victim_addr;
+	     if( !(job_list.empty()) ){
+   	        std::string victim = job_list.front();
+	        job_list.pop_front();
+	        job_list.push_back(victim);
+	        victim_addr = inet_addr(victim.c_str());
+	     }else{
+		victim_addr = inet_addr("0.0.0.0");
+	     }
+	     
+	     write_sock(newsockfd, (char*)(&victim_addr), sizeof(in_addr_t));
+	     //std::cout << "Task list is ... : " << std::endl;
+	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
+		//std::cout <<  *it << std::endl;
+	     //}
+        }else if(strcmp (request_type,"result") == 0){
+	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     int cli_id = 0;
+             recv_data[cli_id][job_id]=(float*)blob_buffer;
+	     recv_counters[cli_id] = recv_counters[cli_id] + 1; 
+	     if(recv_counters[cli_id] == PARTITIONS) {
+		  std::cout << "Data from client " << cli_id << " have been fully collected..." <<std::endl;
+                  recv_counters[cli_id] = 0;
+		  ready_queue.Enqueue(cli_id);
+	     }
+        }
+
+     	close(newsockfd);
+   }
+   close(sockfd);
 }
 
-void client_steal_gateway(){
-    char steal[10] = "steals";
-    struct sockaddr_in addr;
-    addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
-    std::cout << "Stolen address from the gateway is: " <<inet_ntoa(addr.sin_addr) << std::endl;
+
+inline void gateway_compute(network *netp, int cli_id)
+{
+    int part;
+    network net = *netp;
+    int upto = STAGES-1;
+
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+
+
+    for(part = 0; part < PARTITIONS; part ++){
+       join_output(part, recv_data[cli_id][part],  stage_out, upto, net);
+       free(recv_data[cli_id][part]);
+    }
+
+    net.input = stage_out;
+    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
+        net.index = i;
+        if(net.layers[i].delta){	       
+            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
+        }
+        net.layers[i].forward(net.layers[i], net);
+        net.input = net.layers[i].output; //Layer output
+        if(net.layers[i].truth) {
+            net.truth = net.layers[i].output;
+        }
+    }
+    free(stage_out);
 }
+
 
 void gateway_service(std::string thread_name){
+   network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+   set_batch_network(netp, 1);
+   network net = reshape_network(0, STAGES-1, *netp);
+   int cli_id;
+   while(1){
+	cli_id = ready_queue.Dequeue();
+	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+	gateway_compute(netp, cli_id);
+   }
+
+}
+
+void gateway_sync(std::string thread_name){
     task_recorder(SMART_GATEWAY);
 }
 
@@ -501,9 +605,11 @@ void toggle_gateway(){
 }
 
 void smart_gateway(){
-    std::thread t1(gateway_service, "server");
+    std::thread t1(gateway_sync, "gateway_sync");
+    std::thread t2(gateway_service, "gateway_service");
     exec_control(START_CTRL);
     t1.join();
+    t2.join();
 }
 
 
@@ -522,6 +628,14 @@ void idle_client(){
 }
 
 
+void victim_result_to_gateway(std::string thread_name){
+    while(1){
+	dataBlob* blob = result_queue.Dequeue();
+	send_result(blob, AP, PORTNO);
+    }
+}
+
+
 
 void victim_client(){
     unsigned int number_of_jobs = 1;
@@ -532,9 +646,11 @@ void victim_client(){
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
     std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
-    std::thread t2(steal_server, "server");
+    std::thread t2(steal_server, "steal_server");
+    std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
     t1.join();
     t2.join();
+    t3.join();
 }
 
 
