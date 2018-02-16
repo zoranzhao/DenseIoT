@@ -429,8 +429,8 @@ inline void steal_forward_with_gateway(network *netp, std::string thread_name){
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Exec cost is: "<<t1<< std::endl;
         //t0 =  get_real_time_now();
-	send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
-	//send_result(blob, AP, SMART_GATEWAY);
+	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
+	send_result(blob, AP, SMART_GATEWAY);
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
 	delete blob;
@@ -773,10 +773,10 @@ void victim_client(){
     g_t0 = what_time_is_it_now();
     std::thread t1(local_consumer, &net, number_of_jobs, "local_consumer");
     std::thread t2(steal_server, "steal_server");
-    //std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
+    std::thread t3(victim_result_to_gateway, "victim_result_to_gateway");
     t1.join();
     t2.join();
-    //t3.join();
+    t3.join();
 }
 
 
