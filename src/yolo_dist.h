@@ -606,11 +606,11 @@ void task_recorder(int portno)
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     int cli_id = 0;
-	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
+	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
              recv_data[cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[cli_id] = recv_counters[cli_id] + 1; 
 	     if(recv_counters[cli_id] == PARTITIONS) {
-		  std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
+		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
                   recv_counters[cli_id] = 0;
 		  ready_queue.Enqueue(cli_id);
 	     }
@@ -668,6 +668,8 @@ void gateway_service(std::string thread_name){
     int id = 0;
     while(1){
 	cli_id = ready_queue.Dequeue();
+	g_t1 = what_time_is_it_now() - g_t0;
+	std::cout << g_t1 << std::endl;
 	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 	gateway_compute(&net, cli_id);
 
@@ -734,6 +736,8 @@ void smart_gateway(){
     std::thread t1(gateway_sync, "gateway_sync");
     std::thread t2(gateway_service, "gateway_service");
     exec_control(START_CTRL);
+    g_t0 = what_time_is_it_now();
+    g_t1 = 0;
     t1.join();
     t2.join();
 }
