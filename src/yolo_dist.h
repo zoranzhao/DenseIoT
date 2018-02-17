@@ -605,7 +605,7 @@ void task_recorder(int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
-	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    "<<cli_addr.sin_addr <<std::endl;
+	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
 	     int cli_id = 0;
 	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
 
