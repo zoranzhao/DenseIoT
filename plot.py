@@ -208,8 +208,8 @@ def plot_time_prof(ax, filename1="", filename2=""):
     ax.set_xticks(x)
     layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
     layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
-    #ax.set_xticklabels(layer_names_yolo_608, rotation=30)
-    ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
+    ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
     ax.set_xlim([-1,len(x)])
     plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
 
@@ -234,9 +234,54 @@ def plot_figure_time_prof(style_label=""):
     fig, axes = plt.subplots(ncols=1, nrows=1, num=style_label, figsize=fig_size, squeeze=True)
     plt.set_cmap('Greys')
 
-    axes.set_ylabel("Memory size (MB)")
-    #plot_time_prof(axes, "./profile/yolo608/layer_exe_time.log", "./profile/yolo608/layer_comm_time.log")
-    plot_time_prof(axes, "./profile/tiny_yolo/layer_exe_time.log", "./profile/tiny_yolo/layer_comm_time.log")
+    axes.set_ylabel("Latency (s)")
+    plot_time_prof(axes, "./profile/yolo608/layer_exe_time.log", "./profile/yolo608/layer_comm_time.log")
+    #plot_time_prof(axes, "./profile/tiny_yolo/layer_exe_time.log", "./profile/tiny_yolo/layer_comm_time.log")
+    fig.tight_layout()
+
+    return fig
+
+def plot_one_device(ax, filename1=""):
+    """Plot two bar graphs side by side, with letters as x-tick labels.
+    """
+    y1 =  load_data(filename1)
+    x = np.arange(len(y1))
+    print x
+    width = 0.5
+
+    ax.bar(x, y1, width, label='4 X 4 Partitions', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
+
+
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([1,2,3,4,5,6])
+    ax.set_xlim([-1,len(x)])
+    plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
+
+    return ax
+
+def plot_figure_one_device(style_label=""):
+
+    prng = np.random.RandomState(96917002)
+
+
+    #plt.set_cmap('Greys')
+    #plt.rcParams['image.cmap']='Greys'
+
+
+    # Tweak the figure size to be better suited for a row of numerous plots:
+    # double the width and halve the height. NB: use relative changes because
+    # some styles may have a figure size different from the default one.
+    (fig_width, fig_height) = plt.rcParams['figure.figsize']
+    fig_size = [fig_width * 1.8, fig_height / 2]
+
+    fig, axes = plt.subplots(ncols=1, nrows=1, num=style_label, figsize=fig_size, squeeze=True)
+    plt.set_cmap('Greys')
+
+    axes.set_ylabel("Latency (s)")
+    axes.set_xlabel("Number of devices")
+
+    plot_one_device(axes, "./profile/yolo608/latency_dev_num.log")
     fig.tight_layout()
 
     return fig
@@ -264,5 +309,7 @@ if __name__ == "__main__":
     #        fig = plot_figure(style_label=style_label)
     #fig = plot_figure_mem_prof()
     fig = plot_figure_time_prof()
+    #fig = plot_figure_one_device()
+
 
     plt.show()
