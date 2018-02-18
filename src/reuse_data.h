@@ -2,6 +2,8 @@
 #include "darknet_util.h"
 
 
+#ifndef REUSE_DATA__H
+#define REUSE_DATA__H
 
 void print_subindex(sub_index index){
     printf("[[%d, %d][%d],\n", index.w1, index.w2, (index.w));
@@ -467,5 +469,5 @@ inline network reshape_network_debug(int startfrom, int upto, network net){
 }
 
 */
-
+#endif
 

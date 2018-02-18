@@ -43,15 +43,18 @@ extern "C"{
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
-
-
 #include <iostream>
 #include "distriot.h"
 
-#define DEBUG_DIST 0
-
 #ifndef DARKNET_UTIL__H
 #define DARKNET_UTIL__H
+
+#define DEBUG_DIST 0
+#define STAGES 4
+#define PARTITIONS_W 2
+#define PARTITIONS_H 2 
+#define PARTITIONS 4
+#define THREAD_NUM 1
 
 
 //Calculate the input partition range
@@ -63,13 +66,6 @@ typedef struct partition_range{
     int h;
     int w;
 } sub_index;
-
-
-#define STAGES 16
-#define PARTITIONS_W 4
-#define PARTITIONS_H 4 
-#define PARTITIONS 16
-#define THREAD_NUM 1
 
 
 typedef struct input_dimension{

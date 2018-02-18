@@ -1,6 +1,12 @@
 #include "darknet_util.h"
 #include "reuse_data.h"
 #include "distriot.h"
+
+#ifndef DARKNET_DIST__H 
+#define DARKNET_DIST__H
+
+
+
 void write_layer_test(network *netp, int idx)
 {
     network net = *netp;
@@ -27,6 +33,25 @@ void read_layer_test(network *netp, int idx)
     fread(net.input, sizeof(float), l.inputs, p_file); 
     fclose(p_file);
 
+}
+
+
+//Load images by name
+void load_image_by_number(image* img, unsigned int id){
+    int h = img->h;
+    int w = img->w;
+    char filename[256];
+    sprintf(filename, "data/val2017/%d.jpg", id);
+//#ifdef NNPACK
+//    int c = img->c;
+//    image im = load_image_thread(filename, 0, 0, c, net->threadpool);
+//    image sized = letterbox_image_thread(im, w, h, net->threadpool);
+//#else
+    image im = load_image_color(filename, 0, 0);
+    image sized = letterbox_image(im, w, h);
+//#endif
+    free_image(im);
+    img->data = sized.data;
 }
 
 //input(w*h) [dh1, dh2]    copy into ==> output  [0, dh2 - dh1]
@@ -253,6 +278,12 @@ inline network reshape_network(int startfrom, int upto, network net){
 	}
     }
 
+    for(i = upto; i >= startfrom; i--){
+        for(int p = 0; p < partition; p++){
+	    std::cout << "At layer: "<< i <<" ... :" << std::endl;
+	    print_subindex(output_ranges[p][i]);
+	}
+    }
 
     for(p_h = 0; p_h < partition_h; p_h++){
 	for(p_w = 0; p_w < partition_w; p_w++){
@@ -640,329 +671,7 @@ inline network forward_stage(int p_h, int p_w, float *input,int startfrom, int u
     return net; 
 }
 
-inline void forward_network_dist(network *netp, network orig)
-{
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = STAGES-1;
-
-    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
-
-    //fork_input_reuse(startfrom, stage_in, net);
-    fork_input(startfrom, stage_in, net);
-
-    for(part = 0; part < PARTITIONS; part ++){
-      printf("Putting jobs %d\n", part);
-      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
-    }
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-    double t1 = 0.0;
-    double t0 = get_real_time_now();
-
-    for(part = 0; 1; part ++){
-       try_get_job((void**)&data, &size, &part_id);
-       if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
-       std::cout << "=======================: " << part_id << std::endl;
-
-       net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
-       //net = forward_stage_reuse( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 
 
-       join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
-       free(data);
-    }
+#endif 
 
-    for(part = part; part < PARTITIONS; part ++){
-       get_result((void**)&data, &size, &part_id);
-       printf("Getting result %d from other stealers\n", part_id);
-       join_output(part_id, data,  stage_out, upto, net);
-       free(data);
-    }
-    t1 = t1 + get_real_time_now() - t0;
-    std::cout << "Processing overhead is: " << t1 << std::endl;
-
-
-    net.input = stage_out;
-
-    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
-        net.index = i;
-        if(net.layers[i].delta){	       
-            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-        }
-        net.layers[i].forward(net.layers[i], net);
-        net.input = net.layers[i].output; //Layer output
-        if(net.layers[i].truth) {
-            net.truth = net.layers[i].output;
-        }
-    }
-    free(stage_out);
-}
-
-inline void forward_network_dist_gateway(network *netp, network orig)
-{
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = STAGES-1;
-
-
-    float* stage_in = net.input; 
-
-    fork_input(startfrom, stage_in, net);
-    char reg[10] = "register";
-
-
-
-    for(part = 0; part < PARTITIONS; part ++){
-      printf("Putting jobs %d\n", part);
-      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
-    }
-    ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
-
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-    for(part = 0; 1; part ++){
-       try_get_job((void**)&data, &size, &part_id);
-       if(data == NULL) {
-	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
-	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
-	   break;
-       }
-       std::cout<< "Processing task "<< part_id <<std::endl;
-       net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
-       put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
-       free(data);
-    }
-
-
-}
-
-
-inline void forward_network_dist_device_gateway(network *netp, network orig)
-{
-    int part;
-    network net = *netp;
-
-    int startfrom = 0;
-    int upto = STAGES-1;
-
-    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
-
-    fork_input(startfrom, stage_in, net);
-    char reg[10] = "register";
-
-
-
-    for(part = 0; part < PARTITIONS; part ++){
-      printf("Putting jobs %d\n", part);
-      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
-    }
-    ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
-
-
-    float* data;
-    int part_id;
-    unsigned int size;
-
-    for(part = 0; 1; part ++){
-       try_get_job((void**)&data, &size, &part_id);
-       if(data == NULL) {
-	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
-	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
-	   break;
-       }
-       std::cout<< "Processing task "<< part_id <<std::endl;
-       net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
-       join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
-       free(data);
-    }
-
-    for(part = part; part < PARTITIONS; part ++){
-       get_result((void**)&data, &size, &part_id);
-       //printf("Getting result %d from other stealers\n", part_id);
-       join_output(part_id, data,  stage_out, upto, net);
-       free(data);
-    }
-
-    g_t1  =  what_time_is_it_now() - g_t0;
-    //std::cout << "At time " << g_t1 << ", get task " << part_id << " from res_queue" <<std::endl;  
-    std::cout << "At time " << g_t1 << " stage1 is finished" <<std::endl;  
-
-    net.input = stage_out;
-
-    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
-        net.index = i;
-        if(net.layers[i].delta){	       
-            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-        }
-        net.layers[i].forward(net.layers[i], net);
-        net.input = net.layers[i].output; //Layer output
-        if(net.layers[i].truth) {
-            net.truth = net.layers[i].output;
-        }
-    }
-    g_t1  =  what_time_is_it_now() - g_t0;
-    std::cout << "At time " << g_t1 << " stage2 is finished" <<std::endl;  
-    free(stage_out);
-}
-
-void send_data_prof(char *blob_buffer, unsigned int bytes_length, const char *dest_ip, int portno)
-{
-     int sockfd;
-     struct sockaddr_in serv_addr;
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0) 
-        sock_error("ERROR opening socket");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
-     serv_addr.sin_port = htons(portno);
-     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
-	sock_error("ERROR connecting");
-     write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
-     write_sock(sockfd, blob_buffer, bytes_length);
-     close(sockfd);
-}
-
-
-inline void forward_network_dist_prof(network *netp)
-{
-    network net = *netp;
-    int i;
-//Profiling of communication and computation time
-/*
-    double t0 = what_time_is_it_now();
-    double t1 = 0;
-    FILE *layer_exe;
-    layer_exe = fopen("layer_exe_time.log", "w");  
-
-    FILE *layer_comm;
-    layer_comm = fopen("layer_comm_time.log", "w");  
-*/
-
-//Profiling of execution memory footprint
-/*
-    FILE *layer_input;
-    FILE *layer_output;
-    FILE *layer_weight; 
-    FILE *layer_other; 
-
-    layer_input  = fopen("layer_input.log", "w"); 
-    layer_output = fopen("layer_output.log", "w");  
-    layer_weight = fopen("layer_weight.log", "w");
-    layer_other  = fopen("layer_other.log", "w");
-*/
-    
-/*
-    std::cout << "[";
-    for(i = 0; i < net.n; ++i){//print layer list
-	if(net.layers[i].type == CONVOLUTIONAL)
-	  std::cout << "\"conv\", " ;
-	if(net.layers[i].type == MAXPOOL)
-	  std::cout << "\"maxpool\", " ;
-	if(net.layers[i].type == ROUTE)
-	  std::cout << "\"route\", " ;
-	if(net.layers[i].type == REORG)
-	  std::cout << "\"reorg\", "  ;
-	if(net.layers[i].type == REGION)
-	  std::cout << "\"region\""  ;
-    }
-    std::cout << "]"<<std::endl;
-*/
-    for(i = 0; i < net.n; ++i){//Iteratively execute the layers
-        net.index = i;
-        if(net.layers[i].delta){	       
-            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-        }
-
-//Profiling of execution memory footprint
-/*
-        fprintf(layer_input, "%f\n", (float)(net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-        fprintf(layer_output, "%f\n", (float)(net.layers[i].outputs*sizeof(float))/1024.0/1024.0 );
-        fprintf(layer_other, "%f\n", (float)(net.layers[i].out_c*4*sizeof(float))/1024.0/1024.0 );
-
-        if(net.layers[i].type == CONNECTED)
-           fprintf(layer_weight, "%f\n", (float)(net.layers[i].outputs*net.layers[i].inputs*sizeof(float))/1024.0/1024.0 );
-	else
-           fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
-*/
-        net.layers[i].forward(net.layers[i], net);
-//Profiling of communication and computation time
-/*
-        t0 = what_time_is_it_now();
-        net.layers[i].forward(net.layers[i], net);
-        t1 = what_time_is_it_now() - t0;
-        fprintf(layer_exe, "%f\n", t1);
-
-        t0 = what_time_is_it_now();
-	send_data_prof((char*)(net.layers[i].output), net.layers[i].outputs*sizeof(float), BLUE1, PORTNO);
-        t1 = what_time_is_it_now() - t0;
-        fprintf(layer_comm, "%f\n", t1);
-*/
-        net.input = net.layers[i].output;  //Layer output
-        if(net.layers[i].truth) {
-            net.truth = net.layers[i].output;
-        }
-        printf("Index %d, Layer %s, input data byte num is: %ld, output data byte num is: %ld\n", 
-		i, get_layer_string(net.layers[i].type), net.layers[i].inputs*sizeof(float), net.layers[i].outputs*sizeof(float));
-    }
-
-//Profiling of communication and computation time
-/*
-    fclose(layer_comm);
-    fclose(layer_exe);
-*/
-
-
-//Profiling of execution memory footprint
-/*
-    fclose(layer_input);
-    fclose(layer_weight);
-    fclose(layer_output);
-    fclose(layer_other);
-*/
-}
-
-inline float *network_predict_dist_prof(network *net, float *input)
-{
-    network orig = *net;
-    net->input = input;
-    net->truth = 0;
-    net->train = 0;
-    net->delta = 0;
-    //forward_network_dist_prof(net);
-    forward_network_dist(net, orig);
-    float *out = net->output;
-    *net = orig;
-    return out;
-}
-
-inline float *network_predict_dist(network *net, float *input)
-{
-    network orig = *net;
-    net->input = input;
-    net->truth = 0;
-    net->train = 0;
-    net->delta = 0;
-    //forward_network_dist_prof(net);
-    //forward_network_dist(net, orig);
-    forward_network_dist_gateway(net, orig);
-    //forward_network_dist_device_gateway(net, orig);
-    float *out = net->output;
-    *net = orig;
-    return out;
-}
