@@ -31,6 +31,13 @@ ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
 
 
 //For smart gateway
-
 unsigned int recv_counters[CLI_NUM] = {0,0,0,0,0,0};
 float* recv_data[CLI_NUM][PARTITIONS];
+
+
+//For reuse data serialization and deserialization
+int up[PARTITIONS][STAGES];
+int left[PARTITIONS][STAGES];	
+int right[PARTITIONS][STAGES];
+int down[PARTITIONS][STAGES];
+unsigned int ir_data_size[PARTITIONS];

@@ -121,6 +121,13 @@ extern unsigned int recv_counters[CLI_NUM];
 extern float* recv_data[CLI_NUM][PARTITIONS];
 
 
+//For reuse data serialization and deserialization
+extern int up[PARTITIONS][STAGES];
+extern int left[PARTITIONS][STAGES];	
+extern int right[PARTITIONS][STAGES];
+extern int down[PARTITIONS][STAGES];
+extern unsigned int ir_data_size[PARTITIONS];
+
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2);
 sub_index calculate_range(sub_index output, layer l);
