@@ -239,6 +239,12 @@ inline void forward_network_dist(network *netp, network orig)
 
        //net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        //net = forward_stage_reuse( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+       if(part_id==3||part_id==5||part_id==7||part_id==1){
+		std::cout << "For partition number: "<< part_id << ", the size of reuse data to be transfered: "<< ir_data_size[part_id]<< std::endl;
+		float* reuse_data = req_ir_data_serialization(net, part_id, startfrom, upto);
+		req_ir_data_deserialization(net, part_id, reuse_data, startfrom, upto);
+       }       
+
        net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
