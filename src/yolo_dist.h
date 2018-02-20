@@ -3,6 +3,9 @@
 #include "client.h"
 
 
+
+
+
 void get_image(image* im, int* im_id){
     unsigned int size;
     float* data;
@@ -197,11 +200,33 @@ inline void forward_network_dist(network *netp, network orig)
 
     //fork_input_reuse(startfrom, stage_in, net);
     fork_input(startfrom, stage_in, net);
-
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
     }
+/*
+    //fork_input(startfrom, stage_in, net);
+    //fork_input_reuse(startfrom, stage_in, net);
+
+    fork_input_reuse(startfrom, stage_in, net);
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		put_job(part_data[part_id[p_h][p_w]], 
+			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			part_id[p_h][p_w]);
+	}
+    }
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		put_job(part_data[part_id[p_h][p_w]], 
+			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			part_id[p_h][p_w]);
+	}
+    }
+
+*/
 
     float* data;
     int part_id;
@@ -217,7 +242,7 @@ inline void forward_network_dist(network *netp, network orig)
 
        net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        //net = forward_stage_reuse( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
-
+       //net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);
@@ -469,6 +494,7 @@ void victim_client_local(){
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
+    //network net = reshape_network_shuffle(0, STAGES-1, *netp);
     network net = reshape_network(0, STAGES-1, *netp);
     std::thread t1(client_compute_prof, &net, number_of_jobs, "client_compute_prof");
     t1.join();

@@ -4,9 +4,16 @@
 //A table for partition ID
 //A mapping of partition IDs
 int part_id[PARTITIONS_H][PARTITIONS_W] = {
+   {0,  1,  2},
+   {3,  4,  5},
+   {6,  7,  8} 
+};
+
+
+/*int part_id[PARTITIONS_H][PARTITIONS_W] = {
    {0,  1},
    {2,  3}
-};
+};*/
 
 /*int part_id[PARTITIONS_H][PARTITIONS_W] = {
    {0,  1,  2,  3},

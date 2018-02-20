@@ -50,10 +50,10 @@ extern "C"{
 #define DARKNET_UTIL__H
 
 #define DEBUG_DIST 0
-#define STAGES 4
-#define PARTITIONS_W 2
-#define PARTITIONS_H 2 
-#define PARTITIONS 4
+#define STAGES 16
+#define PARTITIONS_W 3
+#define PARTITIONS_H 3 
+#define PARTITIONS 9
 #define THREAD_NUM 1
 
 
@@ -76,13 +76,16 @@ typedef struct input_dimension{
 typedef struct overlapped_data{
    float *down;
    float *right;
+   float *up;
+   float *left;
    float *corner;
    
    sub_index down_range;
    sub_index right_range;
+   sub_index left_range;
+   sub_index up_range;
+
    sub_index corner_range;
-   sub_index bottom_corner_range;
-   sub_index right_corner_range;
 
 } ir_data;
 
@@ -116,6 +119,16 @@ extern ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
 //For smart gateway
 extern unsigned int recv_counters[CLI_NUM];
 extern float* recv_data[CLI_NUM][PARTITIONS];
+
+
+
+inline void stage_output_partition(int w1, int w2, int h1, int h2);
+sub_index calculate_range(sub_index output, layer l);
+sub_index calculate_layeroutput_range(sub_index input, layer l);
+sub_index crop_ranges(sub_index large, sub_index small);
+float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
+void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
+void copy_input_to_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 
 #endif
 
