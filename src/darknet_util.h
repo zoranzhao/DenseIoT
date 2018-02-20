@@ -129,7 +129,7 @@ sub_index crop_ranges(sub_index large, sub_index small);
 float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void copy_input_to_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
-
+void numbering_part_id();
 #endif
 
 

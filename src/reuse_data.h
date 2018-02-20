@@ -179,6 +179,7 @@ void cal_reuse_overlap_range_full(int p_h, int p_w,  int i, sub_index output_ran
 
 inline network reshape_network_shuffle(int startfrom, int upto, network net){
     //network net = *netp;//Be careful because we are using a shallow copy here
+    numbering_part_id();
     int i;
     int ii;
 

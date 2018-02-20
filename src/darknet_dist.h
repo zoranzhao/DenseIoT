@@ -7,6 +7,7 @@
 
 
 
+
 void write_layer_test(network *netp, int idx)
 {
     network net = *netp;
@@ -134,7 +135,15 @@ void print_array(char* filename, float* stage_out, int stage_outs, int line){
 
 
 
-
+void numbering_part_id(){
+  int id = 0;
+  for(int i = 0; i < PARTITIONS_H; i++){
+    for(int j = 0; j < PARTITIONS_W; j++){
+       part_id[i][j] = id;
+       id ++;
+    }
+  }
+}
 
 
 
@@ -242,6 +251,7 @@ inline void stage_output_partition(int w1, int w2, int h1, int h2){
 
 
 inline network reshape_network(int startfrom, int upto, network net){
+    numbering_part_id();
     //network net = *netp;//Be careful because we are using a shallow copy here
     int i;
     int ii;

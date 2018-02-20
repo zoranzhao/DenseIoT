@@ -3,34 +3,12 @@
 
 //A table for partition ID
 //A mapping of partition IDs
-int part_id[PARTITIONS_H][PARTITIONS_W] = {
-   {0,  1,  2},
-   {3,  4,  5},
-   {6,  7,  8} 
-};
-
-
-/*int part_id[PARTITIONS_H][PARTITIONS_W] = {
-   {0,  1},
-   {2,  3}
-};*/
-
-/*int part_id[PARTITIONS_H][PARTITIONS_W] = {
-   {0,  1,  2,  3},
-   {4,  5,  6,  7}, 
-   {8,  9,  10, 11},
-   {12, 13, 14, 15}
-};
-int part_id[PARTITIONS_H][PARTITIONS_W] = {
-   {0,  1,  2,  3,  4},
-   {5,  6,  7,  8,  9}, 
-   {10, 11, 12, 13, 14},
-   {15, 16, 17, 18, 19}, 
-   {20, 21, 22, 23, 24}
-};
-*/
-
-
+//int part_id[PARTITIONS_H][PARTITIONS_W] = {
+//   {0,  1,  2},
+//   {3,  4,  5},
+//   {6,  7,  8} 
+//};
+int part_id[PARTITIONS_H][PARTITIONS_W];
 //Partitioned DNN parameters 
 sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
 sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
