@@ -122,7 +122,6 @@ void cal_reuse_overlap_range_full(int p_h, int p_w,  int i, sub_index output_ran
     int p_id = part_id[p_h][p_w];
     int p_id_nearby;
 
-
     //Processing the block on the left
     //printf("Existing output whose overlap can be reused in output of layer %d... ...: \n", i);
     if(p_w > 0) {
@@ -365,6 +364,85 @@ inline network reshape_network_shuffle(int startfrom, int upto, network net){
 }
 
 
+
+inline float* ir_data_serialization(network net, int part, int startfrom, int upto){
+      int p_h = part / PARTITIONS_W; 
+      int p_w = part % PARTITIONS_W;
+      int ir_data_size = 0;
+      float *output;
+      for(int i = startfrom; i < (upto+1); ++i){
+	if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
+		ir_data_size = ir_data_size + (ir_output[i][p_h][p_w].down_range.w)*(ir_output[i][p_h][p_w].down_range.h)*net.layers[i].out_c;  
+	}
+	if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
+		ir_data_size = ir_data_size + (ir_output[i][p_h][p_w].right_range.w)*(ir_output[i][p_h][p_w].right_range.h)*net.layers[i].out_c;  
+	}
+	if((ir_output[i][p_h][p_w].up_range.w>0)&&(ir_output[i][p_h][p_w].up_range.h>0)){
+		ir_data_size = ir_data_size + (ir_output[i][p_h][p_w].up_range.w)*(ir_output[i][p_h][p_w].up_range.h)*net.layers[i].out_c;  
+	}
+	if((ir_output[i][p_h][p_w].left_range.w>0)&&(ir_output[i][p_h][p_w].left_range.h>0)){
+		ir_data_size = ir_data_size + (ir_output[i][p_h][p_w].left_range.w)*(ir_output[i][p_h][p_w].left_range.h)*net.layers[i].out_c;  
+	}
+      }
+
+      output = (float*)malloc(ir_data_size*sizeof(float));
+
+      for(int i = startfrom; i < (upto+1); ++i){
+	if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
+		memcpy(output, ir_output[i][p_h][p_w].down, ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
+		output = output + ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
+		memcpy(output, ir_output[i][p_h][p_w].down, ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c*sizeof(float) ); 
+		output = output + ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].up_range.w>0)&&(ir_output[i][p_h][p_w].up_range.h>0)){
+		memcpy(output, ir_output[i][p_h][p_w].down, ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c*sizeof(float) ); 
+		output = output + ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].left_range.w>0)&&(ir_output[i][p_h][p_w].left_range.h>0)){
+		memcpy(output, ir_output[i][p_h][p_w].down, ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c*sizeof(float) ); 
+		output = output + ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c;
+	}
+      }
+
+
+      return output;
+}
+
+
+inline void ir_data_deserialization(network net, int part, float* input, int startfrom, int upto){
+      int p_h = part / PARTITIONS_W; 
+      int p_w = part % PARTITIONS_W;
+
+      float* input_data = input;
+
+      for(int i = startfrom; i < (upto+1); ++i){
+	if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
+		memcpy(ir_output[i][p_h][p_w].down, input_data, ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
+		input_data = input_data + ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
+		memcpy(ir_output[i][p_h][p_w].down, input_data, ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c*sizeof(float) ); 
+		input_data = input_data + ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].up_range.w>0)&&(ir_output[i][p_h][p_w].up_range.h>0)){
+		memcpy(ir_output[i][p_h][p_w].down, input_data, ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c*sizeof(float) ); 
+		input_data = input_data + ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c;
+	}
+	if((ir_output[i][p_h][p_w].left_range.w>0)&&(ir_output[i][p_h][p_w].left_range.h>0)){
+		memcpy(ir_output[i][p_h][p_w].down, input_data, ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c*sizeof(float) ); 
+		input_data = input_data + ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c;
+	}
+      }
+
+
+
+}
+
+
+
+
 inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int startfrom, int upto,  network net){
 	int part = part_id[p_h][p_w];
         //std::cout << "==========Begin=============: " << p_h<<"   "<<p_w<< std::endl;
@@ -396,7 +474,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			cropped_output = net.layers[i].output;
 		}
 
-
+		int ir_data_size = 0;
 		//What should we record for the current layer?
 		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
 			//std::cout << "Down: " << std::endl;
@@ -407,6 +485,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			down_index.h1 -= reuse_output_ranges[part][i].h1;
 			down_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(down_index);
+			ir_data_size = ir_data_size + (down_index.w2 - down_index.w1 + 1)*(down_index.h2 - down_index.h1 + 1);  
 			ir_output[i][p_h][p_w].down =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							down_index.w1, down_index.w2, 
 							down_index.h1, down_index.h2);
@@ -421,6 +500,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			right_index.h1 -= reuse_output_ranges[part][i].h1;
 			right_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(right_index);
+			ir_data_size = ir_data_size + (right_index.w2 - right_index.w1 + 1)*(right_index.h2 - right_index.h1 + 1);  
 			ir_output[i][p_h][p_w].right =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							right_index.w1, right_index.w2, 
 							right_index.h1, right_index.h2);
@@ -437,6 +517,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			up_index.h1 -= reuse_output_ranges[part][i].h1;
 			up_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(up_index);
+			ir_data_size = ir_data_size + (up_index.w2 - up_index.w1 + 1)*(up_index.h2 - up_index.h1 + 1);  
 			ir_output[i][p_h][p_w].up =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							up_index.w1, up_index.w2, 
 							up_index.h1, up_index.h2);
@@ -451,12 +532,15 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			left_index.h1 -= reuse_output_ranges[part][i].h1;
 			left_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(left_index);
+			ir_data_size = ir_data_size + (left_index.w2 - left_index.w1 + 1)*(left_index.h2 - left_index.h1 + 1);  
 			ir_output[i][p_h][p_w].left =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							left_index.w1, left_index.w2, 
 							left_index.h1, left_index.h2);
 
 		}
 
+		if(net.layers[i].out_c * ir_data_size * sizeof(float) > 0)
+		 std::cout << "The size of overlapped data for part "<< part << " at layer "<< i <<" is:"<< (float)(net.layers[i].out_c * ir_data_size * sizeof(float))/1024.0/1024.0 << std::endl;
 
 		int up = 0;
 		int left = 0;	
