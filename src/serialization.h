@@ -233,18 +233,22 @@ inline void result_ir_data_deserialization(network net, int part, float* input, 
 
       for(int i = startfrom; i < upto; ++i){
 	if(result_up[part][i]==1){
+		ir_output[i][p_h][p_w].up = (float*)malloc(ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w].up, input_data, ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w].up_range.w*ir_output[i][p_h][p_w].up_range.h*net.layers[i].out_c;
 	}
 	if(result_left[part][i]==1){
+		ir_output[i][p_h][p_w].left = (float*)malloc(ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w].left, input_data, ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w].left_range.w*ir_output[i][p_h][p_w].left_range.h*net.layers[i].out_c;
 	}
 	if(result_down[part][i]==1){
+		ir_output[i][p_h][p_w].down = (float*)malloc(ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w].down, input_data, ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w].down_range.w*ir_output[i][p_h][p_w].down_range.h*net.layers[i].out_c;
 	}
 	if(result_right[part][i]==1){
+		ir_output[i][p_h][p_w].right = (float*)malloc(ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w].right, input_data, ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h*net.layers[i].out_c;
 	}

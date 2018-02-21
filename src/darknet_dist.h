@@ -622,7 +622,6 @@ void fork_input_reuse(int startfrom, float* stage_in, network net){
       part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
 				reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
 				reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
-
 				std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
 	 			print_subindex(reuse_input_ranges[part][startfrom]);
     }

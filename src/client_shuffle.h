@@ -310,7 +310,6 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
         }else if(strcmp (request_type,"ir_data") == 0){
      	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	     std::cout << "For partition number: "<< job_id << ", reuse data "<< bytes_length << " has been arrived at victim client...."<< std::endl;
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id] << " has been arrived at victim client.."<< std::endl;
