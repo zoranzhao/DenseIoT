@@ -54,7 +54,7 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
 		need_ir_data[part_id[p_h][p_w]]=0;
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(part_data[part_id[p_h][p_w]], 
-			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}
     }
@@ -63,20 +63,16 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
 		need_ir_data[part_id[p_h][p_w]]=1;
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(part_data[part_id[p_h][p_w]], 
-			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}
     }
-
-
-
     char reg[10] = "register";
-
-    for(part = 0; part < PARTITIONS; part ++){
-      printf("Putting jobs %d\n", part);
-      put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
-    }
     ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
+
+
+
+
 
     float* data;
     int part_id;

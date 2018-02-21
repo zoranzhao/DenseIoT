@@ -211,7 +211,7 @@ inline void forward_network_dist(network *netp, network orig)
 	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(part_data[part_id[p_h][p_w]], 
-			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}
     }
@@ -219,7 +219,7 @@ inline void forward_network_dist(network *netp, network orig)
 	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(part_data[part_id[p_h][p_w]], 
-			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}
     }

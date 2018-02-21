@@ -117,7 +117,7 @@ inline float* req_ir_data_serialization(network net, int part, int startfrom, in
       int p_w = part % PARTITIONS_W;
       float *output;
       output = (float*)malloc(ir_data_size[part]*sizeof(float));
-      std::cout  << "The total number of bytes in this partition ... "<< ir_data_size[part] << std::endl;
+      //std::cout  << "The total number of bytes in this partition ... "<< ir_data_size[part] << std::endl;
       //int profile_num = 0;
 
       for(int i = startfrom; i < upto; i ++){
@@ -197,7 +197,7 @@ inline float* result_ir_data_serialization(network net, int part, int startfrom,
       int p_w = part % PARTITIONS_W;
       float *output;
       output = (float*)malloc(result_ir_data_size[part]*sizeof(float));
-      std::cout  << "The total number of bytes in this partition ... "<< result_ir_data_size[part] << std::endl;
+      //std::cout  << "The total number of bytes in this partition ... "<< result_ir_data_size[part] << std::endl;
       //int profile_num = 0;
 
       for(int i = startfrom; i < upto; i ++){

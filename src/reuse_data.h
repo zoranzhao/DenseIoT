@@ -401,7 +401,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			cropped_output = net.layers[i].output;
 		}
 
-		int ir_data_size = 0;
+
 		//What should we record for the current layer?
 		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
 			//std::cout << "Down: " << std::endl;
@@ -412,7 +412,6 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			down_index.h1 -= reuse_output_ranges[part][i].h1;
 			down_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(down_index);
-			ir_data_size = ir_data_size + (down_index.w2 - down_index.w1 + 1)*(down_index.h2 - down_index.h1 + 1);  
 			ir_output[i][p_h][p_w].down =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							down_index.w1, down_index.w2, 
 							down_index.h1, down_index.h2);
@@ -427,7 +426,6 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			right_index.h1 -= reuse_output_ranges[part][i].h1;
 			right_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(right_index);
-			ir_data_size = ir_data_size + (right_index.w2 - right_index.w1 + 1)*(right_index.h2 - right_index.h1 + 1);  
 			ir_output[i][p_h][p_w].right =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							right_index.w1, right_index.w2, 
 							right_index.h1, right_index.h2);
@@ -444,7 +442,6 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			up_index.h1 -= reuse_output_ranges[part][i].h1;
 			up_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(up_index);
-			ir_data_size = ir_data_size + (up_index.w2 - up_index.w1 + 1)*(up_index.h2 - up_index.h1 + 1);  
 			ir_output[i][p_h][p_w].up =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							up_index.w1, up_index.w2, 
 							up_index.h1, up_index.h2);
@@ -459,15 +456,14 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 			left_index.h1 -= reuse_output_ranges[part][i].h1;
 			left_index.h2 -= reuse_output_ranges[part][i].h1;
 			//print_subindex(left_index);
-			ir_data_size = ir_data_size + (left_index.w2 - left_index.w1 + 1)*(left_index.h2 - left_index.h1 + 1);  
 			ir_output[i][p_h][p_w].left =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
 							left_index.w1, left_index.w2, 
 							left_index.h1, left_index.h2);
 
 		}
 
-		if(net.layers[i].out_c * ir_data_size * sizeof(float) > 0)
-		 std::cout << "The size of overlapped data for part "<< part << " at layer "<< i <<" is:"<< (float)(net.layers[i].out_c * ir_data_size * sizeof(float))/1024.0/1024.0 << std::endl;
+
+
 
 		int up = 0;
 		int left = 0;	
