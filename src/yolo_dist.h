@@ -1,7 +1,7 @@
 #include "darknet_dist.h"
 #include "gateway.h"
 #include "client.h"
-
+#include "client_shuffle.h"
 void get_image(image* im, int* im_id){
     unsigned int size;
     float* data;
@@ -237,15 +237,26 @@ inline void forward_network_dist(network *netp, network orig)
        if(data == NULL) {printf("%d parts out of the %d are processes locally\n", part, PARTITIONS); break;}
        std::cout << "=======================: " << part_id << std::endl;
 
+
+
+
        //net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        //net = forward_stage_reuse( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
        if(part_id==3||part_id==5||part_id==7||part_id==1){
-		std::cout << "For partition number: "<< part_id << ", the size of reuse data to be transfered: "<< ir_data_size[part_id]<< std::endl;
+		std::cout << "For partition number: "<< part_id << ", the size of reuse data to be retrieved: "<< ir_data_size[part_id]<< std::endl;
 		float* reuse_data = req_ir_data_serialization(net, part_id, startfrom, upto);
 		req_ir_data_deserialization(net, part_id, reuse_data, startfrom, upto);
        }       
 
        net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+
+
+       if(part_id==0||part_id==2||part_id==4||part_id==6||part_id==8){
+		std::cout << "For partition number: "<< part_id << ", the size of reuse data to be stored: "<< result_ir_data_size[part_id]<< std::endl;
+		float* reuse_data = result_ir_data_serialization(net, part_id, startfrom, upto);
+		result_ir_data_deserialization(net, part_id, reuse_data, startfrom, upto);
+       }       
+
 
        join_output(part_id, net.layers[upto].output,  stage_out, upto, net);
        free(data);

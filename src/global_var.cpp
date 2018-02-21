@@ -47,3 +47,6 @@ int result_left[PARTITIONS][STAGES];
 int result_right[PARTITIONS][STAGES];
 int result_down[PARTITIONS][STAGES];
 unsigned int result_ir_data_size[PARTITIONS];
+
+//Indicating whether a particular partition require intermediate data or not
+int need_ir_data[PARTITIONS];

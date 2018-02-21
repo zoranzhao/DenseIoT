@@ -8,13 +8,10 @@ inline void forward_network_dist_gateway(network *netp, network orig)
     int startfrom = 0;
     int upto = STAGES-1;
 
-
     float* stage_in = net.input; 
 
     fork_input(startfrom, stage_in, net);
     char reg[10] = "register";
-
-
 
     for(part = 0; part < PARTITIONS; part ++){
       printf("Putting jobs %d\n", part);

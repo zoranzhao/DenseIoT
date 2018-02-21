@@ -133,7 +133,7 @@ extern int result_left[PARTITIONS][STAGES];
 extern int result_right[PARTITIONS][STAGES];
 extern int result_down[PARTITIONS][STAGES];
 extern unsigned int result_ir_data_size[PARTITIONS];
-
+extern int need_ir_data[PARTITIONS];
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2);
 sub_index calculate_range(sub_index output, layer l);

@@ -1,6 +1,43 @@
 #include "darknet_dist.h"
 
-inline void forward_network_dist_gateway(network *netp, network orig)
+void froward_result_to_gateway(std::string thread_name);
+
+
+void send_ir_data(dataBlob* blob, const char *dest_ip, int portno)
+{
+     int sockfd;
+     struct sockaddr_in serv_addr;
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        sock_error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
+     serv_addr.sin_port = htons(portno);
+
+     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+	sock_error("ERROR connecting");
+
+     char request_type[10] = "ir_data";
+     write_sock(sockfd, request_type, 10);
+
+     char *blob_buffer;
+     unsigned int bytes_length;
+     int job_id;
+
+     blob_buffer = (char*)(blob -> getDataPtr());
+     job_id = blob -> getID();
+     bytes_length = blob -> getSize();
+     write_sock(sockfd, (char*)&job_id, sizeof(job_id));
+     write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
+     write_sock(sockfd, blob_buffer, bytes_length);
+
+     close(sockfd);
+}
+
+
+
+inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
 {
     int part;
     network net = *netp;
@@ -10,7 +47,29 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 
     float* stage_in = net.input; 
 
-    fork_input(startfrom, stage_in, net);
+    //Partition and shuffle the input data for the processing stage
+    fork_input_reuse(startfrom, stage_in, net);
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		need_ir_data[part_id[p_h][p_w]]=0;
+		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		put_job(part_data[part_id[p_h][p_w]], 
+			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			part_id[p_h][p_w]);
+	}
+    }
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		need_ir_data[part_id[p_h][p_w]]=1;
+		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		put_job(part_data[part_id[p_h][p_w]], 
+			input_ranges[part_id[p_h][p_w]][startfrom].w*input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
+			part_id[p_h][p_w]);
+	}
+    }
+
+
+
     char reg[10] = "register";
 
     for(part = 0; part < PARTITIONS; part ++){
@@ -18,7 +77,6 @@ inline void forward_network_dist_gateway(network *netp, network orig)
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), part);
     }
     ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
-
 
     float* data;
     int part_id;
@@ -32,31 +90,32 @@ inline void forward_network_dist_gateway(network *netp, network orig)
 	   break;
        }
        std::cout<< "Processing task "<< part_id <<std::endl;
-       net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
+       net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
     }
-
+    
 
 }
 
 
 
-inline float *network_predict_dist(network *net, float *input)
+inline float *network_predict_dist_shuffle(network *net, float *input)
 {
     network orig = *net;
     net->input = input;
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_gateway(net, orig);
+    forward_network_dist_gateway_shuffle(net, orig);
     float *out = net->output;
     *net = orig;
     return out;
 }
 
 
-void client_compute(network *netp, unsigned int number_of_jobs, std::string thread_name)
+
+void client_compute_shuffle(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
 
     network *net = netp;
@@ -66,17 +125,6 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
 
-#ifdef DEBUG_DIST
-    image **alphabet = load_alphabet();
-    list *options = read_data_cfg((char*)"cfg/coco.data");
-    char *name_list = option_find_str(options, (char*)"names", (char*)"data/names.list");
-    char **names = get_labels(name_list);
-    char filename[256];
-    char outfile[256];
-    float thresh = .24;
-    float hier_thresh = .5;
-    float nms=.3;
-#endif
 
     int j;
     int id = 0;//5000 > id > 0
@@ -84,39 +132,10 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
     for(cnt = 0; cnt < number_of_jobs; cnt ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
-
 	id = cnt;
         load_image_by_number(&sized, id);
         float *X = sized.data;
-        double t1=what_time_is_it_now();
-	network_predict_dist(net, X);
-        double t2=what_time_is_it_now();
-
-#ifdef DEBUG_DIST
-	sprintf(filename, "data/val2017/%d.jpg", id);
-	sprintf(outfile, "%d", id);
-        layer l = net->layers[net->n-1];
-        float **masks = 0;
-        if (l.coords > 4){
-            masks = (float **)calloc(l.w*l.h*l.n, sizeof(float*));
-            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = (float *)calloc(l.coords-4, sizeof(float *));
-        }
-        float **probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes + 1, sizeof(float *));
-	printf("%s: Predicted in %f s.\n", filename, t2 - t1);
-        image im = load_image_color(filename,0,0);
-        box *boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
-        get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
-        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-        save_image(im, outfile);
-        free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);
-        if (l.coords > 4){
-        	free_ptrs((void **)masks, l.w*l.h*l.n);
-	}
-        free_image(im);
-#endif
+	network_predict_dist_shuffle(net, X);
         free_image(sized);
     }
 #ifdef NNPACK
@@ -126,7 +145,56 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
 }
 
 
-inline void steal_through_gateway(network *netp, std::string thread_name){
+dataBlob* steal_and_return_shuffle(network net, const char *dest_ip, int portno)
+{
+     int sockfd;
+     struct sockaddr_in serv_addr;
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        sock_error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
+     serv_addr.sin_port = htons(portno);
+
+     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+        sock_error("ERROR connecting");
+
+     char request_type[10] = "steals";
+     write_sock(sockfd, request_type, 10);
+
+
+     char *blob_buffer;
+     unsigned int bytes_length;
+     int job_id;
+     read_sock(sockfd, (char*)&job_id, sizeof(job_id));
+     read_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
+     blob_buffer = (char*)malloc(bytes_length);
+     if (blob_buffer==NULL) {printf("(char*)malloc(bytes_length) failed\n"); exit (1);}
+     read_sock(sockfd, blob_buffer, bytes_length);
+
+     if(need_ir_data[job_id]==1){
+	     char *reuse_data;
+	     unsigned int reuse_data_length;
+	     int reuse_part_id;
+	     read_sock(sockfd, (char*)&reuse_part_id, sizeof(reuse_part_id));
+	     read_sock(sockfd, (char*)&reuse_data_length, sizeof(reuse_data_length));
+	     reuse_data = (char*)malloc(reuse_data_length);
+	     read_sock(sockfd, reuse_data, reuse_data_length);
+	     req_ir_data_deserialization(net, reuse_part_id, (float*)reuse_data, 0, STAGES-1);
+	     free(reuse_data);
+     }
+
+     close(sockfd);
+     dataBlob* ret = (new dataBlob((void*)blob_buffer, bytes_length, job_id)) ;
+     return ret;
+}
+
+
+
+
+
+inline void steal_through_gateway_shuffle(network *netp, std::string thread_name){
     netp->truth = 0;
     netp->train = 0;
     netp->delta = 0;
@@ -150,45 +218,30 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
     struct sockaddr_in addr;
 
     while(1){
-        //t0 = get_real_time_now();
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
-	//std::cout << "Stolen address from the gateway is: " << inet_ntoa(addr.sin_addr) << std::endl;
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
-		//If the stolen address is a broadcast address, steal again 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		//std::cout << "Nothing is registered in the gateway device, sleep for a while" << std::endl;
 		continue;
 	}
-	dataBlob* blob = steal_and_return(inet_ntoa(addr.sin_addr), PORTNO);
+	dataBlob* blob = steal_and_return_shuffle(*netp, inet_ntoa(addr.sin_addr), PORTNO);
         if(blob->getID() == -1){
-		//Have stolen nothing, this can happen if a registration remote call happens
-		//after an check call happens to the gateway
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		//std::cout << "The victim has already finished current job list" << std::endl;
-		//std::cout << "Wait for a while until next stealing iteration" << std::endl;
 		continue;
 	}
-        //t1 =  get_real_time_now() - t0;
-        //std::cout << "Steal cost is: "<<t1<< std::endl;
-        //t0 = get_real_time_now();
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
 	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
-	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+	net = forward_stage_reuse_full(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 	free(data);
 	delete blob;
-	//blob -> setData((void*)(net.layers[upto].output));
-	//blob -> setSize(net.layers[upto].outputs*sizeof(float));
-        //t1 =  get_real_time_now() - t0;
-        //std::cout << "Exec cost is: "<<t1<< std::endl;
-        //t0 =  get_real_time_now();
-	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
-	//send_result(blob, AP, SMART_GATEWAY);
+	if(need_ir_data[part_id]==0){//Doesn't need intermediate data, which means it will generate IR data
+	        float* reuse_data = result_ir_data_serialization(*netp, part_id, 0, STAGES-1);
+		dataBlob* ir_blob = (new dataBlob((void*)reuse_data, result_ir_data_size[part_id], part_id)) ;
+		send_ir_data(ir_blob, inet_ntoa(addr.sin_addr), PORTNO);
+		delete ir_blob;
+	}
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), part_id);
-        //t1 =  get_real_time_now() - t0;
-        //std::cout << "Send result cost is: "<<t1<< std::endl;
-
     }
 #ifdef NNPACK
     pthreadpool_destroy(netp->threadpool);
@@ -197,7 +250,7 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 }
 
 
-void serve_steal_and_gather_result(int portno)
+void serve_steal_and_gather_result_shuffle(network net, int portno)
 {
    int sockfd, newsockfd;
    socklen_t clilen;
@@ -248,6 +301,20 @@ void serve_steal_and_gather_result(int portno)
 	     write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     write_sock(newsockfd, blob_buffer, bytes_length);
 	     free(blob_buffer);
+	     if(need_ir_data[job_id]==1){
+		float* reuse_data = req_ir_data_serialization(net, job_id, 0, STAGES-1);
+		write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+		write_sock(newsockfd, (char*)&ir_data_size[job_id], sizeof(ir_data_size[job_id]));
+		write_sock(newsockfd, (char*)reuse_data, ir_data_size[job_id]);
+		free(reuse_data);
+	     }
+        }else if(strcmp (request_type,"ir_data") == 0){
+     	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id] << " has been arrived at victim client"<< std::endl;
+	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
         }
 	//free(blob_buffer);//
      	close(newsockfd);
@@ -257,28 +324,23 @@ void serve_steal_and_gather_result(int portno)
 }
 
 
-void steal_server(std::string thread_name){
-   serve_steal_and_gather_result( PORTNO );
-}
-
-void froward_result_to_gateway(std::string thread_name){
-    while(1){
-	dataBlob* blob = result_queue.Dequeue();
-	send_result(blob, AP, SMART_GATEWAY);
-    }
+void steal_server_shuffle(network net, std::string thread_name){
+   serve_steal_and_gather_result_shuffle(net, PORTNO);
 }
 
 
-void victim_client(){
+
+
+void victim_client_shuffle(){
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    network net = reshape_network(0, STAGES-1, *netp);
+    network net = reshape_network_shuffle(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_compute, &net, number_of_jobs, "client_compute");
-    std::thread t2(steal_server, "steal_server");
+    std::thread t1(client_compute_shuffle, &net, number_of_jobs, "client_compute");
+    std::thread t2(steal_server_shuffle, net, "steal_server");
     std::thread t3(froward_result_to_gateway, "froward_result_to_gateway");
     t1.join();
     t2.join();
@@ -286,15 +348,15 @@ void victim_client(){
 }
 
 
-void idle_client(){
+void idle_client_shuffle(){
     unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    network net = reshape_network(0, STAGES-1, *netp);
+    network net = reshape_network_shuffle(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(steal_through_gateway, &net,  "steal_forward");
+    std::thread t1(steal_through_gateway_shuffle, &net,  "steal_forward");
     std::thread t2(froward_result_to_gateway, "froward_result_to_gateway");
     t1.join();
     t2.join();
