@@ -174,6 +174,7 @@ dataBlob* steal_and_return_shuffle(network net, const char *dest_ip, int portno)
      read_sock(sockfd, blob_buffer, bytes_length);
 
      if(need_ir_data[job_id]==1){
+	     std::cout << "Stealing reuse data for partition number: "<< job_id << std::endl;
 	     char *reuse_data;
 	     unsigned int reuse_data_length;
 	     int reuse_part_id;
@@ -239,6 +240,7 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	        float* reuse_data = result_ir_data_serialization(*netp, part_id, 0, STAGES-1);
 		dataBlob* ir_blob = (new dataBlob((void*)reuse_data, result_ir_data_size[part_id], part_id)) ;
 		send_ir_data(ir_blob, inet_ntoa(addr.sin_addr), PORTNO);
+	        std::cout << "For partition number: "<< part_id << ", reuse data "<< result_ir_data_size[part_id] << " has been sent to victim client"<< std::endl;
 		delete ir_blob;
 	}
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), part_id);
@@ -302,9 +304,10 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     write_sock(newsockfd, blob_buffer, bytes_length);
 	     free(blob_buffer);
 	     if(need_ir_data[job_id]==1){
+	        std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
 		float* reuse_data = req_ir_data_serialization(net, job_id, 0, STAGES-1);
 		write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-		write_sock(newsockfd, (char*)&ir_data_size[job_id], sizeof(ir_data_size[job_id]));
+		write_sock(newsockfd, (char*)&(ir_data_size[job_id]), sizeof(ir_data_size[job_id]));
 		write_sock(newsockfd, (char*)reuse_data, ir_data_size[job_id]);
 		free(reuse_data);
 	     }
@@ -315,6 +318,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id] << " has been arrived at victim client"<< std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
+	     free(blob_buffer);
         }
 	//free(blob_buffer);//
      	close(newsockfd);
