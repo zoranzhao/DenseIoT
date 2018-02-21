@@ -87,6 +87,7 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        }
        std::cout<< "Processing task "<< part_id <<std::endl;
        net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+       std::cout<< "Processed task "<< part_id <<std::endl;
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
     }
