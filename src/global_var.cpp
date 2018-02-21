@@ -41,3 +41,9 @@ int left[PARTITIONS][STAGES];
 int right[PARTITIONS][STAGES];
 int down[PARTITIONS][STAGES];
 unsigned int ir_data_size[PARTITIONS];
+
+int result_up[PARTITIONS][STAGES];
+int result_left[PARTITIONS][STAGES];	
+int result_right[PARTITIONS][STAGES];
+int result_down[PARTITIONS][STAGES];
+unsigned int result_ir_data_size[PARTITIONS];

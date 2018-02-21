@@ -128,6 +128,12 @@ extern int right[PARTITIONS][STAGES];
 extern int down[PARTITIONS][STAGES];
 extern unsigned int ir_data_size[PARTITIONS];
 
+extern int result_up[PARTITIONS][STAGES];
+extern int result_left[PARTITIONS][STAGES];	
+extern int result_right[PARTITIONS][STAGES];
+extern int result_down[PARTITIONS][STAGES];
+extern unsigned int result_ir_data_size[PARTITIONS];
+
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2);
 sub_index calculate_range(sub_index output, layer l);
@@ -137,6 +143,10 @@ float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh
 void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void copy_input_to_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void numbering_part_id();
+
+
+
+void print_subindex(sub_index index);
 #endif
 
 
