@@ -291,7 +291,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     put_result((void*)blob_buffer, bytes_length, job_id);
 	     //std::cout << "At time " << g_t1 << ", put result " << job_id << " into res_queue" <<std::endl;  
 	}else if(strcmp (request_type,"steals") == 0){
-	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     try_get_job((void**)&blob_buffer, &bytes_length, &job_id);
 	     if(blob_buffer == NULL) {bytes_length = 4; blob_buffer = (char*)malloc(bytes_length+1); }
 	     //std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
@@ -305,6 +305,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 		write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		write_sock(newsockfd, (char*)&(ir_data_size[job_id]), sizeof(ir_data_size[job_id]));
 		write_sock(newsockfd, (char*)reuse_data, ir_data_size[job_id]);
+	        std::cout << "Served the stealing of reuse data for partition number: "<< job_id << std::endl;
 		free(reuse_data);
 	     }
         }else if(strcmp (request_type,"ir_data") == 0){
