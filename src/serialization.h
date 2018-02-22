@@ -171,7 +171,6 @@ inline void req_ir_data_deserialization(network net, int part, float* input, int
 
       for(int i = startfrom; i < upto; ++i){
 	if(up[part][i]==1){
-		std::cout << "" << std::endl;
 		ir_output[i][p_h-1][p_w].down = (float*)malloc(   ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h-1][p_w].down, input_data, ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c;
