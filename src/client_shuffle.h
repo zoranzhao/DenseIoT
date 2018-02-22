@@ -53,7 +53,7 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        }else{
 		net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data[part_id], startfrom, upto, net);
        }
-       if(need_ir_data[part_id]==1){set_coverage(part_id);}
+       if(need_ir_data[part_id]==0){set_coverage(part_id);}
 
        std::cout<< "Processed task "<< part_id <<std::endl;
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
@@ -313,7 +313,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	    	write_sock(newsockfd, blob_buffer, bytes_length);
 	     }else{
 		     if(need_ir_data[job_id]==0){
-			std::cout << "Serve steal of part number "<< job_id << "no need for reused data..." << std::endl;
+			std::cout << "Serve steal of part number "<< job_id << " no need for reused data..." << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 			write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 			write_sock(newsockfd, blob_buffer, bytes_length);
