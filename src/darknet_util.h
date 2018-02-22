@@ -150,10 +150,16 @@ void copy_input_to_output(float* input, float* output, int w, int h, int c, int 
 void numbering_part_id();
 void clear_coverage();
 bool is_part_ready(int part_id);
-
-
-
 void print_subindex(sub_index index);
+
+
+//Global variables for MapReduce-like task distribution
+
+extern ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];
+extern sub_index input_ranges_mr[PARTITIONS][STAGES];//Required input ranges for each layer
+extern sub_index output_ranges_mr[PARTITIONS][STAGES];//Corrrect output ranges for each layer
+
+
 #endif
 
 
