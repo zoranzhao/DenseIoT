@@ -236,11 +236,11 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	size = blob -> getSize();
 	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
 
-	if(ready == 1)
-		net = forward_stage_reuse_full(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
-	else 
+	if( ready == 0 && need_ir_data[part_id]==1){
 		net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
-
+	}else{ 
+		net = forward_stage_reuse_full(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+	}
 	free(data);
 	delete blob;
 	if(need_ir_data[part_id]==0){//Doesn't need intermediate data, which means it will generate IR data
