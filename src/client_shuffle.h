@@ -311,6 +311,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	    	write_sock(newsockfd, blob_buffer, bytes_length);
 	     }else{
 		     if(need_ir_data[job_id]==0){
+			std::cout << "Serve steal of part number "<< job_id << "no need for reused data..." << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 			write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 			write_sock(newsockfd, blob_buffer, bytes_length);
@@ -331,6 +332,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		    	write_sock(newsockfd, (char*)part_data[job_id], bytes_length);
+			std::cout << "Serve the stealing of reuse data for partition number: "<< job_id<<", well it is not ready yet ...." << std::endl;
 			job_id = -1; 
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		     }
@@ -344,7 +346,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id] << " has been arrived at victim client.."<< std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
-	     set_covered(job_id);
+	     set_coverage(job_id);
 	     free(blob_buffer);
         }
 	//free(blob_buffer);//

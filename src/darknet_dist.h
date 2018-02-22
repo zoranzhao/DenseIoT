@@ -207,7 +207,7 @@ inline bool is_part_ready(int part_id){
 }
 
 
-inline void set_covered(int part_id){
+inline void set_coverage(int part_id){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    coverage[p_h][p_w] = true;
