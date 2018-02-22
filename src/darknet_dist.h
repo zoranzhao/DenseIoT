@@ -156,7 +156,7 @@ void numbering_part_id(){
 
 }
 
-void clear_coverage(){
+inline void clear_coverage(){
   for(int i = 0; i < PARTITIONS_H; i++){
     for(int j = 0; j < PARTITIONS_W; j++){
        coverage[i][j] = 0;
@@ -165,7 +165,7 @@ void clear_coverage(){
 }
 
 
-bool is_part_ready(int part_id){
+inline bool is_part_ready(int part_id){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    bool ready = true;
@@ -205,6 +205,14 @@ bool is_part_ready(int part_id){
    return ready;
 
 }
+
+
+inline void set_covered(int part_id){
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
+   coverage[p_h][p_w] = true;
+}
+
 
 sub_index calculate_range(sub_index output, layer l){
     sub_index input; 
