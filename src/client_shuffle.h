@@ -53,6 +53,8 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        }else{
 		net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data[part_id], startfrom, upto, net);
        }
+       if(need_ir_data[part_id]==1){set_coverage(part_id);}
+
        std::cout<< "Processed task "<< part_id <<std::endl;
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
