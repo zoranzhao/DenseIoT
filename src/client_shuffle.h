@@ -330,7 +330,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 			bytes_length = input_ranges[job_id][0].w*input_ranges[job_id][0].h*net.layers[0].c*sizeof(float);
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-		    	write_sock(newsockfd, part_data[job_id], bytes_length);
+		    	write_sock(newsockfd, (char*)part_data[job_id], bytes_length);
 			job_id = -1; 
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		     }

@@ -155,8 +155,8 @@ void clear_coverage(){
 
 
 bool is_part_ready(int part_id){
-   int p_w = part_id%PARTITONS_W;
-   int p_h = part_id/PARTITONS_W;
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
    bool ready = true;
 
    //check down block
