@@ -234,7 +234,7 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
 
 	if( ready == 0 && need_ir_data[part_id]==1){
 		net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
