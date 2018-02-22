@@ -143,6 +143,17 @@ void numbering_part_id(){
        id ++;
     }
   }
+  for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+    for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+	need_ir_data[part_id[p_h][p_w]]=0;
+    }
+  }
+  for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+    for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+	need_ir_data[part_id[p_h][p_w]]=1;
+    }
+  }
+
 }
 
 void clear_coverage(){
