@@ -110,6 +110,8 @@ extern float* part_data[PARTITIONS];
 extern sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 extern sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 extern input_dim dims[STAGES];
+extern float* reuse_part_data[PARTITIONS];
+
 
 //Partition overlap
 extern int overlaps[STAGES];
@@ -143,6 +145,8 @@ float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh
 void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void copy_input_to_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2);
 void numbering_part_id();
+void clear_coverage();
+bool is_part_ready(int part_id);
 
 
 

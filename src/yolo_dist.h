@@ -210,7 +210,7 @@ inline void forward_network_dist(network *netp, network orig)
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
-		put_job(part_data[part_id[p_h][p_w]], 
+		put_job(reuse_part_data[part_id[p_h][p_w]], 
 			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}
@@ -218,7 +218,7 @@ inline void forward_network_dist(network *netp, network orig)
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		printf("Putting jobs %d\n", part_id[p_h][p_w]);
-		put_job(part_data[part_id[p_h][p_w]], 
+		put_job(reuse_part_data[part_id[p_h][p_w]], 
 			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			part_id[p_h][p_w]);
 	}

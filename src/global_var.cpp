@@ -48,5 +48,12 @@ int result_right[PARTITIONS][STAGES];
 int result_down[PARTITIONS][STAGES];
 unsigned int result_ir_data_size[PARTITIONS];
 
+float* reuse_part_data[PARTITIONS];
+int coverage[PARTITIONS_H][PARTITIONS_W];
+
+
 //Indicating whether a particular partition require intermediate data or not
 int need_ir_data[PARTITIONS];
+
+
+

@@ -145,7 +145,55 @@ void numbering_part_id(){
   }
 }
 
+void clear_coverage(){
+  for(int i = 0; i < PARTITIONS_H; i++){
+    for(int j = 0; j < PARTITIONS_W; j++){
+       coverage[i][j] = 0;
+    }
+  }
+}
 
+
+bool is_part_ready(int part_id){
+   int p_w = part_id%PARTITONS_W;
+   int p_h = part_id/PARTITONS_W;
+   bool ready = true;
+
+   //check down block
+   if(p_h + 1 < PARTITIONS_H){
+	if(coverage[p_h+1][p_w] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check right block
+   if(p_w + 1 < PARTITIONS_W){
+	if(coverage[p_h][p_w+1] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check left block
+   if(p_w > 0){
+	if(coverage[p_h][p_w-1] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check up block
+   if(p_h > 0){
+	if(coverage[p_h-1][p_w] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   return ready;
+
+}
 
 sub_index calculate_range(sub_index output, layer l){
     sub_index input; 
@@ -445,8 +493,6 @@ inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom,
 		}
 
 
-
-
 		int up = 0;
 		int corner = 0;
 		int left = 0;		
@@ -616,20 +662,23 @@ void fork_input(int startfrom, float* stage_in, network net){
 
 void fork_input_reuse(int startfrom, float* stage_in, network net){
 
+    //If the neighbour data  
+    fork_input(startfrom, stage_in, net);
+
     int part;
     //Prepare the input data for each partition   
     for(part = 0; part < PARTITIONS; part ++) { 
-      part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
-				reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
-				reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
-				std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
-	 			print_subindex(reuse_input_ranges[part][startfrom]);
+      reuse_part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
+			reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
+			reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
+			std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
+	 		print_subindex(reuse_input_ranges[part][startfrom]);
     }
 
 }
 
-void join_output(int part, float* part_data, float* stage_out, int upto, network net){
-    reshape_output(part_data, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
+void join_output(int part, float* part_result, float* stage_out, int upto, network net){
+    reshape_output(part_result, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
 			(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
 			output_ranges[part][upto].w1, output_ranges[part][upto].w2,
 			output_ranges[part][upto].h1, output_ranges[part][upto].h2);
