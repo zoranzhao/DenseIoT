@@ -57,3 +57,11 @@ int need_ir_data[PARTITIONS];
 
 
 
+//Global variables for MapReduce-like task distribution 
+ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];
+sub_index input_ranges_mr[PARTITIONS][STAGES];      	  //Required input ranges for each layer
+sub_index output_ranges_mr[PARTITIONS][STAGES];     	  //Corrrect output ranges for each layer
+
+
+
+
