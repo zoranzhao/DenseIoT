@@ -50,10 +50,10 @@ extern "C"{
 #define DARKNET_UTIL__H
 
 #define DEBUG_DIST 0
-#define STAGES 16
-#define PARTITIONS_W 4
-#define PARTITIONS_H 4 
-#define PARTITIONS 16
+#define STAGES 4
+#define PARTITIONS_W 2
+#define PARTITIONS_H 2 
+#define PARTITIONS 4
 #define THREAD_NUM 1
 
 
@@ -79,12 +79,14 @@ typedef struct overlapped_data{
    float *up;
    float *left;
    float *corner;
+   float *corner_mr[4];
    
    sub_index down_range;
    sub_index right_range;
    sub_index left_range;
    sub_index up_range;
 
+   sub_index corner_range_mr[4];
    sub_index corner_range;
 
 } ir_data;
@@ -154,11 +156,28 @@ void print_subindex(sub_index index);
 
 
 //Global variables for MapReduce-like task distribution
-
+extern float* part_data_mr[PARTITIONS];
+extern float* output_part_data_mr[PARTITIONS];
 extern ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];
 extern sub_index input_ranges_mr[PARTITIONS][STAGES];//Required input ranges for each layer
 extern sub_index output_ranges_mr[PARTITIONS][STAGES];//Corrrect output ranges for each layer
 
+extern int up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+
+
+extern int result_up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int result_left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int result_right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int result_down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+
+
+extern unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+extern unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 
 #endif
 

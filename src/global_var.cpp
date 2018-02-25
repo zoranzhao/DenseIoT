@@ -61,7 +61,24 @@ int need_ir_data[PARTITIONS];
 ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];
 sub_index input_ranges_mr[PARTITIONS][STAGES];      	  //Required input ranges for each layer
 sub_index output_ranges_mr[PARTITIONS][STAGES];     	  //Corrrect output ranges for each layer
+float* part_data_mr[PARTITIONS];
+float* output_part_data_mr[PARTITIONS];
 
+int up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+
+int result_up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int result_left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int result_right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int result_down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+
+
+unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
+unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 
 
 

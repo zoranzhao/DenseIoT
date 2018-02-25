@@ -3,6 +3,8 @@
 #include "gateway_shuffle.h"
 #include "client.h"
 #include "client_shuffle.h"
+#include "client_mr.h"
+
 void get_image(image* im, int* im_id){
     unsigned int size;
     float* data;

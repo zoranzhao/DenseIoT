@@ -1,286 +1,23 @@
-#include "darknet_util.h"
-#include "reuse_data.h"
-#include "distriot.h"
+#include "darknet_dist.h"
+#include "serialization_mr.h"
 
-#ifndef DARKNET_DIST__H 
-#define DARKNET_DIST__H
-
+#ifndef DARKNET_DIST_MR__H 
+#define DARKNET_DIST_MR__H
 
 
-
-void write_layer_test(network *netp, int idx)
-{
-    network net = *netp;
-    layer l = net.layers[idx];
-    FILE *p_file;
-
-    char filename[50];
-    sprintf(filename, "%s_%d.dat", get_layer_string(net.layers[idx + 1].type), idx + 1);
-    p_file = fopen(filename, "wb");
- 
-    fwrite(l.output, sizeof(float), l.outputs, p_file); 
-    fclose(p_file);
-}
-
-void read_layer_test(network *netp, int idx)
-{
-    network net = *netp;
-    layer l = net.layers[idx];
-    FILE *p_file;
-
-    char filename[50];
-    sprintf(filename, "%s_%d.dat", get_layer_string(net.layers[idx].type), idx);
-    p_file = fopen(filename, "rb");
-    fread(net.input, sizeof(float), l.inputs, p_file); 
-    fclose(p_file);
-
-}
-
-
-//Load images by name
-void load_image_by_number(image* img, unsigned int id){
-    int h = img->h;
-    int w = img->w;
-    char filename[256];
-    sprintf(filename, "data/val2017/%d.jpg", id);
-//#ifdef NNPACK
-//    int c = img->c;
-//    image im = load_image_thread(filename, 0, 0, c, net->threadpool);
-//    image sized = letterbox_image_thread(im, w, h, net->threadpool);
-//#else
-    image im = load_image_color(filename, 0, 0);
-    image sized = letterbox_image(im, w, h);
-//#endif
-    free_image(im);
-    img->data = sized.data;
-}
-
-//input(w*h) [dh1, dh2]    copy into ==> output  [0, dh2 - dh1]
-//	     [dw1, dw2]			         [0, dw2 - dw1]
-
-float* reshape_input(float* input, int w, int h, int c, int dw1, int dw2, int dh1, int dh2){
-
-   int out_w = dw2 - dw1 + 1;
-   int out_h = dh2 - dh1 + 1;
-   int i,j,k;
-   float* output = (float*) malloc( sizeof(float)*out_w*out_h*c );  
-   for(k = 0; k < c; ++k){
-     for(j = dh1; j < dh2+1; ++j){
-       for(i = dw1; i < dw2+1; ++i){
-           int in_index  = i + w*(j + h*k);
-           int out_index  = (i - dw1) + out_w*(j - dh1) + out_w*out_h*k;
-	   output[out_index] = input[in_index];
-       }
-     }
-   }
-   return output;
-
-}
-
-//input [0, dh2 - dh1]    copy into ==> output(w*h)   [dh1, dh2]
-//	[0, dw2 - dw1]			              [dw1, dw2]
-
-void reshape_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2){
-
-   int in_w = dw2 - dw1 + 1;
-   int in_h = dh2 - dh1 + 1;
-   int i,j,k;
-
-   for(k = 0; k < c; ++k){
-     for(j = 0; j < in_h; ++j){
-       for(i = 0; i < in_w; ++i){
-           int in_index  = i + in_w*(j + in_h*k);
-           int out_index  = (i + dw1) + w*(j + dh1) + w*h*k;
-	   output[out_index] = input[in_index];
-       }
-     }
-   }
-
-}
-//
-//input [0, dh2 - dh1]    copy into ==> output(w*h)   [dh1, dh2]
-//	[0, dw2 - dw1]			              [dw1, dw2]
-
-void copy_input_to_output(float* input, float* output, int w, int h, int c, int dw1, int dw2, int dh1, int dh2){
-
-   int in_w = dw2 - dw1 + 1;
-   int in_h = dh2 - dh1 + 1;
-   int i,j,k;
-
-   for(k = 0; k < c; ++k){
-     for(j = 0; j < in_h; ++j){
-       for(i = 0; i < in_w; ++i){
-           int in_index  = i + in_w*(j + in_h*k);
-           int out_index  = (i + dw1) + w*(j + dh1) + w*h*k;
-	   output[out_index] = input[in_index];
-       }
-     }
-   }
-
-}
-
-
-void print_array(char* filename, float* stage_out, int stage_outs, int line){
-    FILE *layerfile;
-    char layerdata[30];
-    int ii;
-    sprintf(layerdata, filename);
-    layerfile = fopen(layerdata, "w");  
-    for(ii = 0; ii < stage_outs; ii++){
-       fprintf(layerfile, "%.1f", stage_out[ii]);
-       if((ii+1)%line == 0) fprintf(layerfile, "\n");
-    }
-    fclose(layerfile);
-}
-
-
-
-void numbering_part_id(){
-  int id = 0;
-  for(int i = 0; i < PARTITIONS_H; i++){
-    for(int j = 0; j < PARTITIONS_W; j++){
-       part_id[i][j] = id;
-       id ++;
-    }
-  }
-  for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
-    for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
-	need_ir_data[part_id[p_h][p_w]]=0;
-    }
-  }
-  for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
-    for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
-	need_ir_data[part_id[p_h][p_w]]=1;
-    }
-  }
-
-}
-
-inline void clear_coverage(){
-  for(int i = 0; i < PARTITIONS_H; i++){
-    for(int j = 0; j < PARTITIONS_W; j++){
-       coverage[i][j] = 0;
-    }
-  }
-}
-
-
-inline bool is_part_ready(int part_id){
-   int p_w = part_id%PARTITIONS_W;
-   int p_h = part_id/PARTITIONS_W;
-   bool ready = true;
-
-   //check down block
-   if(p_h + 1 < PARTITIONS_H){
-	if(coverage[p_h+1][p_w] == 0) {
-		ready = false;
-		return ready;
-	}	
-   }
-
-   //check right block
-   if(p_w + 1 < PARTITIONS_W){
-	if(coverage[p_h][p_w+1] == 0) {
-		ready = false;
-		return ready;
-	}	
-   }
-
-   //check left block
-   if(p_w > 0){
-	if(coverage[p_h][p_w-1] == 0) {
-		ready = false;
-		return ready;
-	}	
-   }
-
-   //check up block
-   if(p_h > 0){
-	if(coverage[p_h-1][p_w] == 0) {
-		ready = false;
-		return ready;
-	}	
-   }
-
-   return ready;
-
-}
-
-
-inline void set_coverage(int part_id){
-   int p_w = part_id%PARTITIONS_W;
-   int p_h = part_id/PARTITIONS_W;
-   coverage[p_h][p_w] = true;
-}
-
-
-sub_index calculate_range(sub_index output, layer l){
-    sub_index input; 
-    if(l.type == CONVOLUTIONAL){
-       input.w1 = (output.w1*l.stride - l.size/2)>0   ? (output.w1*l.stride - l.size/2) : 0;
-       input.w2 = (output.w2*l.stride + l.size/2)<(l.w-1) ? (output.w2*l.stride + l.size/2) : (l.w-1);
-       input.h1 = (output.h1*l.stride - l.size/2)>0   ? (output.h1*l.stride - l.size/2) : 0;
-       input.h2 = (output.h2*l.stride + l.size/2)<(l.h-1) ? (output.h2*l.stride + l.size/2) : (l.h-1);
-    }else if(l.type == MAXPOOL){
-       input.w1 = output.w1*l.stride;
-       input.w2 = output.w2*l.stride + l.stride -1;
-       input.h1 = output.h1*l.stride;
-       input.h2 = output.h2*l.stride + l.stride -1;
-    }
-
-    input.w = input.w2 -input.w1 + 1;
-    input.h = input.h2 -input.h1 + 1;
-
-    return input;
+void join_output_mr(int part, float* part_result, float* stage_out, int upto, network net){
+    reshape_output(part_result, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
+			(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
+			output_ranges_mr[part][upto].w1, output_ranges_mr[part][upto].w2,
+			output_ranges_mr[part][upto].h1, output_ranges_mr[part][upto].h2);
 }
 
 
 
 
-
-sub_index calculate_layeroutput_range(sub_index input, layer l){
-    sub_index output; 
-    if(l.type == CONVOLUTIONAL){
-	if((input.w1) > 0) {input.w1 = input.w1 + l.size/2;}
-	if((input.w2) < l.w-1) {input.w2 = input.w2 - l.size/2;} 
-	output.w1 = input.w1/l.stride; 
-	output.w2 = input.w2/l.stride;
-	if((input.h1) > 0) {input.h1 = input.h1 + l.size/2;}
-	if((input.h2) < l.h-1) {input.h2 = input.h2 - l.size/2;} 
-	output.h1 = input.h1/l.stride; 
-	output.h2 = input.h2/l.stride;
-    }else if(l.type == MAXPOOL){
-	output.w1 = input.w1/l.stride; 
-	output.w2 = input.w2/l.stride;
-	output.h1 = input.h1/l.stride; 
-	output.h2 = input.h2/l.stride;
-    }
-
-    output.w = output.w2 -output.w1 + 1;
-    output.h = output.h2 -output.h1 + 1;
-
-    return output;
-}
-
-
-sub_index crop_ranges(sub_index large, sub_index small){
-
-    sub_index output; 
-    output.w1 = small.w1 - large.w1 ; 
-    output.w2 = small.w1 - large.w1 + (small.w2 - small.w1);
-    output.h1 = small.h1 - large.h1; 
-    output.h2 = small.h1 - large.h1 + (small.h2 - small.h1);
-    
-
-    output.w = output.w2 -output.w1 + 1;
-    output.h = output.h2 -output.h1 + 1;
-    return output;
-}
-
-
-inline void stage_output_partition(int w1, int w2, int h1, int h2){
-    int w = w2 - w1 + 1;
-    int h = h2 - h1 + 1;
+inline void layer_output_partition_mr(network net, int i){//partition the output of layer i
+    int w = net.layers[i].out_w;
+    int h = net.layers[i].out_h;
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
 
@@ -292,24 +29,24 @@ inline void stage_output_partition(int w1, int w2, int h1, int h2){
     int start_h = 0;
     int end_h = stride_h - 1;
 
-    for(int i = 0; i < partition_h; i++){
+    for(int p_h = 0; p_h < partition_h; p_h++){
        start_w = 0;
        end_w = stride_w - 1;	 
-       for(int j = 0; j < partition_w; j++){
-	   stage_output_partition_ranges[part_id[i][j]].w1 = start_w;
-	   stage_output_partition_ranges[part_id[i][j]].w2 = end_w;
-	   stage_output_partition_ranges[part_id[i][j]].h1 = start_h;
-	   stage_output_partition_ranges[part_id[i][j]].h2 = end_h;
-	   stage_output_partition_ranges[part_id[i][j]].h = end_h - start_h + 1;
-	   stage_output_partition_ranges[part_id[i][j]].w = end_w - start_w + 1;
+       for(int p_w = 0; p_w < partition_w; p_w++){
+	   output_ranges_mr[part_id[p_h][p_w]][i].w1 = start_w;
+	   output_ranges_mr[part_id[p_h][p_w]][i].w2 = end_w;
+	   output_ranges_mr[part_id[p_h][p_w]][i].h1 = start_h;
+	   output_ranges_mr[part_id[p_h][p_w]][i].h2 = end_h;
+	   output_ranges_mr[part_id[p_h][p_w]][i].h = end_h - start_h + 1;
+	   output_ranges_mr[part_id[p_h][p_w]][i].w = end_w - start_w + 1;
 	   start_w = end_w + 1;
-	   if(j == (partition_w-2))
+	   if(p_w == (partition_w-2))
 	       end_w = w - 1;
 	   else
 	       end_w = end_w + stride_w; 	 
        }
        start_h = end_h + 1;
-       if(i == (partition_h-2))
+       if(p_h == (partition_h-2))
 	       end_h = h - 1;
        else
 	       end_h = end_h + stride_h; 
@@ -317,105 +54,192 @@ inline void stage_output_partition(int w1, int w2, int h1, int h2){
 }
 
 
-inline network reshape_network(int startfrom, int upto, network net){
-    numbering_part_id();
-    //network net = *netp;//Be careful because we are using a shallow copy here
-    int i;
-    int ii;
+inline void cal_each_layer_partition_mr(network net, int startfrom, int upto){
+    //Calculate the output partitions for each layer within the range
+    for(int i = startfrom; i < upto+1; i++){
+	layer_output_partition_mr(net, i);
+    }
 
-    //Number of partition assume it is even number
-    //Network parameters that are required for processing partition
-    int partition_w = PARTITIONS_W;
-    int partition_h = PARTITIONS_H;
-    int partition = partition_h*partition_w;
-    //int startfrom = 0;
-    //int upto = startfrom + STAGES-1; //This stage execute upto this layer
-     
-    int p_w;
-    int p_h;
-
-    //Calculate the ranges after partition     
-    layer l = net.layers[upto];
-    stage_output_partition(0, l.out_w-1, 0, l.out_h-1);
-    //Assumption l.out_w and l.out_h are all even numbers here
-    for(p_h = 0; p_h < partition_h; p_h++){
-	   for(p_w = 0; p_w < partition_w; p_w++){ 
-	      sub_index tmp_range = stage_output_partition_ranges[part_id[p_h][p_w]];
-	      for(i = upto; i >= startfrom; i--){
-    		  layer l = net.layers[i];
-		  tmp_range = calculate_range(tmp_range, l);
-		  input_ranges[part_id[p_h][p_w]][i] = tmp_range;
-	      }
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = 0; p_w < PARTITIONS_W; p_w++){ 
+	   for(int i = upto; i >= startfrom; i--){
+		//Calculate input_ranges	
+		input_ranges_mr[part_id[p_h][p_w]][i] = calculate_range(output_ranges_mr[part_id[p_h][p_w]][i], net.layers[i]);
 	   }
-    }
-
-    for(int p = 0; p < partition; p++){
-    	for(i = upto; i >= startfrom; i--){
-	    output_ranges[p][i] = calculate_layeroutput_range(input_ranges[p][i], net.layers[i]);
 	}
     }
 
-    for(i = upto; i >= startfrom; i--){
-        for(int p = 0; p < partition; p++){
-	    std::cout << "At layer: "<< i <<" ... :" << std::endl;
-	    print_subindex(output_ranges[p][i]);
+}
+
+
+void cal_reuse_overlap_range_mr(int p_h, int p_w,  int i, sub_index output_ranges_mr[][STAGES], sub_index required_range) {
+    //printf("Reusing in the output of layer %d... ...: \n", i);
+    //printf("Partition %d, left %d, above %d\n", part_id[p_h][p_w], part_id[p_h][(p_w-1)>0?(p_w-1):0], part_id[(p_h-1)>0?(p_h-1):0][p_w]);
+    int p_id = part_id[p_h][p_w];
+    int p_id_nearby;
+
+    //Processing the block on the left
+    //printf("Existing output whose overlap can be reused in output of layer %d... ...: \n", i);
+    if(p_w > 0) {
+			p_id_nearby = part_id[p_h][p_w-1]; 
+			ir_output_mr[i][p_h][p_w-1].right_range.w1 = required_range.w1;
+			ir_output_mr[i][p_h][p_w-1].right_range.w2 = output_ranges_mr[p_id_nearby][i].w2;
+			ir_output_mr[i][p_h][p_w-1].right_range.h1 = output_ranges_mr[p_id_nearby][i].h1;
+			ir_output_mr[i][p_h][p_w-1].right_range.h2 = output_ranges_mr[p_id_nearby][i].h2;
+
+			ir_output_mr[i][p_h][p_w-1].right_range.w = ir_output_mr[i][p_h][p_w-1].right_range.w2 - ir_output_mr[i][p_h][p_w-1].right_range.w1 + 1;
+			ir_output_mr[i][p_h][p_w-1].right_range.h = ir_output_mr[i][p_h][p_w-1].right_range.h2 - ir_output_mr[i][p_h][p_w-1].right_range.h1 + 1;
+			//std::cout << "Left block ..." << std::endl;
+			//print_subindex(ir_output[i][p_h][p_w-1].right_range);
+    }
+    //Processing the block on the right
+    if((p_w + 1) < PARTITIONS_W ) {
+			p_id_nearby = part_id[p_h][p_w+1]; 
+			ir_output_mr[i][p_h][p_w+1].left_range.w1 = output_ranges_mr[p_id_nearby][i].w1;
+			ir_output_mr[i][p_h][p_w+1].left_range.w2 = required_range.w2;
+			ir_output_mr[i][p_h][p_w+1].left_range.h1 = output_ranges_mr[p_id_nearby][i].h1;
+			ir_output_mr[i][p_h][p_w+1].left_range.h2 = output_ranges_mr[p_id_nearby][i].h2;
+			ir_output_mr[i][p_h][p_w+1].left_range.w = ir_output_mr[i][p_h][p_w+1].left_range.w2 - ir_output_mr[i][p_h][p_w+1].left_range.w1 + 1;
+			ir_output_mr[i][p_h][p_w+1].left_range.h = ir_output_mr[i][p_h][p_w+1].left_range.h2 - ir_output_mr[i][p_h][p_w+1].left_range.h1 + 1;
+			//std::cout << "Right block ..." << std::endl;
+			//print_subindex(ir_output[i][p_h][p_w+1].left_range);
+    }
+
+    //Processing the block above
+    if(p_h > 0) {
+			p_id_nearby = part_id[p_h-1][p_w]; 
+			ir_output_mr[i][p_h-1][p_w].down_range.w1 = output_ranges_mr[p_id_nearby][i].w1;
+			ir_output_mr[i][p_h-1][p_w].down_range.w2 = output_ranges_mr[p_id_nearby][i].w2;
+			ir_output_mr[i][p_h-1][p_w].down_range.h1 = required_range.h1;
+			ir_output_mr[i][p_h-1][p_w].down_range.h2 = output_ranges_mr[p_id_nearby][i].h2;
+			ir_output_mr[i][p_h-1][p_w].down_range.w = ir_output_mr[i][p_h-1][p_w].down_range.w2 - ir_output_mr[i][p_h-1][p_w].down_range.w1 + 1;
+			ir_output_mr[i][p_h-1][p_w].down_range.h = ir_output_mr[i][p_h-1][p_w].down_range.h2 - ir_output_mr[i][p_h-1][p_w].down_range.h1 + 1;
+			//std::cout << "Up block ..." << std::endl;
+			//print_subindex(ir_output[i][p_h-1][p_w].down_range);
+    }
+    //Processing the block down
+    if((p_h + 1) < PARTITIONS_H ) {
+			p_id_nearby = part_id[p_h+1][p_w]; 
+			ir_output_mr[i][p_h+1][p_w].up_range.w1 = output_ranges_mr[p_id_nearby][i].w1;
+			ir_output_mr[i][p_h+1][p_w].up_range.w2 = output_ranges_mr[p_id_nearby][i].w2;
+			ir_output_mr[i][p_h+1][p_w].up_range.h1 = output_ranges_mr[p_id_nearby][i].h1;
+			ir_output_mr[i][p_h+1][p_w].up_range.h2 = required_range.h2;
+			ir_output_mr[i][p_h+1][p_w].up_range.w = ir_output_mr[i][p_h+1][p_w].up_range.w2 - ir_output_mr[i][p_h+1][p_w].up_range.w1 + 1;
+			ir_output_mr[i][p_h+1][p_w].up_range.h = ir_output_mr[i][p_h+1][p_w].up_range.h2 - ir_output_mr[i][p_h+1][p_w].up_range.h1 + 1;
+			//std::cout << "Down block ..." << std::endl;
+			//print_subindex(ir_output[i][p_h+1][p_w].up_range);
+    }
+
+//left up corner
+    if(p_w > 0 && p_h > 0) {
+	p_id_nearby = part_id[p_h-1][p_w-1]; 
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].w1 = required_range.w1;
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].h1 = required_range.h1;
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].w2 = output_ranges_mr[p_id_nearby][i].w2;
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].h2 = output_ranges_mr[p_id_nearby][i].h2;
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].w = ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].w2 - ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].w1 + 1;
+	ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].h = ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].h2 - ir_output_mr[i][p_h-1][p_w-1].corner_range_mr[3].h1 + 1;
+    }    
+//right up corner
+    if((p_w + 1) < PARTITIONS_W && p_h > 0) {
+	p_id_nearby = part_id[p_h-1][p_w+1]; 
+	ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].w1 = output_ranges_mr[p_id_nearby][i].w1;
+	ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].h1 = required_range.h1;
+	ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].w2 = required_range.w2;
+	ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].h2 = output_ranges_mr[p_id_nearby][i].h2;
+        ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].w = ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].w2 - ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].w1 + 1;
+        ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].h = ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].h2 - ir_output_mr[i][p_h-1][p_w+1].corner_range_mr[2].h1 + 1;
+    }    
+//left down corner
+    if(p_w > 0 && (p_h + 1) < PARTITIONS_H) {
+	p_id_nearby = part_id[p_h+1][p_w-1]; 
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].w1 = required_range.w1;
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].h1 = output_ranges_mr[p_id_nearby][i].h1;
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].w2 = output_ranges_mr[p_id_nearby][i].w2;
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].h2 = required_range.h2;
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].h = ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].h2 - ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].h1 + 1;
+	ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].w = ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].w2 - ir_output_mr[i][p_h+1][p_w-1].corner_range_mr[1].w1 + 1;
+    }    
+//right down corner
+    if((p_w + 1) < PARTITIONS_W && (p_h + 1) < PARTITIONS_H) {
+	p_id_nearby = part_id[p_h+1][p_w+1]; 
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w1 = output_ranges_mr[p_id_nearby][i].w1;
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h1 = output_ranges_mr[p_id_nearby][i].h1;
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w2 = required_range.w2;
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h2 = required_range.h2;
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h = ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h2 - ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h1 + 1;
+	ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w = ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w2 - ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w1 + 1;
+    }    
+
+
+
+}
+
+
+inline network reshape_network_mr(int startfrom, int upto, network net){
+    numbering_part_id();
+    cal_each_layer_partition_mr(net, startfrom, upto);
+
+
+    for(int i = upto; i >= startfrom; i--){
+        for(int p = 0; p < PARTITIONS; p++){
+	    std::cout << "The input at layer: "<< i <<" ... :" << std::endl;
+	    print_subindex(input_ranges_mr[p][i]);
+	    std::cout << "The output at layer: "<< i <<" ... :" << std::endl;
+	    print_subindex(output_ranges_mr[p][i]);
 	}
     }
 
-    for(p_h = 0; p_h < partition_h; p_h++){
-	for(p_w = 0; p_w < partition_w; p_w++){
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = 0; p_w < PARTITIONS_W; p_w++){
 	    for(int i = 0; i < STAGES; i++){
-		ir_output[i][p_h][p_w].down_range.w = 0;
-		ir_output[i][p_h][p_w].down_range.h = 0;
-		ir_output[i][p_h][p_w].right_range.w = 0;
-		ir_output[i][p_h][p_w].right_range.h = 0;
-		ir_output[i][p_h][p_w].corner_range.w = 0;
-		ir_output[i][p_h][p_w].corner_range.h = 0;
+		ir_output_mr[i][p_h][p_w].down_range.w = 0;
+		ir_output_mr[i][p_h][p_w].down_range.h = 0;
+		ir_output_mr[i][p_h][p_w].right_range.w = 0;
+		ir_output_mr[i][p_h][p_w].right_range.h = 0;
+		ir_output_mr[i][p_h][p_w].up_range.w = 0;
+		ir_output_mr[i][p_h][p_w].up_range.h = 0;
+		ir_output_mr[i][p_h][p_w].left_range.w = 0;
+		ir_output_mr[i][p_h][p_w].left_range.h = 0;
             }
         }
     }
-//--------------------------------------------------------------------------------------------------------------
-    for(p_h = 0; p_h < partition_h; p_h++){
-	for(p_w = 0; p_w < partition_w; p_w++){ 
-	    reuse_input_ranges[part_id[p_h][p_w]][upto] = input_ranges[part_id[p_h][p_w]][upto];//Cropped output ranges without overlap for each layer
-	    reuse_output_ranges[part_id[p_h][p_w]][upto] = output_ranges[part_id[p_h][p_w]][upto];
-
-	    sub_index tmp = cal_new_range(p_h, p_w, upto-1, &output_ranges[0], input_ranges[part_id[p_h][p_w]][upto]);
-	    tmp = calculate_range(tmp, net.layers[upto-1]);
-	    //printf("Required range at input of layer %d\n", upto-1);
-	    //print_subindex(tmp);
-	    reuse_input_ranges[part_id[p_h][p_w]][upto-1]  = tmp; 
-	    //reuse_output_ranges[part_id[p_h][p_w]][upto-1] = calculate_layeroutput_range(tmp, net.layers[upto-1]);
-
-	    for(i = upto-1; i > 0; i--){
-		tmp = cal_new_range(p_h, p_w, i-1, &output_ranges[0], tmp);
-		tmp = calculate_range(tmp, net.layers[i-1]);
-		//printf("Required range at input of layer %d\n", i-1);
-		//print_subindex(tmp);
-		reuse_input_ranges[part_id[p_h][p_w]][i-1]  = tmp; 
-	        //reuse_output_ranges[part_id[p_h][p_w]][i-1] = calculate_layeroutput_range(tmp, net.layers[i-1]);
+    //Calculate reuse
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = 0; p_w < PARTITIONS_W; p_w++){ 
+	    for(int i = upto; i > 0; i--){
+		cal_reuse_overlap_range_mr(p_h, p_w, i-1, &output_ranges_mr[0], input_ranges_mr[part_id[p_h][p_w]][i] );
 	    }
-	 }
-    }
-    for(int p = 0; p < partition; p++){
-    	for(i = upto; i >= startfrom; i--){
-	    reuse_output_ranges[p][i] = calculate_layeroutput_range(reuse_input_ranges[p][i], net.layers[i]);
 	}
     }
-//--------------------------------------------------------------------------------------------------------------
 
+/*
+    for(int i = upto-1; i >= startfrom; i--){
+	std::cout << "==========================At layer: "<< i <<" ... :" << std::endl;
+        for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+          for(int p_w = 0; p_w < PARTITIONS_W; p_w++){
+	    std::cout << "Partition: "<< part_id[p_h][p_w] <<" ... :" << std::endl;
 
-//Calculate reuse
-    for(p_h = 0; p_h < partition_h; p_h++){
-	for(p_w = 0; p_w < partition_w; p_w++){ 
-	    for(i = upto; i > 0; i--){
-		cal_reuse_overlap_range(p_h, p_w, i-1, &reuse_output_ranges[0], reuse_input_ranges[part_id[p_h][p_w]][i] );
+	    if(ir_output_mr[i][p_h][p_w].down_range.w>0&&ir_output_mr[i][p_h][p_w].down_range.h>0)
+		    {std::cout << "Down" << std::endl;   print_subindex(ir_output_mr[i][p_h][p_w].down_range);}
+	    if(ir_output_mr[i][p_h][p_w].right_range.w>0&&ir_output_mr[i][p_h][p_w].right_range.h>0)
+		    {std::cout << "Right" << std::endl;  print_subindex(ir_output_mr[i][p_h][p_w].right_range);}
+	    if(ir_output_mr[i][p_h][p_w].up_range.w>0&&ir_output_mr[i][p_h][p_w].up_range.h>0)
+		    {std::cout << "Up" << std::endl;     print_subindex(ir_output_mr[i][p_h][p_w].up_range);}
+	    if(ir_output_mr[i][p_h][p_w].left_range.w>0&&ir_output_mr[i][p_h][p_w].left_range.h>0)
+		    {std::cout << "Left" << std::endl;   print_subindex(ir_output_mr[i][p_h][p_w].left_range);}
+
+	    std::cout << "Printing corner ... ... " << std::endl; 
+	    for(int ii = 0; ii < 4; ii++){
+		if(ir_output_mr[i][p_h][p_w].corner_range_mr[ii].w > 0 && ir_output_mr[i][p_h][p_w].corner_range_mr[ii].h > 0){
+			std::cout << "Corner ID is: "<< ii << std::endl;		    
+			print_subindex(ir_output_mr[i][p_h][p_w].corner_range_mr[ii]);
+		}
 	    }
-	 }
+  	  }
+	}
     }
-
-
-
+*/
 
     stage_input_range.w1 = 0;
     stage_input_range.w2 = net.layers[startfrom].w-1;
@@ -424,6 +248,7 @@ inline network reshape_network(int startfrom, int upto, network net){
     stage_input_range.h2 = net.layers[startfrom].h-1;
     stage_input_range.h = net.layers[startfrom].h;
 
+
     stage_output_range.w1 = 0;
     stage_output_range.w2 = net.layers[upto].out_w-1;
     stage_output_range.w = net.layers[upto].out_w;
@@ -431,324 +256,276 @@ inline network reshape_network(int startfrom, int upto, network net){
     stage_output_range.h2 = net.layers[upto].out_h-1;
     stage_output_range.h = net.layers[upto].out_h;
 
+    cal_dependency_mr(net, startfrom, upto);
+    result_cal_dependency_mr(net, startfrom, upto);
+
     return net;
 }
 
 
-inline network forward_stage_reuse(int p_h, int p_w, float *input,int startfrom, int upto,  network net){
-	int part = part_id[p_h][p_w];
-        //std::cout << "==========Begin=============: " << p_h<<"   "<<p_w<< std::endl;
-
-	//Reshape first
-	net.input = input;
-	for(int i = startfrom; i < (upto+1); ++i){
-	    net.layers[i].h = (reuse_input_ranges[part][i].h2 - reuse_input_ranges[part][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
-	    net.layers[i].w = (reuse_input_ranges[part][i].w2 - reuse_input_ranges[part][i].w1 + 1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
-	    net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * net.layers[i].out_c; 
-	    net.layers[i].inputs = net.layers[i].h * net.layers[i].w * net.layers[i].c; 
-	}
-
-
-    	for(int i = startfrom; i < upto+1; i++){
-		//std::cout << "-----------At layer----------: " << i << std::endl;
-		//std::cout << "Input is: "<< std::endl;
-		//print_subindex(reuse_input_ranges[part][i]);
-		//std::cout << "Output is: "<< std::endl;
-		//print_subindex(reuse_output_ranges[part][i]);
-		net.layers[i].forward(net.layers[i], net);
-		float * cropped_output;
-	        if(net.layers[i].type == CONVOLUTIONAL){
-			//std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
-			layer l = net.layers[i]; 
-			sub_index tmp = crop_ranges(reuse_input_ranges[part][i], reuse_output_ranges[part][i]);   
-			cropped_output = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
-		}else{
-			cropped_output = net.layers[i].output;
-		}
-
-
-		//What should we record for the current layer?
-		if((ir_output[i][p_h][p_w].down_range.w>0)&&(ir_output[i][p_h][p_w].down_range.h>0)){
-			//std::cout << "Down: " << std::endl;
-			//print_subindex(ir_output[i][p_h][p_w].down_range);
-			sub_index down_index = ir_output[i][p_h][p_w].down_range;
-			down_index.w1 -= reuse_output_ranges[part][i].w1;
-			down_index.w2 -= reuse_output_ranges[part][i].w1;
-			down_index.h1 -= reuse_output_ranges[part][i].h1;
-			down_index.h2 -= reuse_output_ranges[part][i].h1;
-			//print_subindex(down_index);
-			ir_output[i][p_h][p_w].down =   reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
-							down_index.w1, down_index.w2, 
-							down_index.h1, down_index.h2);
-
-		}
-		if((ir_output[i][p_h][p_w].right_range.w>0)&&(ir_output[i][p_h][p_w].right_range.h>0)){
-			//std::cout << "Right: " << std::endl;
-			//print_subindex(ir_output[i][p_h][p_w].right_range);
-			sub_index right_index = ir_output[i][p_h][p_w].right_range;
-			right_index.w1 -= reuse_output_ranges[part][i].w1;
-			right_index.w2 -= reuse_output_ranges[part][i].w1;
-			right_index.h1 -= reuse_output_ranges[part][i].h1;
-			right_index.h2 -= reuse_output_ranges[part][i].h1;
-			//print_subindex(right_index);
-			ir_output[i][p_h][p_w].right =  reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
-							right_index.w1, right_index.w2, 
-							right_index.h1, right_index.h2);
-
-		}
-		if((ir_output[i][p_h][p_w].corner_range.w>0)&&(ir_output[i][p_h][p_w].corner_range.h>0)) {
-			//std::cout << "Corner: " << std::endl;
-			//print_subindex(ir_output[i][p_h][p_w].corner_range);
-			sub_index corner_index = ir_output[i][p_h][p_w].corner_range;
-			corner_index.w1 -= reuse_output_ranges[part][i].w1;
-			corner_index.w2 -= reuse_output_ranges[part][i].w1;
-			corner_index.h1 -= reuse_output_ranges[part][i].h1;
-			corner_index.h2 -= reuse_output_ranges[part][i].h1;
-			//print_subindex(corner_index);
-			ir_output[i][p_h][p_w].corner = reshape_input(cropped_output, reuse_output_ranges[part][i].w, reuse_output_ranges[part][i].h, net.layers[i].out_c, 
-							corner_index.w1, corner_index.w2, 
-							corner_index.h1, corner_index.h2);
-
-		}
-
-
-		int up = 0;
-		int corner = 0;
-		int left = 0;		
-		if(i < upto){
-	          if(net.layers[i+1].type == CONVOLUTIONAL){
-			//If next layer is a convlutional layer, then collect the adj parts output
-			//std::cout<< "We should gather the output adj parts from this layer..." <<std::endl;
-			if((p_h>0)&&(ir_output[i][p_h-1][p_w].down_range.w>0)&&(ir_output[i][p_h-1][p_w].down_range.h>0)){
-				//std::cout << "Require input from above part in this layer: " << std::endl;
-				up = 1;
-				//print_subindex(ir_output[i][p_h-1][p_w].down_range);
-			}
-			if((p_w>0)&&(ir_output[i][p_h][p_w-1].right_range.w>0)&&(ir_output[i][p_h][p_w-1].right_range.h>0)){
-				//std::cout << "Require input from left part in this layer: " << std::endl;
-				left = 1;
-				//print_subindex(ir_output[i][p_h][p_w-1].right_range);
-			}
-			if((p_h>0)&&(p_w>0)&&(ir_output[i][p_h-1][p_w-1].corner_range.w>0)&&(ir_output[i][p_h-1][p_w-1].corner_range.h>0)) {
-				//std::cout << "Require input from left above part in this layer: " << std::endl;
-				corner = 1;
-				//print_subindex(ir_output[i][p_h-1][p_w-1].corner_range);
-			}
-
-		  }
-                }
-
-		//std::cout<< ".....................OK, let us do it then....................." <<std::endl;
-		if(up == 1 && corner == 0){
-			//std::cout << "Input for next layer is: "<< std::endl;
-			//print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i+1]);
-			sub_index main_index;
-			sub_index up_index;
-
-			main_index.w2 = reuse_output_ranges[part_id[p_h][p_w]][i].w2 - reuse_output_ranges[part_id[p_h][p_w]][i].w1;
-			main_index.h2 = reuse_output_ranges[part_id[p_h][p_w]][i].h2 - reuse_output_ranges[part_id[p_h][p_w]][i].h1;
-			main_index.w1 = 0; main_index.w = main_index.w2 - main_index.w1 + 1;
-			main_index.h1 = 0; main_index.h = main_index.h2 - main_index.h1 + 1;
-			
-
-			up_index.w2 = ir_output[i][p_h-1][p_w].down_range.w2 - ir_output[i][p_h-1][p_w].down_range.w1;
-			up_index.h2 = ir_output[i][p_h-1][p_w].down_range.h2 - ir_output[i][p_h-1][p_w].down_range.h1;
-			up_index.w1 = 0; up_index.w = up_index.w2 - up_index.w1 + 1;
-			up_index.h1 = 0; up_index.h = up_index.h2 - up_index.h1 + 1;
-
-			main_index.h1 += up_index.h;
-			main_index.h2 += up_index.h;
-				
-			//print_subindex(main_index);
-			//print_subindex(up_index);
-                        copy_input_to_output(ir_output[i][p_h-1][p_w].down, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, up_index.w1, up_index.w2, up_index.h1, up_index.h2);
-                        copy_input_to_output(cropped_output, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
-
-
-		}else if(left == 1 && corner == 0){
-			//std::cout << "Input for next layer is: "<< std::endl;
-			//print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i+1]);
-			sub_index main_index;
-			sub_index left_index;
-
-			main_index.w2 = reuse_output_ranges[part_id[p_h][p_w]][i].w2 - reuse_output_ranges[part_id[p_h][p_w]][i].w1;
-			main_index.h2 = reuse_output_ranges[part_id[p_h][p_w]][i].h2 - reuse_output_ranges[part_id[p_h][p_w]][i].h1;
-			main_index.w1 = 0; main_index.w = main_index.w2 - main_index.w1 + 1;
-			main_index.h1 = 0; main_index.h = main_index.h2 - main_index.h1 + 1;
-			
-
-			left_index.w2 = ir_output[i][p_h][p_w-1].right_range.w2 - ir_output[i][p_h][p_w-1].right_range.w1;
-			left_index.h2 = ir_output[i][p_h][p_w-1].right_range.h2 - ir_output[i][p_h][p_w-1].right_range.h1;
-			left_index.w1 = 0; left_index.w = left_index.w2 - left_index.w1 + 1;
-			left_index.h1 = 0; left_index.h = left_index.h2 - left_index.h1 + 1;
-
-			main_index.w1 += left_index.w;
-			main_index.w2 += left_index.w;
-				
-			//print_subindex(main_index);
-			//print_subindex(left_index);
-                        copy_input_to_output(ir_output[i][p_h][p_w-1].right, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, left_index.w1, left_index.w2, left_index.h1, left_index.h2);
-                        copy_input_to_output(cropped_output, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
-
-          
-
-
-		}else if(corner == 1){
-			//std::cout << "Input for next layer is: "<< std::endl;
-			//print_subindex(reuse_input_ranges[part_id[p_h][p_w]][i+1]);
-			sub_index main_index;
-			sub_index left_index;
-			sub_index up_index;
-			sub_index corner_index;
-
-			main_index.w2 = reuse_output_ranges[part_id[p_h][p_w]][i].w2 - reuse_output_ranges[part_id[p_h][p_w]][i].w1;
-			main_index.h2 = reuse_output_ranges[part_id[p_h][p_w]][i].h2 - reuse_output_ranges[part_id[p_h][p_w]][i].h1;
-			main_index.w1 = 0; main_index.w = main_index.w2 - main_index.w1 + 1;
-			main_index.h1 = 0; main_index.h = main_index.h2 - main_index.h1 + 1;
-			
-
-			left_index.w2 = ir_output[i][p_h][p_w-1].right_range.w2 - ir_output[i][p_h][p_w-1].right_range.w1;
-			left_index.h2 = ir_output[i][p_h][p_w-1].right_range.h2 - ir_output[i][p_h][p_w-1].right_range.h1;
-			left_index.w1 = 0; left_index.w = left_index.w2 - left_index.w1 + 1;
-			left_index.h1 = 0; left_index.h = left_index.h2 - left_index.h1 + 1;
-
-			main_index.w1 += left_index.w;
-			main_index.w2 += left_index.w;
-				
-
-			up_index.w2 = ir_output[i][p_h-1][p_w].down_range.w2 - ir_output[i][p_h-1][p_w].down_range.w1;
-			up_index.h2 = ir_output[i][p_h-1][p_w].down_range.h2 - ir_output[i][p_h-1][p_w].down_range.h1;
-			up_index.w1 = 0; up_index.w = up_index.w2 - up_index.w1 + 1;
-			up_index.h1 = 0; up_index.h = up_index.h2 - up_index.h1 + 1;
-
-			main_index.h1 += up_index.h;
-			main_index.h2 += up_index.h;
-
-
-			corner_index.w2 = ir_output[i][p_h-1][p_w-1].corner_range.w2 - ir_output[i][p_h-1][p_w-1].corner_range.w1;
-			corner_index.h2 = ir_output[i][p_h-1][p_w-1].corner_range.h2 - ir_output[i][p_h-1][p_w-1].corner_range.h1;
-			corner_index.w1 = 0; corner_index.w = corner_index.w2 - corner_index.w1 + 1;
-			corner_index.h1 = 0; corner_index.h = corner_index.h2 - corner_index.h1 + 1;
-
-			left_index.h1 += corner_index.h;
-			left_index.h2 += corner_index.h;
-
-			up_index.w1 += corner_index.w;
-			up_index.w2 += corner_index.w;
-
-
-			//print_subindex(main_index);
-			//print_subindex(left_index);
-			//print_subindex(up_index);
-			//print_subindex(corner_index);
-
-                        copy_input_to_output(ir_output[i][p_h-1][p_w-1].corner, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, corner_index.w1, corner_index.w2, corner_index.h1, corner_index.h2);
-                        copy_input_to_output(ir_output[i][p_h][p_w-1].right, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, left_index.w1, left_index.w2, left_index.h1, left_index.h2);
-                        copy_input_to_output(ir_output[i][p_h-1][p_w].down, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, up_index.w1, up_index.w2, up_index.h1, up_index.h2);
-                        copy_input_to_output(cropped_output, net.input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
-						net.layers[i].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
-
-		}else {net.input = cropped_output;}
-
-	}
-        //std::cout << "==========Finish=============: " << part_id[p_h][p_w] << std::endl;
-
-	return net;
-
-}
-
-void fork_input(int startfrom, float* stage_in, network net){
+void fork_input_mr(int startfrom, float* stage_in, network net){
 
     int part;
     //Prepare the input data for each partition   
     for(part = 0; part < PARTITIONS; part ++) { 
-      part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
-					input_ranges[part][startfrom].w1, input_ranges[part][startfrom].w2, 
-					input_ranges[part][startfrom].h1, input_ranges[part][startfrom].h2);
-			 //printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[i].c, 
-			 //		input_ranges[p][i].w1, input_ranges[p][i].w2, input_ranges[p][i].h1, input_ranges[p][i].h2);
+      	part_data_mr[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h,  net.layers[startfrom].c, 
+					input_ranges_mr[part][startfrom].w1, input_ranges_mr[part][startfrom].w2, 
+					input_ranges_mr[part][startfrom].h1, input_ranges_mr[part][startfrom].h2);
+	//printf("%2d %4d %4d %4d %4d %4d %4d\n", (stage_input_range.w2 - stage_input_range.w1 + 1), (stage_input_range.h2 - stage_input_range.h1 + 1), net.layers[startfrom].c, 
+	//input_ranges_mr[part][startfrom].w1, input_ranges_mr[part][startfrom].w2, input_ranges_mr[part][startfrom].h1, input_ranges_mr[part][startfrom].h2);
     }
 
-}
-
-
-void fork_input_reuse(int startfrom, float* stage_in, network net){
-
-    //If the neighbour data  
-    fork_input(startfrom, stage_in, net);
-
-    int part;
-    //Prepare the input data for each partition   
-    for(part = 0; part < PARTITIONS; part ++) { 
-      reuse_part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
-			reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
-			reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
-			std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
-	 		print_subindex(reuse_input_ranges[part][startfrom]);
-    }
 
 }
 
-void join_output(int part, float* part_result, float* stage_out, int upto, network net){
-    reshape_output(part_result, stage_out, (stage_output_range.w2-stage_output_range.w1 + 1), 
-			(stage_output_range.h2-stage_output_range.h1 + 1), net.layers[upto].out_c, 
-			output_ranges[part][upto].w1, output_ranges[part][upto].w2,
-			output_ranges[part][upto].h1, output_ranges[part][upto].h2);
-}
-
-
-inline network forward_stage(int p_h, int p_w, float *input,int startfrom, int upto,  network net)
+//
+inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, int upto,  network net)
 {
+
     int part = part_id[p_h][p_w];
     net.input = input;
     //Reshape first
     for(int i = startfrom; i < (upto+1); ++i){
-	    net.layers[i].h = (input_ranges[part][i].h2 - input_ranges[part][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
-	    net.layers[i].w = (input_ranges[part][i].w2 - input_ranges[part][i].w1 + 1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
-	    net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * net.layers[i].out_c; 
-	    net.layers[i].inputs = net.layers[i].h * net.layers[i].w * net.layers[i].c; 
+	net.layers[i].h = (input_ranges_mr[part][i].h2 - input_ranges_mr[part][i].h1 + 1); net.layers[i].out_h = (net.layers[i].h/net.layers[i].stride); 
+	net.layers[i].w = (input_ranges_mr[part][i].w2 - input_ranges_mr[part][i].w1 + 1); net.layers[i].out_w = (net.layers[i].w/net.layers[i].stride); 
+	net.layers[i].outputs = net.layers[i].out_h * net.layers[i].out_w * net.layers[i].out_c; 
+	net.layers[i].inputs = net.layers[i].h * net.layers[i].w * net.layers[i].c; 
     }
 
-    int to_free = 0;
-    float * cropped_output;
 
-    for(int i = startfrom; i < (upto+1); ++i){	    
-	    net.layers[i].forward(net.layers[i], net);
-	    if (to_free == 1) {
-		free(cropped_output); 
-		to_free = 0; //Free the memory allocated by the reshape_input function call;
-	    }
-	    if(net.layers[i].type == CONVOLUTIONAL){
-		layer l = net.layers[i];
-	        //print_subindex(input_ranges[part][i]);
-	        //print_subindex(output_ranges[part][i]);
-		//printf("%2d, %2d, %2d\n", l.out_w, l.out_h, l.out_c);
-		//print_subindex(crop_ranges(input_ranges[part][i], output_ranges[part][i]));   
-		sub_index tmp = crop_ranges(input_ranges[part][i], output_ranges[part][i]);   
+    for(int i = startfrom; i < upto+1; i++){
+	net.layers[i].forward(net.layers[i], net);
+	float * cropped_output;
+	if(net.layers[i].type == CONVOLUTIONAL){
+		//std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
+		layer l = net.layers[i]; 
+		sub_index tmp = crop_ranges(input_ranges_mr[part][i], output_ranges_mr[part][i]);   
 		cropped_output = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
-		to_free = 1;
-	    } else {cropped_output = net.layers[i].output;}  
+	}else{
+		cropped_output = net.layers[i].output;
+	}
 
-	    net.input = cropped_output;
 
-	    //if(net.layers[i].truth) {
-		//    net.truth = net.layers[i].output;
-	    //}
+		//What should we record for the current layer?
+	if((ir_output_mr[i][p_h][p_w].down_range.w>0)&&(ir_output_mr[i][p_h][p_w].down_range.h>0)){
+		std::cout << "Down: " << std::endl;
+		print_subindex(ir_output_mr[i][p_h][p_w].down_range);
+		sub_index down_index = ir_output_mr[i][p_h][p_w].down_range;
+		down_index.w1 -= output_ranges_mr[part][i].w1;
+		down_index.w2 -= output_ranges_mr[part][i].w1;
+		down_index.h1 -= output_ranges_mr[part][i].h1;
+		down_index.h2 -= output_ranges_mr[part][i].h1;
+		print_subindex(down_index);
+		ir_output_mr[i][p_h][p_w].down = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
+							down_index.w1, down_index.w2, 
+							down_index.h1, down_index.h2);
+
+	}
+	if((ir_output_mr[i][p_h][p_w].right_range.w>0)&&(ir_output_mr[i][p_h][p_w].right_range.h>0)){
+		std::cout << "Right: " << std::endl;
+		print_subindex(ir_output_mr[i][p_h][p_w].right_range);
+		sub_index right_index = ir_output_mr[i][p_h][p_w].right_range;
+		right_index.w1 -= output_ranges_mr[part][i].w1;
+		right_index.w2 -= output_ranges_mr[part][i].w1;
+		right_index.h1 -= output_ranges_mr[part][i].h1;
+		right_index.h2 -= output_ranges_mr[part][i].h1;
+		print_subindex(right_index);
+		ir_output_mr[i][p_h][p_w].right =  reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
+							right_index.w1, right_index.w2, 
+							right_index.h1, right_index.h2);
+
+	}
+	//What should we record for the current layer?
+	if((ir_output_mr[i][p_h][p_w].up_range.w>0)&&(ir_output_mr[i][p_h][p_w].up_range.h>0)){
+		std::cout << "Up: " << std::endl;
+		print_subindex(ir_output_mr[i][p_h][p_w].up_range);
+		sub_index up_index = ir_output_mr[i][p_h][p_w].up_range;
+		up_index.w1 -= output_ranges_mr[part][i].w1;
+		up_index.w2 -= output_ranges_mr[part][i].w1;
+		up_index.h1 -= output_ranges_mr[part][i].h1;
+		up_index.h2 -= output_ranges_mr[part][i].h1;
+		print_subindex(up_index);
+		ir_output_mr[i][p_h][p_w].up = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
+							up_index.w1, up_index.w2, 
+							up_index.h1, up_index.h2);
+
+	}
+	if((ir_output_mr[i][p_h][p_w].left_range.w>0)&&(ir_output_mr[i][p_h][p_w].left_range.h>0)){
+		std::cout << "Left: " << std::endl;
+		print_subindex(ir_output_mr[i][p_h][p_w].left_range);
+		sub_index left_index = ir_output_mr[i][p_h][p_w].left_range;
+		left_index.w1 -= output_ranges_mr[part][i].w1;
+		left_index.w2 -= output_ranges_mr[part][i].w1;
+		left_index.h1 -= output_ranges_mr[part][i].h1;
+		left_index.h2 -= output_ranges_mr[part][i].h1;
+		print_subindex(left_index);
+		ir_output_mr[i][p_h][p_w].left = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
+							left_index.w1, left_index.w2, 
+							left_index.h1, left_index.h2);
+
+	}
+
+        for(int corner_number = 0; corner_number < 4; corner_number ++){
+	        if(ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w > 0 && ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h > 0 ){
+		    std::cout << "Corner: " << corner_number << std::endl;
+		    print_subindex(ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number]);
+		    sub_index corner_index = ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number];
+		    corner_index.w1 -= output_ranges_mr[part][i].w1;
+		    corner_index.w2 -= output_ranges_mr[part][i].w1;
+		    corner_index.h1 -= output_ranges_mr[part][i].h1;
+		    corner_index.h2 -= output_ranges_mr[part][i].h1;	    
+		    print_subindex(corner_index);
+		    ir_output_mr[i][p_h][p_w].corner_mr[corner_number] = 
+				reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
+							corner_index.w1, corner_index.w2, 
+							corner_index.h1, corner_index.h2);
+		}
+	}
+        
     }
-    if (to_free == 1) free(net.input);
-    //
+
+
+
+		
+
+
 
     return net; 
 }
 
 
+
+void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the input for part_id in layer i, from output of adj partitions in layer i-1
+        //part_data_mr[part_id];
+        int p_h = part / PARTITIONS_W; 
+        int p_w = part % PARTITIONS_W;
+        int cur_layer = layer_id;
+        int prev_layer = layer_id-1;
+	float * cropped_output;
+	if(net.layers[prev_layer].type == CONVOLUTIONAL){
+		std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
+		layer l = net.layers[prev_layer]; 
+		sub_index tmp = crop_ranges(input_ranges_mr[part][prev_layer], output_ranges_mr[part][prev_layer]);   
+		print_subindex(tmp);
+		std::cout << "l.out_w: " << l.out_w<< ", l.out_h: " << l.out_h<< ", l.out_c: " << l.out_c <<std::endl;
+		cropped_output = reshape_input(output_part_data_mr[part], l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+	}else{
+		cropped_output = output_part_data_mr[part];
+	}	
+
+
+
+	sub_index main_index;
+	main_index.w2 = output_ranges_mr[part_id[p_h][p_w]][prev_layer].w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+	main_index.h2 = output_ranges_mr[part_id[p_h][p_w]][prev_layer].h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+	main_index.w1 = output_ranges_mr[part_id[p_h][p_w]][prev_layer].w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1; 
+	main_index.h1 = output_ranges_mr[part_id[p_h][p_w]][prev_layer].h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;  
+	main_index.w = main_index.w2 - main_index.w1 + 1;
+	main_index.h = main_index.h2 - main_index.h1 + 1;
+	std::cout << "Processing the input data for partition " << part<< " at layer "<< layer_id << std::endl;
+	std::cout << "Main index is ... ... :" << std::endl;
+	print_subindex(main_index);
+	//print_subindex(output_ranges_mr[part_id[p_h][p_w]][i]);
+	//std::cout << "Required index from next layer is ... ... :" << std::endl;
+	//print_subindex(input_ranges_mr[part_id[p_h][p_w]][i+1]);
+	part_data_mr[part]= 
+		(float*)malloc(input_ranges_mr[part_id[p_h][p_w]][cur_layer].w*input_ranges_mr[part_id[p_h][p_w]][cur_layer].h*net.layers[prev_layer].out_c*sizeof(float));
+
+	copy_input_to_output(cropped_output, part_data_mr[part], input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+							net.layers[prev_layer].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
+
+
+	std::cout<< "Copy padding regions from other partitions" <<std::endl;
+	int reuse_h;
+	int reuse_w;
+	sub_index reuse_index;
+
+	if(up_mr[p_h][p_w][cur_layer] == 1){
+			reuse_h = p_h - 1; reuse_w = p_w;		
+			reuse_index.w2 = ir_output_mr[prev_layer][reuse_h][reuse_w].down_range.w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h2 = ir_output_mr[prev_layer][reuse_h][reuse_w].down_range.h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+			reuse_index.w1 = ir_output_mr[prev_layer][reuse_h][reuse_w].down_range.w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].down_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
+			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
+			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
+		        std::cout << "Up index is ... ... :" << std::endl;
+			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].down_range);
+			print_subindex(reuse_index);
+                        copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].down, part_data_mr[part], 
+						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
+	}
+	if(down_mr[p_h][p_w][cur_layer] == 1){
+			reuse_h = p_h + 1; reuse_w = p_w;		
+			reuse_index.w2 = ir_output_mr[prev_layer][reuse_h][reuse_w].up_range.w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h2 = ir_output_mr[prev_layer][reuse_h][reuse_w].up_range.h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+			reuse_index.w1 = ir_output_mr[prev_layer][reuse_h][reuse_w].up_range.w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].up_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
+			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
+			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
+		        std::cout << "Down index is ... ... :" << std::endl;
+			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].up_range);
+			print_subindex(reuse_index);
+                        copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].up, part_data_mr[part], 
+						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
+	}
+	if(left_mr[p_h][p_w][cur_layer] == 1){
+			reuse_h = p_h; reuse_w = p_w - 1;		
+			reuse_index.w2 = ir_output_mr[prev_layer][reuse_h][reuse_w].right_range.w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h2 = ir_output_mr[prev_layer][reuse_h][reuse_w].right_range.h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+			reuse_index.w1 = ir_output_mr[prev_layer][reuse_h][reuse_w].right_range.w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].right_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
+			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
+			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
+		        std::cout << "Left index is ... ... :" << std::endl;
+			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].right_range);
+			print_subindex(reuse_index);
+                        copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].right, part_data_mr[part], 
+						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
+	}
+	if(right_mr[p_h][p_w][cur_layer] == 1 == 1){
+			reuse_h = p_h; reuse_w = p_w + 1;		
+			reuse_index.w2 = ir_output_mr[prev_layer][reuse_h][reuse_w].left_range.w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h2 = ir_output_mr[prev_layer][reuse_h][reuse_w].left_range.h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+			reuse_index.w1 = ir_output_mr[prev_layer][reuse_h][reuse_w].left_range.w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].left_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
+			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
+			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
+		        std::cout << "Right index is ... ... :" << std::endl;
+			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].left_range);
+			print_subindex(reuse_index);
+                        copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].left, part_data_mr[part], 
+						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
+	}
+        for(int corner_num = 0; corner_num < 4; corner_num++){
+		if(corners_mr[corner_num][p_h][p_w][cur_layer] == 1){
+			if(corner_num == 0){reuse_h = p_h - 1; reuse_w = p_w - 1;}
+			if(corner_num == 1){reuse_h = p_h - 1; reuse_w = p_w + 1;}
+			if(corner_num == 2){reuse_h = p_h + 1; reuse_w = p_w - 1;}
+			if(corner_num == 3){reuse_h = p_h + 1; reuse_w = p_w + 1;}					
+			reuse_index.w2 = ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num].w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h2 = ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num].h2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;
+			reuse_index.w1 = ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num].w1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
+			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num].h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
+			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
+			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
+		        std::cout << "Corner index is ... ... :"<< corner_num << std::endl;
+			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num]);
+			print_subindex(reuse_index);
+
+                        copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].corner_mr[3-corner_num], part_data_mr[part], 
+						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
+						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
+		}
+	}
+        //std::cout << "==========Finish=============: " << part_id[p_h][p_w] << std::endl;
+
+
+}
+    
 
 #endif 
 
