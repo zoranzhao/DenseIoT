@@ -346,9 +346,10 @@ inline void req_ir_data_deserialization_mr(network net, int part, float* input, 
 	   if(corner_number == 1){reuse_h = p_h - 1; reuse_w = p_w + 1;}
 	   if(corner_number == 2){reuse_h = p_h + 1; reuse_w = p_w - 1;}
 	   if(corner_number == 3){reuse_h = p_h + 1; reuse_w = p_w + 1;}
-
-	   copy_size = 
-	ir_output_mr[prev][reuse_h][reuse_w].corner_range_mr[3-corner_number].w*ir_output_mr[prev][reuse_h][reuse_w].corner_range_mr[3-corner_number].h*net.layers[prev].out_c ;
+	   copy_size = ir_output_mr[prev][reuse_h][reuse_w].corner_range_mr[3-corner_number].w*
+			ir_output_mr[prev][reuse_h][reuse_w].corner_range_mr[3-corner_number].h*
+			net.layers[prev].out_c ;
+	   ir_output_mr[prev][reuse_h][reuse_w].corner_mr[3-corner_number] = (float*)malloc(copy_size*sizeof(float));
 	   memcpy(ir_output_mr[prev][reuse_h][reuse_w].corner_mr[3-corner_number], input_data, copy_size*sizeof(float) ); 
 	   input_data = input_data + copy_size;
 	  std::cout << "Deserializing the corner block of the corner:" << corner_number <<"   size is:" << copy_size << std::endl;
