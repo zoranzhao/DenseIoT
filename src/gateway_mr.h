@@ -1,8 +1,34 @@
-#include "darknet_dist.h"
+#include "darknet_dist_mr.h"
+//ACT_CLI
 
-void task_recorder(int portno)
+void send_result_mr(dataBlob* blob, const char *dest_ip, int portno)
+{
+     int sockfd;
+     struct sockaddr_in serv_addr;
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        sock_error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
+     serv_addr.sin_port = htons(portno);
+     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+	sock_error("ERROR connecting");
+     char *blob_buffer;
+     unsigned int bytes_length;
+     int job_id;
+     blob_buffer = (char*)(blob -> getDataPtr());
+     job_id = blob -> getID();
+     bytes_length = blob -> getSize();
+     write_sock(sockfd, (char*)&job_id, sizeof(job_id));
+     write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
+     write_sock(sockfd, blob_buffer, bytes_length);
+     close(sockfd);
+}
+
+
+void data_map_reduce(network net, int portno)
 {  
-   int task_total;
    int sockfd, newsockfd;
    socklen_t clilen;
    struct sockaddr_in serv_addr, cli_addr;
@@ -17,76 +43,73 @@ void task_recorder(int portno)
 	sock_error("ERROR on binding");
    listen(sockfd, 10);//back_log numbers 
    clilen = sizeof(cli_addr);
-   unsigned int bytes_length;
-   int job_num;
-   char request_type[10];
-   std::list< std::string > job_list;
-
    int job_id;
+   unsigned int bytes_length;
    char *blob_buffer;
-
+   std::list< std::string > cli_list;
+   std::list< int > job_id_list;
    while(1){
-     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	if (newsockfd < 0) sock_error("ERROR on accept");
-        read_sock(newsockfd, request_type, 10); 
-        if(strcmp (request_type,"register") == 0){
-	     //std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
-	     read_sock(newsockfd, (char*)&job_num, sizeof(job_num));
-	     if(job_num > 0){
-		job_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
-		//std::cout << "Register task" << std::endl;
-	     }else{
-		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
-		//std::cout << "Delete task" << std::endl;
-             }
-	     //std::cout << "Task list is ... : " << std::endl;
-	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
-		//std::cout <<  *it << std::endl;
-	     //}
-	}else if(strcmp (request_type,"steals") == 0){
-	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
-	     in_addr_t victim_addr;
-	     if( !(job_list.empty()) ){
-   	        std::string victim = job_list.front();
-	        job_list.pop_front();
-	        job_list.push_back(victim);
-	        victim_addr = inet_addr(victim.c_str());
-	     }else{
-		victim_addr = inet_addr("0.0.0.0");
-	     }
-	     
-	     write_sock(newsockfd, (char*)(&victim_addr), sizeof(in_addr_t));
-	     //std::cout << "Task list is ... : " << std::endl;
-	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
-		//std::cout <<  *it << std::endl;
-	     //}
-        }else if(strcmp (request_type,"result") == 0){
-	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	     blob_buffer = (char*)malloc(bytes_length);
-	     read_sock(newsockfd, blob_buffer, bytes_length);
-	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     int cli_id = 0;
-	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
+     //Receive the data from a single client;
+     int cli_id;
+     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+     read_sock(newsockfd, (char*)&cli_id, sizeof(cli_id));
+     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+     blob_buffer = (char*)malloc(bytes_length);
+     read_sock(newsockfd, blob_buffer, bytes_length);
+     close(newsockfd);
+     //Distribute the data 
+     fork_input_mr(0, (float*)blob_buffer, net);
+     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+	bytes_length = input_ranges_mr[cli_cnt][0].w*input_ranges_mr[cli_cnt][0].h*net.layers[0].c*sizeof(float);
+	dataBlob* blob = new dataBlob(part_data_mr[cli_cnt], bytes_length, cli_cnt); 
+        send_result_mr(blob, addr_list[cli_cnt], portno);
+       	free(part_data_mr[cli_cnt]);
+	delete blob;
+     }
+     for(int ii = 0; ii < STAGES - 1; ii ++){
+        for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+     	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	  blob_buffer = (char*)malloc(bytes_length);
+	  read_sock(newsockfd, blob_buffer, bytes_length);
+	  result_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii);
+	  free(blob_buffer);
+     	  close(newsockfd);
+  	  cli_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
+          job_id_list.push_back(job_id);
+	}
 
-	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-             recv_data[cli_id][job_id]=(float*)blob_buffer;
-	     recv_counters[cli_id] = recv_counters[cli_id] + 1; 
-	     if(recv_counters[cli_id] == PARTITIONS) {
-		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
-                  recv_counters[cli_id] = 0;
-		  ready_queue.Enqueue(cli_id);
-	     }
-        }
-
-     	close(newsockfd);
+	for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+	  std::string cur_addr = cli_list.front();
+	  cli_list.pop_front();
+	  int cur_id = job_id_list.front();
+	  job_id_list.pop_front();
+	  blob_buffer = (char*) req_ir_data_serialization_mr(net, cur_id, ii+1);
+	  bytes_length = req_ir_data_size_mr[cur_id/PARTITIONS_W][cur_id%PARTITIONS_W][ii+1]* sizeof(float);
+	  dataBlob* blob = new dataBlob(blob_buffer, bytes_length, cur_id); 
+	  send_result_mr(blob, cur_addr.c_str(), portno);
+	  free(blob_buffer);
+	  delete blob;
+	}
+     }
+     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	  blob_buffer = (char*)malloc(bytes_length);
+	  read_sock(newsockfd, blob_buffer, bytes_length);
+     	  close(newsockfd);
+          recv_data_mr[job_id]=(float*)blob_buffer;
+     }
+     ready_queue.Enqueue(cli_id);
+     break;
    }
    close(sockfd);
 }
 
 
-
-inline void gateway_compute(network *netp, int cli_id)
+inline void gateway_compute_mr(network *netp, int cli_id)
 {
     network net = *netp;
     int upto = STAGES-1;
@@ -96,8 +119,8 @@ inline void gateway_compute(network *netp, int cli_id)
 
 
     for(int part = 0; part < PARTITIONS; part ++){
-       join_output(part, recv_data[cli_id][part],  stage_out, upto, net);
-       free(recv_data[cli_id][part]);
+       join_output_mr(part, recv_data_mr[part],  stage_out, upto, net);
+       free(recv_data_mr[part]);
     }
 
     net.input = stage_out;
@@ -116,10 +139,8 @@ inline void gateway_compute(network *netp, int cli_id)
 }
 
 
-void gateway_service(std::string thread_name){
-    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(netp, 1);
-    network net = reshape_network(0, STAGES-1, *netp);
+void gateway_service_mr(network net, std::string thread_name){
+
     net.truth = 0;
     net.train = 0;
     net.delta = 0;
@@ -135,7 +156,7 @@ void gateway_service(std::string thread_name){
 	g_t1 = what_time_is_it_now() - g_t0;
 	std::cout << g_t1 << std::endl;
 	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-	gateway_compute(&net, cli_id);
+	gateway_compute_mr(&net, cli_id);
 
 
 	#ifdef DEBUG_DIST
@@ -185,18 +206,21 @@ void gateway_service(std::string thread_name){
 #endif
 }
 
-void gateway_sync(std::string thread_name){
-    task_recorder(SMART_GATEWAY);
+
+void gateway_sync_mr(network net, std::string thread_name){
+    data_map_reduce(net, PORTNO);
 }
 
 
-
-void smart_gateway(){
-    std::thread t1(gateway_sync, "gateway_sync");
-    std::thread t2(gateway_service, "gateway_service");
-    exec_control(START_CTRL);
+void smart_gateway_mr(){
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network_mr(0, STAGES-1, *netp);
+    std::thread t1(gateway_sync_mr, net,  "gateway_sync_mr");
+    std::thread t2(gateway_service_mr, net, "gateway_service_mr");
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
+    exec_control(START_CTRL);
     t1.join();
     t2.join();
 }

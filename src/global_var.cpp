@@ -79,6 +79,6 @@ int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
 
 unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-
+float* recv_data_mr[PARTITIONS];
 
 

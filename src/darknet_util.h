@@ -52,8 +52,8 @@ extern "C"{
 #define DEBUG_DIST 0
 #define STAGES 4
 #define PARTITIONS_W 2
-#define PARTITIONS_H 2 
-#define PARTITIONS 4
+#define PARTITIONS_H 1 
+#define PARTITIONS 2
 #define THREAD_NUM 1
 
 
@@ -178,7 +178,7 @@ extern int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
 
 extern unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-
+extern float* recv_data_mr[PARTITIONS];
 #endif
 
 
