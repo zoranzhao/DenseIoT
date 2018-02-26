@@ -219,9 +219,12 @@ inline void forward_network_dist_mr(network *netp)
 	     blob_buffer = (char*)malloc(bytes_length);
              std::cout << "Receiving IR result for layer"<<(ii+1)<<" from AP" << " part "<< job_id << std::endl;
 	     read_sock(newsockfd, blob_buffer, bytes_length);
+
 	     req_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii+1);
+             std::cout << "After deserializing IR result for layer"<<(ii+1)<<" from AP" << " part "<< job_id << std::endl;
              free(part_data_mr[job_id]);
 	     cross_map_overlap_output(net, job_id, ii+1);//Reallocate part_data_mr[job_id]
+             std::cout << "After preparing IR input for layer"<<(ii+1)<< " part "<< job_id << std::endl;
 	     free(output_part_data_mr[job_id]);
 	}
     }
