@@ -154,29 +154,28 @@ inline float* result_ir_data_serialization_mr(network net, int part, int i){
       output = (float*)malloc(result_ir_data_size_mr[p_h][p_w][i]*sizeof(float));
       //std::cout  << "The total number of bytes in this partition ... "<< result_ir_data_size_mr[p_h][p_w][i] << std::endl;
       //int profile_num = 0;
-
       //std::cout << "===================At layer: " << i  << std::endl;
       if(result_up_mr[p_h][p_w][i]==1){
-		std::cout << "serialization up, size is: " << std::endl;
-		std::cout << ir_output_mr[i][p_h][p_w].up_range.w*ir_output_mr[i][p_h][p_w].up_range.h*net.layers[i].out_c<<std::endl;
+		//std::cout << "serialization up, size is: " << std::endl;
+		//std::cout << ir_output_mr[i][p_h][p_w].up_range.w*ir_output_mr[i][p_h][p_w].up_range.h*net.layers[i].out_c<<std::endl;
 		memcpy(output, ir_output_mr[i][p_h][p_w].up, ir_output_mr[i][p_h][p_w].up_range.w*ir_output_mr[i][p_h][p_w].up_range.h*net.layers[i].out_c*sizeof(float) ); 
 		output = output + ir_output_mr[i][p_h][p_w].up_range.w*ir_output_mr[i][p_h][p_w].up_range.h*net.layers[i].out_c;
       }
       if(result_left_mr[p_h][p_w][i]==1){
-		std::cout << "serialization left, size is: " << std::endl;
-		std::cout << ir_output_mr[i][p_h][p_w].left_range.w*ir_output_mr[i][p_h][p_w].left_range.h*net.layers[i].out_c<<std::endl;
+		//std::cout << "serialization left, size is: " << std::endl;
+		//std::cout << ir_output_mr[i][p_h][p_w].left_range.w*ir_output_mr[i][p_h][p_w].left_range.h*net.layers[i].out_c<<std::endl;
 		memcpy(output, ir_output_mr[i][p_h][p_w].left, ir_output_mr[i][p_h][p_w].left_range.w*ir_output_mr[i][p_h][p_w].left_range.h*net.layers[i].out_c*sizeof(float) ); 
 		output = output + ir_output_mr[i][p_h][p_w].left_range.w*ir_output_mr[i][p_h][p_w].left_range.h*net.layers[i].out_c;
       }
       if(result_down_mr[p_h][p_w][i]==1){
-		std::cout << "serialization down, size is: " << std::endl;
-		std::cout << ir_output_mr[i][p_h][p_w].down_range.w*ir_output_mr[i][p_h][p_w].down_range.h*net.layers[i].out_c << std::endl;
+		//std::cout << "serialization down, size is: " << std::endl;
+		//std::cout << ir_output_mr[i][p_h][p_w].down_range.w*ir_output_mr[i][p_h][p_w].down_range.h*net.layers[i].out_c << std::endl;
 		memcpy(output, ir_output_mr[i][p_h][p_w].down, ir_output_mr[i][p_h][p_w].down_range.w*ir_output_mr[i][p_h][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
 		output = output + ir_output_mr[i][p_h][p_w].down_range.w*ir_output_mr[i][p_h][p_w].down_range.h*net.layers[i].out_c;
       }
       if(result_right_mr[p_h][p_w][i]==1){
-		std::cout << "serialization right, size is: " << std::endl;
-		std::cout << ir_output_mr[i][p_h][p_w].right_range.w*ir_output_mr[i][p_h][p_w].right_range.h*net.layers[i].out_c << std::endl;
+		//std::cout << "serialization right, size is: " << std::endl;
+		//std::cout << ir_output_mr[i][p_h][p_w].right_range.w*ir_output_mr[i][p_h][p_w].right_range.h*net.layers[i].out_c << std::endl;
 		memcpy(output, ir_output_mr[i][p_h][p_w].right,ir_output_mr[i][p_h][p_w].right_range.w*ir_output_mr[i][p_h][p_w].right_range.h*net.layers[i].out_c*sizeof(float) ); 
 		output = output + ir_output_mr[i][p_h][p_w].right_range.w*ir_output_mr[i][p_h][p_w].right_range.h*net.layers[i].out_c;
       }
