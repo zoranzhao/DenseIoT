@@ -218,9 +218,9 @@ void smart_gateway_mr(){
     network net = reshape_network_mr(0, STAGES-1, *netp);
     std::thread t1(gateway_sync_mr, net,  "gateway_sync_mr");
     std::thread t2(gateway_service_mr, net, "gateway_service_mr");
+    exec_control(START_CTRL);
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
-    exec_control(START_CTRL);
     t1.join();
     t2.join();
 }
