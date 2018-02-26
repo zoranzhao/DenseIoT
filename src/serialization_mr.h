@@ -312,28 +312,28 @@ inline void req_ir_data_deserialization_mr(network net, int part, float* input, 
       unsigned int copy_size;
       if(up_mr[p_h][p_w][i]==1){
 	copy_size = ir_output_mr[prev][p_h-1][p_w].down_range.w*ir_output_mr[prev][p_h-1][p_w].down_range.h*net.layers[prev].out_c;
-	std::cout << "Deserializing the above block of the: " << copy_size << std::endl;
+	//std::cout << "Deserializing the above block of the: " << copy_size << std::endl;
 	ir_output_mr[prev][p_h-1][p_w].down = (float*)malloc(copy_size*sizeof(float));
 	memcpy(ir_output_mr[prev][p_h-1][p_w].down, input_data, copy_size*sizeof(float) ); 
 	input_data = input_data + copy_size;
       }
       if(left_mr[p_h][p_w][i]==1){
 	copy_size = ir_output_mr[prev][p_h][p_w-1].right_range.w*ir_output_mr[prev][p_h][p_w-1].right_range.h*net.layers[prev].out_c; 
-	std::cout << "Deserializing the left block of the: " << copy_size << std::endl;
+	//std::cout << "Deserializing the left block of the: " << copy_size << std::endl;
 	ir_output_mr[prev][p_h][p_w-1].right = (float*)malloc(copy_size*sizeof(float));
 	memcpy(ir_output_mr[prev][p_h][p_w-1].right, input_data, copy_size*sizeof(float) ); 
 	input_data = input_data + copy_size;
       }
       if(down_mr[p_h][p_w][i]==1){
 	copy_size = ir_output_mr[prev][p_h+1][p_w].up_range.w*ir_output_mr[prev][p_h+1][p_w].up_range.h*net.layers[prev].out_c;
-	std::cout << "Deserializing the down block of the: " << copy_size << std::endl;
+	//std::cout << "Deserializing the down block of the: " << copy_size << std::endl;
 	ir_output_mr[prev][p_h+1][p_w].up = (float*)malloc(copy_size*sizeof(float));
 	memcpy(ir_output_mr[prev][p_h+1][p_w].up, input_data, copy_size*sizeof(float) ); 
 	input_data = input_data + copy_size;
       }
       if(right_mr[p_h][p_w][i]==1){
 	copy_size = ir_output_mr[prev][p_h][p_w+1].left_range.w*ir_output_mr[prev][p_h][p_w+1].left_range.h*net.layers[prev].out_c;
-	std::cout << "Deserializing the right block of the: " << copy_size << std::endl;
+	//std::cout << "Deserializing the right block of the: " << copy_size << std::endl;
 	ir_output_mr[prev][p_h][p_w+1].left = (float*)malloc(copy_size*sizeof(float));
 	memcpy(ir_output_mr[prev][p_h][p_w+1].left, input_data, copy_size*sizeof(float) ); 
 	input_data = input_data + copy_size;
@@ -352,7 +352,7 @@ inline void req_ir_data_deserialization_mr(network net, int part, float* input, 
 	   ir_output_mr[prev][reuse_h][reuse_w].corner_mr[3-corner_number] = (float*)malloc(copy_size*sizeof(float));
 	   memcpy(ir_output_mr[prev][reuse_h][reuse_w].corner_mr[3-corner_number], input_data, copy_size*sizeof(float) ); 
 	   input_data = input_data + copy_size;
-	  std::cout << "Deserializing the corner block of the corner:" << corner_number <<"   size is:" << copy_size << std::endl;
+	  //std::cout << "Deserializing the corner block of the corner:" << corner_number <<"   size is:" << copy_size << std::endl;
  	 }
       }
 
