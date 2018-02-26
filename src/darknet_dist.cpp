@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     victim_client_local_mr();
     //busy_client_mr();
     //idle_client_mr();
+    //smart_gateway_mr();
 
     return 0;
 }
