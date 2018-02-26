@@ -183,8 +183,8 @@ inline float* result_ir_data_serialization_mr(network net, int part, int i){
 
       for(int corner_number = 0; corner_number < 4; corner_number ++){
 	 if(result_corners_mr[corner_number][p_h][p_w][i] > 0 ){
-		std::cout << "serialization corner "<< corner_number <<", size is: " << std::endl;
-		std::cout << ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w*ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h*net.layers[i].out_c << std::endl;
+		//std::cout << "serialization corner "<< corner_number <<", size is: " << std::endl;
+		//std::cout << ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w*ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h*net.layers[i].out_c << std::endl;
 		memcpy(output, ir_output_mr[i][p_h][p_w].corner_mr[corner_number],
 			ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w*ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h*net.layers[i].out_c*sizeof(float) ); 
 		output = output + ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w*ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h*net.layers[i].out_c;
