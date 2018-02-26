@@ -177,19 +177,20 @@ void cal_reuse_overlap_range_mr(int p_h, int p_w,  int i, sub_index output_range
 
 
 inline network reshape_network_mr(int startfrom, int upto, network net){
+    int print_reshape_info = 0;
     numbering_part_id();
     cal_each_layer_partition_mr(net, startfrom, upto);
 
-
-    for(int i = upto; i >= startfrom; i--){
-        for(int p = 0; p < PARTITIONS; p++){
-	    std::cout << "The input at layer: "<< i <<" ... :" << std::endl;
-	    print_subindex(input_ranges_mr[p][i]);
-	    std::cout << "The output at layer: "<< i <<" ... :" << std::endl;
-	    print_subindex(output_ranges_mr[p][i]);
-	}
+    if(print_reshape_info == 1){
+	    for(int i = upto; i >= startfrom; i--){
+		for(int p = 0; p < PARTITIONS; p++){
+		    std::cout << "The input at layer: "<< i <<" ... :" << std::endl;
+		    print_subindex(input_ranges_mr[p][i]);
+		    std::cout << "The output at layer: "<< i <<" ... :" << std::endl;
+		    print_subindex(output_ranges_mr[p][i]);
+		}
+	    }
     }
-
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = 0; p_w < PARTITIONS_W; p_w++){
 	    for(int i = 0; i < STAGES; i++){
@@ -281,7 +282,7 @@ void fork_input_mr(int startfrom, float* stage_in, network net){
 //
 inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, int upto,  network net)
 {
-
+    int print_data_to_record = 0;
     int part = part_id[p_h][p_w];
     net.input = input;
     //Reshape first
@@ -306,30 +307,34 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 	}
 
 
-		//What should we record for the current layer?
+	//What should we record for the current layer?
 	if((ir_output_mr[i][p_h][p_w].down_range.w>0)&&(ir_output_mr[i][p_h][p_w].down_range.h>0)){
-		std::cout << "Down: " << std::endl;
-		print_subindex(ir_output_mr[i][p_h][p_w].down_range);
 		sub_index down_index = ir_output_mr[i][p_h][p_w].down_range;
 		down_index.w1 -= output_ranges_mr[part][i].w1;
 		down_index.w2 -= output_ranges_mr[part][i].w1;
 		down_index.h1 -= output_ranges_mr[part][i].h1;
 		down_index.h2 -= output_ranges_mr[part][i].h1;
-		print_subindex(down_index);
+                if(print_data_to_record == 1){
+		   std::cout << "Down: " << std::endl;
+		   print_subindex(ir_output_mr[i][p_h][p_w].down_range);
+		   print_subindex(down_index);
+		}
 		ir_output_mr[i][p_h][p_w].down = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
 							down_index.w1, down_index.w2, 
 							down_index.h1, down_index.h2);
 
 	}
 	if((ir_output_mr[i][p_h][p_w].right_range.w>0)&&(ir_output_mr[i][p_h][p_w].right_range.h>0)){
-		std::cout << "Right: " << std::endl;
-		print_subindex(ir_output_mr[i][p_h][p_w].right_range);
 		sub_index right_index = ir_output_mr[i][p_h][p_w].right_range;
 		right_index.w1 -= output_ranges_mr[part][i].w1;
 		right_index.w2 -= output_ranges_mr[part][i].w1;
 		right_index.h1 -= output_ranges_mr[part][i].h1;
 		right_index.h2 -= output_ranges_mr[part][i].h1;
-		print_subindex(right_index);
+                if(print_data_to_record == 1){
+		   std::cout << "Right: " << std::endl;
+		   print_subindex(ir_output_mr[i][p_h][p_w].right_range);
+	  	   print_subindex(right_index);
+		}
 		ir_output_mr[i][p_h][p_w].right =  reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
 							right_index.w1, right_index.w2, 
 							right_index.h1, right_index.h2);
@@ -337,28 +342,32 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 	}
 	//What should we record for the current layer?
 	if((ir_output_mr[i][p_h][p_w].up_range.w>0)&&(ir_output_mr[i][p_h][p_w].up_range.h>0)){
-		std::cout << "Up: " << std::endl;
-		print_subindex(ir_output_mr[i][p_h][p_w].up_range);
 		sub_index up_index = ir_output_mr[i][p_h][p_w].up_range;
 		up_index.w1 -= output_ranges_mr[part][i].w1;
 		up_index.w2 -= output_ranges_mr[part][i].w1;
 		up_index.h1 -= output_ranges_mr[part][i].h1;
 		up_index.h2 -= output_ranges_mr[part][i].h1;
-		print_subindex(up_index);
+                if(print_data_to_record == 1){
+		   std::cout << "Up: " << std::endl;
+		   print_subindex(ir_output_mr[i][p_h][p_w].up_range);
+		   print_subindex(up_index);
+		}
 		ir_output_mr[i][p_h][p_w].up = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
 							up_index.w1, up_index.w2, 
 							up_index.h1, up_index.h2);
 
 	}
 	if((ir_output_mr[i][p_h][p_w].left_range.w>0)&&(ir_output_mr[i][p_h][p_w].left_range.h>0)){
-		std::cout << "Left: " << std::endl;
-		print_subindex(ir_output_mr[i][p_h][p_w].left_range);
 		sub_index left_index = ir_output_mr[i][p_h][p_w].left_range;
 		left_index.w1 -= output_ranges_mr[part][i].w1;
 		left_index.w2 -= output_ranges_mr[part][i].w1;
 		left_index.h1 -= output_ranges_mr[part][i].h1;
 		left_index.h2 -= output_ranges_mr[part][i].h1;
-		print_subindex(left_index);
+                if(print_data_to_record == 1){
+		   std::cout << "Left: " << std::endl;
+		   print_subindex(ir_output_mr[i][p_h][p_w].left_range);
+		   print_subindex(left_index);
+		}
 		ir_output_mr[i][p_h][p_w].left = reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
 							left_index.w1, left_index.w2, 
 							left_index.h1, left_index.h2);
@@ -367,14 +376,16 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 
         for(int corner_number = 0; corner_number < 4; corner_number ++){
 	        if(ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].w > 0 && ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number].h > 0 ){
-		    std::cout << "Corner: " << corner_number << std::endl;
-		    print_subindex(ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number]);
 		    sub_index corner_index = ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number];
 		    corner_index.w1 -= output_ranges_mr[part][i].w1;
 		    corner_index.w2 -= output_ranges_mr[part][i].w1;
 		    corner_index.h1 -= output_ranges_mr[part][i].h1;
-		    corner_index.h2 -= output_ranges_mr[part][i].h1;	    
-		    print_subindex(corner_index);
+		    corner_index.h2 -= output_ranges_mr[part][i].h1;
+                    if(print_data_to_record == 1){	    
+		       std::cout << "Corner: " << corner_number << std::endl;
+		       print_subindex(ir_output_mr[i][p_h][p_w].corner_range_mr[corner_number]);
+		       print_subindex(corner_index);
+		    }
 		    ir_output_mr[i][p_h][p_w].corner_mr[corner_number] = 
 				reshape_input(cropped_output, output_ranges_mr[part][i].w, output_ranges_mr[part][i].h, net.layers[i].out_c, 
 							corner_index.w1, corner_index.w2, 
@@ -385,11 +396,6 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
     }
 
 
-
-		
-
-
-
     return net; 
 }
 
@@ -397,17 +403,20 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 
 void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the input for part_id in layer i, from output of adj partitions in layer i-1
         //part_data_mr[part_id];
+	int print_preparin_the_next_layer = 0;
         int p_h = part / PARTITIONS_W; 
         int p_w = part % PARTITIONS_W;
         int cur_layer = layer_id;
         int prev_layer = layer_id-1;
 	float * cropped_output;
 	if(net.layers[prev_layer].type == CONVOLUTIONAL){
-		std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
 		layer l = net.layers[prev_layer]; 
-		sub_index tmp = crop_ranges(input_ranges_mr[part][prev_layer], output_ranges_mr[part][prev_layer]);   
-		print_subindex(tmp);
-		std::cout << "l.out_w: " << l.out_w<< ", l.out_h: " << l.out_h<< ", l.out_c: " << l.out_c <<std::endl;
+		sub_index tmp = crop_ranges(input_ranges_mr[part][prev_layer], output_ranges_mr[part][prev_layer]); 
+		if(print_preparin_the_next_layer == 1)  {
+			std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
+			print_subindex(tmp);
+			std::cout << "l.out_w: " << l.out_w<< ", l.out_h: " << l.out_h<< ", l.out_c: " << l.out_c <<std::endl;
+		}
 		cropped_output = reshape_input(output_part_data_mr[part], l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
 	}else{
 		cropped_output = output_part_data_mr[part];
@@ -422,12 +431,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 	main_index.h1 = output_ranges_mr[part_id[p_h][p_w]][prev_layer].h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1;  
 	main_index.w = main_index.w2 - main_index.w1 + 1;
 	main_index.h = main_index.h2 - main_index.h1 + 1;
-	std::cout << "Processing the input data for partition " << part<< " at layer "<< layer_id << std::endl;
-	std::cout << "Main index is ... ... :" << std::endl;
-	print_subindex(main_index);
-	//print_subindex(output_ranges_mr[part_id[p_h][p_w]][i]);
-	//std::cout << "Required index from next layer is ... ... :" << std::endl;
-	//print_subindex(input_ranges_mr[part_id[p_h][p_w]][i+1]);
+	if(print_preparin_the_next_layer == 1)  {
+		std::cout << "Processing the input data for partition " << part<< " at layer "<< layer_id << std::endl;
+		std::cout << "Main index is ... ... :" << std::endl;
+		print_subindex(main_index);
+	}
 	part_data_mr[part]= 
 		(float*)malloc(input_ranges_mr[part_id[p_h][p_w]][cur_layer].w*input_ranges_mr[part_id[p_h][p_w]][cur_layer].h*net.layers[prev_layer].out_c*sizeof(float));
 
@@ -435,7 +443,7 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 							net.layers[prev_layer].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
 
 
-	std::cout<< "Copy padding regions from other partitions" <<std::endl;
+	if(print_preparin_the_next_layer == 1)  std::cout<< "Copy padding regions from other partitions" <<std::endl;
 	int reuse_h;
 	int reuse_w;
 	sub_index reuse_index;
@@ -448,9 +456,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].down_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
 			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
 			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
-		        std::cout << "Up index is ... ... :" << std::endl;
-			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].down_range);
-			print_subindex(reuse_index);
+			if(print_preparin_the_next_layer == 1)  {
+		        	std::cout << "Up index is ... ... :" << std::endl;
+				print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].down_range);
+				print_subindex(reuse_index);
+			}
                         copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].down, part_data_mr[part], 
 						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
@@ -463,9 +473,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].up_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
 			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
 			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
-		        std::cout << "Down index is ... ... :" << std::endl;
-			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].up_range);
-			print_subindex(reuse_index);
+			if(print_preparin_the_next_layer == 1)  {
+				std::cout << "Down index is ... ... :" << std::endl;
+				print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].up_range);
+				print_subindex(reuse_index);
+			}
                         copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].up, part_data_mr[part], 
 						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
@@ -478,9 +490,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].right_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
 			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
 			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
-		        std::cout << "Left index is ... ... :" << std::endl;
-			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].right_range);
-			print_subindex(reuse_index);
+			if(print_preparin_the_next_layer == 1)  {
+				std::cout << "Left index is ... ... :" << std::endl;
+				print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].right_range);
+				print_subindex(reuse_index);
+			}
                         copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].right, part_data_mr[part], 
 						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
@@ -493,9 +507,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].left_range.h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
 			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
 			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
-		        std::cout << "Right index is ... ... :" << std::endl;
-			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].left_range);
-			print_subindex(reuse_index);
+			if(print_preparin_the_next_layer == 1)  {
+				std::cout << "Right index is ... ... :" << std::endl;
+				print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].left_range);
+				print_subindex(reuse_index);
+			}
                         copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].left, part_data_mr[part], 
 						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);
@@ -512,10 +528,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 			reuse_index.h1 = ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num].h1 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].h1; 
 			reuse_index.w = reuse_index.w2 - reuse_index.w1 + 1;
 			reuse_index.h = reuse_index.h2 - reuse_index.h1 + 1;
-		        std::cout << "Corner index is ... ... :"<< corner_num << std::endl;
-			print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num]);
-			print_subindex(reuse_index);
-
+			if(print_preparin_the_next_layer == 1)  {
+				std::cout << "Corner index is ... ... :"<< corner_num << std::endl;
+				print_subindex(ir_output_mr[prev_layer][reuse_h][reuse_w].corner_range_mr[3-corner_num]);
+				print_subindex(reuse_index);
+			}
                         copy_input_to_output(ir_output_mr[prev_layer][reuse_h][reuse_w].corner_mr[3-corner_num], part_data_mr[part], 
 						input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 						net.layers[prev_layer].out_c, reuse_index.w1, reuse_index.w2, reuse_index.h1, reuse_index.h2);

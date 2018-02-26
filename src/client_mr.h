@@ -184,6 +184,7 @@ inline void forward_network_dist_mr(network *netp)
     if(netp -> input != NULL ){
       int cli_id = 0;
       dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), cli_id); 
+      std::cout << "Sending the entire input to gateway ..." << std::endl;
       send_result_mr(blob, AP, PORTNO);
       //free(netp -> input);
       delete blob;
@@ -206,6 +207,7 @@ inline void forward_network_dist_mr(network *netp)
 	     float* part_result = result_ir_data_serialization_mr(net, job_id, ii);	
 	     unsigned int result_size = result_ir_data_size_mr[job_id/PARTITIONS_W][job_id%PARTITIONS_W][ii]*sizeof(float);
 	     dataBlob* blob = new dataBlob(part_result, result_size, job_id); 
+             std::cout << "Sending IR result at layer"<<(ii)<<" to AP" << " part "<< job_id << std::endl;
              send_result_mr(blob, AP, PORTNO);
 	     free(part_result);
 	     delete blob;
@@ -215,6 +217,7 @@ inline void forward_network_dist_mr(network *netp)
              read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
+             std::cout << "Receiving IR result for layer"<<(ii+1)<<" from AP" << " part "<< job_id << std::endl;
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     req_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii+1);
              free(part_data_mr[job_id]);
@@ -223,6 +226,7 @@ inline void forward_network_dist_mr(network *netp)
 	}
     }
     dataBlob* blob = new dataBlob(output_part_data_mr[job_id], net.layers[upto].out_w*net.layers[upto].out_h*net.layers[upto].out_c*sizeof(float), job_id); 
+    std::cout << "Sending the part result to AP" << " part "<< job_id << std::endl;
     send_result_mr(blob, AP, PORTNO);  
 
 }

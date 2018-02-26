@@ -57,9 +57,12 @@ void data_map_reduce(network net, int portno)
      blob_buffer = (char*)malloc(bytes_length);
      read_sock(newsockfd, blob_buffer, bytes_length);
      close(newsockfd);
+     std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
+
      //Distribute the data 
      fork_input_mr(0, (float*)blob_buffer, net);
      for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+        std::cout << "Sending the partition "<< cli_cnt << " to client" << addr_list[cli_cnt] << std::endl;
 	bytes_length = input_ranges_mr[cli_cnt][0].w*input_ranges_mr[cli_cnt][0].h*net.layers[0].c*sizeof(float);
 	dataBlob* blob = new dataBlob(part_data_mr[cli_cnt], bytes_length, cli_cnt); 
         send_result_mr(blob, addr_list[cli_cnt], portno);
@@ -73,6 +76,7 @@ void data_map_reduce(network net, int portno)
 	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	  blob_buffer = (char*)malloc(bytes_length);
 	  read_sock(newsockfd, blob_buffer, bytes_length);
+          std::cout << "Receiving IR result at layer"<<ii<<" from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 	  result_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii);
 	  free(blob_buffer);
      	  close(newsockfd);
@@ -88,6 +92,7 @@ void data_map_reduce(network net, int portno)
 	  blob_buffer = (char*) req_ir_data_serialization_mr(net, cur_id, ii+1);
 	  bytes_length = req_ir_data_size_mr[cur_id/PARTITIONS_W][cur_id%PARTITIONS_W][ii+1]* sizeof(float);
 	  dataBlob* blob = new dataBlob(blob_buffer, bytes_length, cur_id); 
+          std::cout << "Sending IR result at layer"<<(ii+1)<<" to client" << cur_addr << " part "<< cur_id << std::endl;
 	  send_result_mr(blob, cur_addr.c_str(), portno);
 	  free(blob_buffer);
 	  delete blob;
@@ -100,6 +105,7 @@ void data_map_reduce(network net, int portno)
 	  blob_buffer = (char*)malloc(bytes_length);
 	  read_sock(newsockfd, blob_buffer, bytes_length);
      	  close(newsockfd);
+          std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
           recv_data_mr[job_id]=(float*)blob_buffer;
      }
      ready_queue.Enqueue(cli_id);
