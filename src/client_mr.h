@@ -26,7 +26,10 @@ inline void forward_network_dist_local_mr(network *netp)
 	std::cout << "At layer ... " << ii << std::endl;        
 	for(part_id = 0; part_id<PARTITIONS; part_id ++){
 	   std::cout << "==========Processing=============: " << part_id << std::endl;
-           output_part_data_mr[part_id] = (float*)malloc(net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
+           output_part_data_mr[part_id] = (float*)malloc(
+						(input_ranges_mr[part_id][ii].w/net.layers[ii].stride)*
+						(input_ranges_mr[part_id][ii].h/net.layers[ii].stride)*net.layers[ii].out_c*sizeof(float));
+
 	   net = forward_stage_mr( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data_mr[part_id], ii, ii, net); 
 	   memcpy(output_part_data_mr[part_id], net.layers[ii].output, net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
 	}
@@ -199,7 +202,10 @@ inline void forward_network_dist_mr(network *netp)
     part_data_mr[job_id] = (float*) blob_buffer; //Get the top-level input data for this network partition  
     
     for(int ii = 0; ii < STAGES; ii++){
-        output_part_data_mr[job_id] = (float*)malloc(net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
+        output_part_data_mr[job_id] = (float*)malloc(
+						(input_ranges_mr[job_id][ii].w/net.layers[ii].stride)*
+						(input_ranges_mr[job_id][ii].h/net.layers[ii].stride)*net.layers[ii].out_c*sizeof(float));
+
 	net = forward_stage_mr( job_id/PARTITIONS_W, job_id%PARTITIONS_W, part_data_mr[job_id], ii, ii, net); 
 	memcpy(output_part_data_mr[job_id], net.layers[ii].output, net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
 	if(ii < STAGES - 1){

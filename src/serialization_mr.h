@@ -28,7 +28,7 @@ inline void cal_dependency_mr(network net, int startfrom, int upto){
             int p_h = part_id / PARTITIONS_W; 
             int p_w = part_id % PARTITIONS_W;
 	    for(int i = startfrom; i < upto; i++){
-		if(net.layers[i+1].type == CONVOLUTIONAL){
+		//if(net.layers[i+1].type == CONVOLUTIONAL){
 			//If next layer is a convlutional layer, then collect the adj parts output
 			//std::cout<< "We should gather the output adj parts from this layer..." <<std::endl;
 			if((p_h>0)&&(ir_output_mr[i][p_h-1][p_w].down_range.w>0)&&(ir_output_mr[i][p_h-1][p_w].down_range.h>0)){
@@ -88,7 +88,7 @@ inline void cal_dependency_mr(network net, int startfrom, int upto){
 					ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].w *ir_output_mr[i][p_h+1][p_w+1].corner_range_mr[0].h*net.layers[i].out_c; 
 				}
 			}    
-		}
+		//}
 
 	    }
 	}
