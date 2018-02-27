@@ -50,7 +50,7 @@ extern "C"{
 #define DARKNET_UTIL__H
 
 #define DEBUG_DIST 0
-#define STAGES 4
+#define STAGES 16
 #define PARTITIONS_W 3
 #define PARTITIONS_H 2
 #define PARTITIONS 6

@@ -205,6 +205,7 @@ void gateway_service_mr(network net, std::string thread_name){
 	#endif
 	free_image(sized);
 	id += 1;
+        break;
     }
 #ifdef NNPACK
     pthreadpool_destroy(net.threadpool);
