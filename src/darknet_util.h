@@ -51,8 +51,8 @@ extern "C"{
 
 #define DEBUG_DIST 0
 #define STAGES 16
-#define PARTITIONS_W 3
-#define PARTITIONS_H 2
+#define PARTITIONS_W 6
+#define PARTITIONS_H 1
 #define PARTITIONS 6
 #define THREAD_NUM 1
 
