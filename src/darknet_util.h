@@ -45,16 +45,12 @@ extern "C"{
 #include <assert.h>
 #include <iostream>
 #include "distriot.h"
+#include "config.h"
 
 #ifndef DARKNET_UTIL__H
 #define DARKNET_UTIL__H
 
-#define DEBUG_DIST 0
-#define STAGES 16
-#define PARTITIONS_W 4
-#define PARTITIONS_H 1
-#define PARTITIONS 4
-#define THREAD_NUM 1
+
 
 
 //Calculate the input partition range
