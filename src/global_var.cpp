@@ -81,3 +81,9 @@ unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 float* recv_data_mr[IMG_NUM][PARTITIONS];
 
+
+//Add some variable for communication and computation profiling
+double commu_time = 0.0;
+double comp_time = 0.0;
+
+
