@@ -253,9 +253,10 @@ void smart_gateway_mr(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
+    exec_control(START_CTRL);
     std::thread t1(gateway_sync_mr, net, number_of_images, "gateway_sync_mr");
     std::thread t2(gateway_service_mr, net, number_of_images, "gateway_service_mr");
-    exec_control(START_CTRL);
+
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
     t1.join();
