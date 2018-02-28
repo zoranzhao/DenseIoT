@@ -34,18 +34,18 @@ inline void forward_network_dist_local_mr(network *netp)
 	   memcpy(output_part_data_mr[part_id], net.layers[ii].output, net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
 	}
 
-	for(part_id = 0; part_id<PARTITIONS; part_id ++){
-	     tmp[part_id] = result_ir_data_serialization_mr(net, part_id, ii);
-             result_ir_data_deserialization_mr(net, part_id, tmp[part_id], ii);
-	     free(tmp[part_id]);
-	}
+	//for(part_id = 0; part_id<PARTITIONS; part_id ++){
+	  //   tmp[part_id] = result_ir_data_serialization_mr(net, part_id, ii);
+          //   result_ir_data_deserialization_mr(net, part_id, tmp[part_id], ii);
+	  //   free(tmp[part_id]);
+	//}
 
 	if(ii < upto){
-	   for(part_id = 0; part_id<PARTITIONS; part_id ++){
-	      tmp[part_id] = req_ir_data_serialization_mr(net, part_id, ii+1);
-	      req_ir_data_deserialization_mr(net, part_id, tmp[part_id], ii+1);
-	      free(tmp[part_id]);
-	   }
+	   //for(part_id = 0; part_id<PARTITIONS; part_id ++){
+	      //tmp[part_id] = req_ir_data_serialization_mr(net, part_id, ii+1);
+	      //req_ir_data_deserialization_mr(net, part_id, tmp[part_id], ii+1);
+	      //free(tmp[part_id]);
+	   //}
 	   std::cout << "==========Preparing the input for next layer=============: " << std::endl;
 	   for(part_id = 0; part_id<PARTITIONS; part_id ++){
                free(part_data_mr[part_id]);
@@ -55,9 +55,11 @@ inline void forward_network_dist_local_mr(network *netp)
 	}  
     }
 
-    for(part_id = 0; part_id<PARTITIONS; part_id ++)
+    for(part_id = 0; part_id<PARTITIONS; part_id ++){
         join_output_mr(part_id, output_part_data_mr[part_id],  stage_out, upto, net);
-
+	free(output_part_data_mr[part_id]);
+        free(part_data_mr[part_id]);
+    }
     net.input = stage_out;
 
     for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
@@ -232,7 +234,9 @@ inline void forward_network_dist_mr(network *netp)
 	     free(output_part_data_mr[job_id]);
 	}
     }
-    dataBlob* blob = new dataBlob(output_part_data_mr[job_id], net.layers[upto].out_w*net.layers[upto].out_h*net.layers[upto].out_c*sizeof(float), job_id); 
+    dataBlob* blob = new dataBlob(output_part_data_mr[job_id], net.layers[upto].out_w*net.layers[upto].out_h*net.layers[upto].out_c*sizeof(float), job_id);  
+    free(part_data_mr[job_id]);
+    free(output_part_data_mr[job_id]);
     std::cout << "Sending the part result to AP" << " part "<< job_id << std::endl;
     send_result_mr(blob, AP, PORTNO);  
 
@@ -292,11 +296,11 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
 
 
 void victim_client_local_mr(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_images = 4;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
-    std::thread t1(client_compute_local_mr, &net, number_of_jobs, "client_compute_local_mr");
+    std::thread t1(client_compute_local_mr, &net, number_of_images, "client_compute_local_mr");
     t1.join();
 }
 

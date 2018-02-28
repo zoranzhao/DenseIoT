@@ -681,7 +681,7 @@ void fork_input(int startfrom, float* stage_in, network net){
 
 void fork_input_reuse(int startfrom, float* stage_in, network net){
 
-    //If the neighbour data  
+    //If the neighbour data is not ready, then we need to 
     fork_input(startfrom, stage_in, net);
 
     int part;

@@ -82,14 +82,12 @@ inline float *network_predict_dist_shuffle(network *net, float *input)
 
 void client_compute_shuffle(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
-
     network *net = netp;
     srand(2222222);
 #ifdef NNPACK
     nnp_initialize();
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
-
 
     int j;
     int id = 0;//5000 > id > 0
