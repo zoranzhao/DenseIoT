@@ -160,16 +160,9 @@ void client_compute_local_mr(network *netp, unsigned int number_of_jobs, std::st
 #endif
 }
 
-
-
-
-
-inline void forward_network_dist_mr(network *netp)
-{
-    network net = *netp;
-    int sockfd, newsockfd;
-    socklen_t clilen;
-    struct sockaddr_in serv_addr, cli_addr;
+inline int bind_port_client(){
+    int sockfd;
+    struct sockaddr_in serv_addr;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
 	sock_error("ERROR opening socket");
@@ -180,10 +173,23 @@ inline void forward_network_dist_mr(network *netp)
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
 	sock_error("ERROR on binding");
     listen(sockfd, 10);//back_log numbers 
+    return sockfd;
+}
+
+inline void forward_network_dist_mr(network *netp, int sockfd)
+{
+
+
+
+    int newsockfd;
+    socklen_t clilen;
+    network net = *netp;
+    struct sockaddr_in cli_addr;
     clilen = sizeof(cli_addr);
     unsigned int bytes_length;
     char* blob_buffer;
     int job_id;
+
 
     int upto = STAGES-1;
     if(netp -> input != NULL ){
@@ -257,9 +263,11 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
 
-    int j;
     int id = 0;//5000 > id > 0
     unsigned int cnt = 0;//5000 > id > 0
+
+    int sockfd = bind_port_client();
+
     for(cnt = 0; cnt < number_of_jobs; cnt ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
@@ -269,7 +277,7 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-        forward_network_dist_mr(net);
+        forward_network_dist_mr(net, sockfd);
         free_image(sized);
     }
 #ifdef NNPACK
@@ -286,12 +294,15 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
     nnp_initialize();
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
+
+    int sockfd = bind_port_client();
+
     for(int cnt = 0; cnt < number_of_jobs; cnt ++){
         net->input  = NULL;
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-        forward_network_dist_mr(net);
+        forward_network_dist_mr(net, sockfd);
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
