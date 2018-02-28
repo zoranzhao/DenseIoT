@@ -1,5 +1,6 @@
 #include "darknet_dist.h"
 
+
 void task_recorder(int portno)
 {  
    int task_total;
@@ -66,7 +67,7 @@ void task_recorder(int portno)
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     int cli_id = 0;
+	     int cli_id = get_client_id(inet_ntoa(cli_addr.sin_addr) );
 	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
 
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
