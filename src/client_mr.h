@@ -240,10 +240,10 @@ inline void forward_network_dist_mr(network *netp)
 	}
     }
     dataBlob* blob = new dataBlob(output_part_data_mr[job_id], net.layers[upto].out_w*net.layers[upto].out_h*net.layers[upto].out_c*sizeof(float), job_id);  
-    free(part_data_mr[job_id]);
-    free(output_part_data_mr[job_id]);
     std::cout << "Sending the part result to AP" << " part "<< job_id << std::endl;
     send_result_mr(blob, AP, PORTNO);  
+    free(part_data_mr[job_id]);
+    free(output_part_data_mr[job_id]);
 
 }
 
