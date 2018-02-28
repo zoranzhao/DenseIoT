@@ -142,7 +142,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
      	  close(newsockfd);
 	  if(print_gateway)
             std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
-          recv_data_mr[job_id]=(float*)blob_buffer;
+          recv_data_mr[id][job_id]=(float*)blob_buffer;
      }
      g_t1 = g_t1 + what_time_is_it_now() - g_t0;
      std::cout << g_t1/((float)(id + 1)) << std::endl;
@@ -153,7 +153,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 }
 
 
-inline void gateway_compute_mr(network *netp, int cli_id)
+inline void gateway_compute_mr(network *netp, int cli_id, int image_id)
 {
     network net = *netp;
     int upto = STAGES-1;
@@ -163,8 +163,8 @@ inline void gateway_compute_mr(network *netp, int cli_id)
 
 
     for(int part = 0; part < PARTITIONS; part ++){
-       join_output_mr(part, recv_data_mr[part],  stage_out, upto, net);
-       free(recv_data_mr[part]);
+       join_output_mr(part, recv_data_mr[image_id][part],  stage_out, upto, net);
+       free(recv_data_mr[image_id][part]);
     }
 
     net.input = stage_out;
@@ -197,7 +197,7 @@ void gateway_service_mr(network net, int number_of_images, std::string thread_na
     int id = 0;
     for(id = 0; id < number_of_images; id++){
 	cli_id = ready_queue.Dequeue();
-	gateway_compute_mr(&net, cli_id);
+	gateway_compute_mr(&net, cli_id, id);
 
 
 	#ifdef DEBUG_DIST
