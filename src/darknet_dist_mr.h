@@ -303,13 +303,14 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 
     for(int i = startfrom; i < upto+1; i++){
 	net.layers[i].forward(net.layers[i], net);
-
+	int cleanup = 0;
 	float * cropped_output;
 	if(net.layers[i].type == CONVOLUTIONAL){
 		//std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
 		layer l = net.layers[i]; 
 		sub_index tmp = crop_ranges(input_ranges_mr[part][i], output_ranges_mr[part][i]);   
 		cropped_output = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+		cleanup = 1;
 	}else{
 		cropped_output = net.layers[i].output;
 	}
@@ -400,7 +401,7 @@ inline network forward_stage_mr(int p_h, int p_w, float *input, int startfrom, i
 							corner_index.h1, corner_index.h2);
 		}
 	}
-     
+     	if(cleanup==1) free(cropped_output);
     }
 
 
@@ -418,6 +419,8 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
         int prev_layer = layer_id-1;
 
 	float * cropped_output;
+	int cleanup = 0;
+
 	if(net.layers[prev_layer].type == CONVOLUTIONAL){
 		layer l = net.layers[prev_layer]; 
 		sub_index tmp = crop_ranges(input_ranges_mr[part][prev_layer], output_ranges_mr[part][prev_layer]); 
@@ -430,6 +433,7 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 		}
 		cropped_output = reshape_input(output_part_data_mr[part], input_ranges_mr[part][prev_layer].w, 
 						input_ranges_mr[part][prev_layer].h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+		cleanup = 1;
 	}else{
 		cropped_output = output_part_data_mr[part];
 	}	
@@ -453,9 +457,11 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 
 
 	sub_index tmp = crop_ranges(output_ranges_mr[part_id[p_h][p_w]][prev_layer], alignment); 
+	float* tofree = cropped_output;
+
 	cropped_output = reshape_input(cropped_output, output_ranges_mr[part_id[p_h][p_w]][prev_layer].w, 
 						output_ranges_mr[part_id[p_h][p_w]][prev_layer].h, net.layers[prev_layer].out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
-
+	if(cleanup==1) free(tofree);
 
 	sub_index main_index;
 	main_index.w2 = alignment.w2 - input_ranges_mr[part_id[p_h][p_w]][cur_layer].w1;
@@ -478,7 +484,7 @@ void cross_map_overlap_output(network net, int part, int layer_id){//Prepare the
 
 	copy_input_to_output(cropped_output, part_data_mr[part], input_ranges_mr[part_id[p_h][p_w]][cur_layer].w, input_ranges_mr[part_id[p_h][p_w]][cur_layer].h, 
 							net.layers[prev_layer].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
-
+	if(cleanup==1) free(cropped_output);
 
 	if(print_preparin_the_next_layer == 1)  std::cout<< "Copy padding regions from other partitions" <<std::endl;
 	int reuse_h;
