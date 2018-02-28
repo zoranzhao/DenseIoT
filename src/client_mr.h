@@ -187,7 +187,12 @@ inline void forward_network_dist_mr(network *netp)
 
     int upto = STAGES-1;
     if(netp -> input != NULL ){
-      int cli_id = 0;
+
+      char request_type[10];
+      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+      read_sock(newsockfd, request_type, 10);
+
+      int cli_id = 0;//TODO
       dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), cli_id); 
       std::cout << "Sending the entire input to gateway ..." << std::endl;
       send_result_mr(blob, AP, PORTNO);

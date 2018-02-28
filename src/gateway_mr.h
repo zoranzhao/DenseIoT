@@ -12,8 +12,10 @@ void send_result_mr(dataBlob* blob, const char *dest_ip, int portno)
      serv_addr.sin_family = AF_INET;
      serv_addr.sin_addr.s_addr = inet_addr(dest_ip) ;
      serv_addr.sin_port = htons(portno);
+     
      if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
 	sock_error("ERROR connecting");
+
      char *blob_buffer;
      unsigned int bytes_length;
      int job_id;
@@ -27,7 +29,33 @@ void send_result_mr(dataBlob* blob, const char *dest_ip, int portno)
 }
 
 
-void data_map_reduce(network net, int portno)
+void gateway_require_data(char* request_type, const char *cli_ip, int portno)
+{
+     int sockfd;
+     struct sockaddr_in serv_addr;
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        sock_error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = inet_addr(cli_ip) ;
+     serv_addr.sin_port = htons(portno);
+     while(1){
+        if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+	     std::cout << "retry..." <<std::endl;
+	     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }else{break;}
+     }
+     //char request_type[10] = "steals";
+     write_sock(sockfd, request_type, 10);
+     std::cout << "Send the require data from client"<< cli_ip << std::endl;
+     close(sockfd);
+
+}
+
+
+
+void data_map_reduce(network net, int number_of_images, int portno)
 {  
    int sockfd, newsockfd;
    socklen_t clilen;
@@ -50,8 +78,10 @@ void data_map_reduce(network net, int portno)
    std::list< int > job_id_list;
    while(1){
      //Receive the data from a single client;
+     gateway_require_data("start", BLUE1, portno);
      int cli_id;
      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+     g_t0 = what_time_is_it_now();
      read_sock(newsockfd, (char*)&cli_id, sizeof(cli_id));
      read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
      blob_buffer = (char*)malloc(bytes_length);
@@ -145,7 +175,7 @@ inline void gateway_compute_mr(network *netp, int cli_id)
 }
 
 
-void gateway_service_mr(network net, std::string thread_name){
+void gateway_service_mr(network net, int number_of_images, std::string thread_name){
 
     net.truth = 0;
     net.train = 0;
@@ -157,10 +187,10 @@ void gateway_service_mr(network net, std::string thread_name){
 #endif
     int cli_id;
     int id = 0;
-    while(1){
+    for(id = 0; id < number_of_images; id++){
 	cli_id = ready_queue.Dequeue();
-	g_t1 = what_time_is_it_now() - g_t0;
-	std::cout << g_t1 << std::endl;
+	g_t1 = g_t1 + what_time_is_it_now() - g_t0;
+	std::cout << g_t1/((float)(id + 1)) << std::endl;
 	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 	gateway_compute_mr(&net, cli_id);
 
@@ -204,7 +234,6 @@ void gateway_service_mr(network net, std::string thread_name){
 	free_image(im);
 	#endif
 	free_image(sized);
-	id += 1;
         break;
     }
 #ifdef NNPACK
@@ -214,17 +243,18 @@ void gateway_service_mr(network net, std::string thread_name){
 }
 
 
-void gateway_sync_mr(network net, std::string thread_name){
-    data_map_reduce(net, PORTNO);
+void gateway_sync_mr(network net, int number_of_images, std::string thread_name){
+    data_map_reduce(net, number_of_images, PORTNO);
 }
 
 
 void smart_gateway_mr(){
+    int number_of_images = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
-    std::thread t1(gateway_sync_mr, net,  "gateway_sync_mr");
-    std::thread t2(gateway_service_mr, net, "gateway_service_mr");
+    std::thread t1(gateway_sync_mr, net, number_of_images, "gateway_sync_mr");
+    std::thread t2(gateway_service_mr, net, number_of_images, "gateway_service_mr");
     exec_control(START_CTRL);
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
