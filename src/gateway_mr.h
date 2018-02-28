@@ -144,6 +144,9 @@ void data_map_reduce(network net, int number_of_images, int portno)
             std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
           recv_data_mr[job_id]=(float*)blob_buffer;
      }
+     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
+     std::cout << g_t1/((float)(id + 1)) << std::endl;
+     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
      ready_queue.Enqueue(cli_id);
    }
    close(sockfd);
@@ -194,9 +197,6 @@ void gateway_service_mr(network net, int number_of_images, std::string thread_na
     int id = 0;
     for(id = 0; id < number_of_images; id++){
 	cli_id = ready_queue.Dequeue();
-	g_t1 = g_t1 + what_time_is_it_now() - g_t0;
-	std::cout << g_t1/((float)(id + 1)) << std::endl;
-	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 	gateway_compute_mr(&net, cli_id);
 
 
