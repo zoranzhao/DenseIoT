@@ -76,7 +76,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
    char *blob_buffer;
    std::list< std::string > cli_list;
    std::list< int > job_id_list;
-   while(1){
+   for(int id = 0; id < number_of_images; id++){
      //Receive the data from a single client;
      gateway_require_data("start", BLUE1, portno);
      int cli_id;
@@ -139,7 +139,6 @@ void data_map_reduce(network net, int number_of_images, int portno)
           recv_data_mr[job_id]=(float*)blob_buffer;
      }
      ready_queue.Enqueue(cli_id);
-     break;
    }
    close(sockfd);
 }
@@ -249,7 +248,7 @@ void gateway_sync_mr(network net, int number_of_images, std::string thread_name)
 
 
 void smart_gateway_mr(){
-    int number_of_images = 1;
+    int number_of_images = 4;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);

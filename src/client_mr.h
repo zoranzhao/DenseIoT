@@ -311,7 +311,7 @@ void victim_client_local_mr(){
 
 
 void busy_client_mr(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_jobs = 4;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
@@ -324,7 +324,7 @@ void busy_client_mr(){
 
 
 void idle_client_mr(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_jobs = 4;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
