@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
     //victim_client_local();
 
-    //victim_client_shuffle();
+    victim_client_shuffle();
     //idle_client_shuffle();
     //smart_gateway_shuffle();
 
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     //server_prof();
     //toggle_gateway();
 
-    victim_client_local_mr();
+    //victim_client_local_mr();
     //busy_client_mr();
     //idle_client_mr();
     //smart_gateway_mr();
