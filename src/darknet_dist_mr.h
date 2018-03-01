@@ -264,6 +264,52 @@ inline network reshape_network_mr(int startfrom, int upto, network net){
     stage_output_range.h2 = net.layers[upto].out_h-1;
     stage_output_range.h = net.layers[upto].out_h;
 
+/*
+    //Print the memory consumption
+    FILE *layer_input;
+    FILE *layer_output;
+    char layer_input_name[30];
+    char layer_output_name[30];
+
+    sprintf(layer_input_name, "layer_input_%d.log", PARTITIONS);
+    sprintf(layer_output_name, "layer_output_%d.log", PARTITIONS);
+
+    layer_input  = fopen(layer_input_name, "w"); 
+    layer_output = fopen(layer_output_name, "w");  
+   
+    
+    for(int i = 0; i < upto+1; i++){
+        unsigned int input_size = 0;
+        unsigned int output_size = 0;
+        for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	    for(int p_w = 0; p_w < PARTITIONS_W; p_w++){ 
+       		unsigned int part_input_size = 0;
+        	unsigned int part_output_size = 0;
+		std::cout << "At layer: "<< i << ", part id is: "<< part_id[p_h][p_w] << std::endl;
+		part_input_size  =  input_ranges_mr[part_id[p_h][p_w]][i].w * input_ranges_mr[part_id[p_h][p_w]][i].h;
+		part_output_size =  (input_ranges_mr[part_id[p_h][p_w]][i].w/(net.layers[i].stride)) * 
+					(input_ranges_mr[part_id[p_h][p_w]][i].h/(net.layers[i].stride));
+
+		if(part_input_size > input_size) input_size = part_input_size;
+		if(part_output_size > output_size) output_size = part_output_size;
+	    }
+	}
+	
+
+        fprintf(layer_input,     "%f\n", (float)( input_size * net.layers[i].c * sizeof(float))/1024.0/1024.0 );
+        fprintf(layer_output,    "%f\n", (float)( output_size * net.layers[i].out_c * sizeof(float))/1024.0/1024.0 );
+
+
+    }
+    
+
+
+    fclose(layer_input);
+    fclose(layer_output);
+*/
+
+
+
     cal_dependency_mr(net, startfrom, upto);
     result_cal_dependency_mr(net, startfrom, upto);
 

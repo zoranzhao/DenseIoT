@@ -344,6 +344,8 @@ inline network reshape_network_shuffle(int startfrom, int upto, network net){
 */
 
 
+
+
     stage_input_range.w1 = 0;
     stage_input_range.w2 = net.layers[startfrom].w-1;
     stage_input_range.w = net.layers[startfrom].w;
@@ -358,6 +360,55 @@ inline network reshape_network_shuffle(int startfrom, int upto, network net){
     stage_output_range.h2 = net.layers[upto].out_h-1;
     stage_output_range.h = net.layers[upto].out_h;
 
+/*
+    //Print the memory consumption
+    FILE *layer_input;
+    FILE *layer_output;
+    FILE *layer_output_ir;
+
+
+    layer_input  = fopen("layer_input.log", "w"); 
+    layer_output = fopen("layer_output.log", "w");  
+    layer_output_ir = fopen("layer_output_ir.log", "w");  
+   
+    
+    for(i = 0; i < upto+1; i++){
+        unsigned int input_size = 0;
+        unsigned int output_size = 0;
+	unsigned int output_ir_size = 0;
+        for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	    for(int p_w = 0; p_w < PARTITIONS_W; p_w++){ 
+       		unsigned int part_input_size = 0;
+        	unsigned int part_output_size = 0;
+		unsigned int part_output_ir_size = 0;
+		std::cout << "At layer: "<< i << ", part id is: "<< part_id[p_h][p_w] << std::endl;
+		part_output_ir_size=    (ir_output[i][p_h][p_w].up_range.w   *ir_output[i][p_h][p_w].up_range.h) +
+					(ir_output[i][p_h][p_w].down_range.w *ir_output[i][p_h][p_w].down_range.h) +
+					(ir_output[i][p_h][p_w].left_range.w *ir_output[i][p_h][p_w].left_range.h) +
+					(ir_output[i][p_h][p_w].right_range.w*ir_output[i][p_h][p_w].right_range.h);
+		part_input_size  =  reuse_input_ranges[part_id[p_h][p_w]][i].w * reuse_input_ranges[part_id[p_h][p_w]][i].h;
+		part_output_size =  (reuse_input_ranges[part_id[p_h][p_w]][i].w/(net.layers[i].stride)) * 
+					(reuse_input_ranges[part_id[p_h][p_w]][i].h/(net.layers[i].stride));
+
+		if(part_input_size > input_size) input_size = part_input_size;
+		if(part_output_size > output_size) output_size = part_output_size;
+		if(part_output_ir_size > output_ir_size) output_ir_size = part_output_ir_size;
+	    }
+	}
+	
+
+        fprintf(layer_input,     "%f\n", (float)( input_size * net.layers[i].c * sizeof(float))/1024.0/1024.0 );
+        fprintf(layer_output,    "%f\n", (float)( output_size * net.layers[i].out_c * sizeof(float))/1024.0/1024.0 );
+        fprintf(layer_output_ir, "%f\n", (float)( output_ir_size * net.layers[i].out_c * sizeof(float))/1024.0/1024.0 );
+
+    }
+    
+
+
+    fclose(layer_input);
+    fclose(layer_output);
+    fclose(layer_output_ir);
+*/
 
     ir_data_spatial_dependency(net, startfrom, upto);
     result_ir_data_spatial_dependency(net, startfrom, upto);
