@@ -63,18 +63,18 @@ void task_recorder(int portno)
    char *blob_buffer;
    init_recv_counter();
 
+   bool g_t0_init = true;
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if(g_t0_init){g_t0 = what_time_is_it_now(); g_t0_init=false;}
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"register") == 0){
-
 	     //std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     read_sock(newsockfd, (char*)&job_num, sizeof(job_num));
 	     if(job_num > 0){
 		job_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
 		//std::cout << "Register task" << std::endl;
-	        g_t0 = what_time_is_it_now();
 	     }else{
 		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
 		//std::cout << "Delete task" << std::endl;
@@ -119,7 +119,7 @@ void task_recorder(int portno)
 	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
 	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
-		  g_t1 = g_t1 + what_time_is_it_now() - g_t0;
+		  g_t1 = what_time_is_it_now() - g_t0;
 		  std::cout << g_t1/(frame_num+1) << std::endl;
 		  std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 		  all = merge(cli_id, frame_num);
