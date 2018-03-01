@@ -9,8 +9,9 @@ inline int merge(int cli, int part){
 
 
 
-inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
+inline int forward_network_dist_gateway_shuffle(network *netp, network orig)
 {
+    int workload_amount;
     int part;
     network net = *netp;
 
@@ -52,6 +53,7 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        if(data == NULL) {
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
 	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
+	   workload_amount = part;
 	   break;
        }
        //std::cout<< "Processing task "<< part_id <<std::endl;
@@ -69,23 +71,24 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
        free(data);
     }
-    
+
+    return workload_amount;
 
 }
 
 
 
-inline float *network_predict_dist_shuffle(network *net, float *input)
+inline int network_predict_dist_shuffle(network *net, float *input)
 {
     network orig = *net;
     net->input = input;
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_gateway_shuffle(net, orig);
+    int workload_amount = forward_network_dist_gateway_shuffle(net, orig);
     float *out = net->output;
     *net = orig;
-    return out;
+    return workload_amount;
 }
 
 
@@ -102,6 +105,7 @@ void client_compute_shuffle(network *netp, unsigned int number_of_jobs, std::str
     int j;
     int id = 0;//5000 > id > 0
     unsigned int cnt = 0;//5000 > id > 0
+    int workload_amount = 0;
     for(cnt = 0; cnt < number_of_jobs; cnt ++){
         image sized;
 	sized.w = net->w; sized.h = net->h; sized.c = net->c;
@@ -109,7 +113,8 @@ void client_compute_shuffle(network *netp, unsigned int number_of_jobs, std::str
         load_image_by_number(&sized, id);
         float *X = sized.data;
         clear_coverage();
-	network_predict_dist_shuffle(net, X);
+	workload_amount = workload_amount + network_predict_dist_shuffle(net, X);
+	std::cout << workload_amount << std::endl;
         free_image(sized);
     }
 #ifdef NNPACK
@@ -227,6 +232,7 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
     double t0;
     double t1 = 0; 
     struct sockaddr_in addr;
+    int workload_amount = 0;
 
     while(1){
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
@@ -261,6 +267,8 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	}
         int cli_id = get_client_id(inet_ntoa(addr.sin_addr));
         int all = merge(cli_id, part_id);
+	std::cout << workload_amount << std::endl;
+	workload_amount ++ ;
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), all);
     }
 #ifdef NNPACK

@@ -179,6 +179,9 @@ void gateway_service(std::string thread_name){
 #endif
     int cli_id;
     int id = 0;
+
+
+
     while(1){
 	cli_id = ready_queue.Dequeue();
 	g_t1 = what_time_is_it_now() - g_t0;
