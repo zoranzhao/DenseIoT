@@ -380,14 +380,14 @@ void steal_server_shuffle(network net, std::string thread_name){
 void froward_result_to_gateway(std::string thread_name);
 
 void victim_client_shuffle(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_images = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_shuffle(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_compute_shuffle, &net, number_of_jobs, "client_compute");
+    std::thread t1(client_compute_shuffle, &net, number_of_images, "client_compute");
     std::thread t2(steal_server_shuffle, net, "steal_server");
     std::thread t3(froward_result_to_gateway, "froward_result_to_gateway");
     t1.join();
@@ -397,7 +397,6 @@ void victim_client_shuffle(){
 
 
 void idle_client_shuffle(){
-    unsigned int number_of_jobs = 1;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_shuffle(0, STAGES-1, *netp);
