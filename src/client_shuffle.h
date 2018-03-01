@@ -1,5 +1,12 @@
 #include "darknet_dist.h"
 
+//A function to compress cli id and part id into a interger
+inline int merge(int cli, int part){
+   int all = 0;
+   all = (cli << 8) + part;  
+   return all;
+}
+
 
 
 inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
@@ -56,7 +63,10 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        if(need_ir_data[part_id]==0){set_coverage(part_id);}
 
        std::cout<< "Processed task "<< part_id <<std::endl;
-       put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
+
+       int cli_id = get_client_id(CUR_CLI);
+       int all = merge(cli_id, part_id);
+       put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
        free(data);
     }
     
@@ -252,7 +262,9 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	        std::cout << "For partition number: "<< part_id << ", reuse data "<< result_ir_data_size[part_id]*sizeof(float) << " has been sent to victim client"<< std::endl;
 		delete ir_blob;
 	}
-	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), part_id);
+        int cli_id = get_client_id(inet_ntoa(addr.sin_addr));
+        int all = merge(cli_id, part_id);
+	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), all);
     }
 #ifdef NNPACK
     pthreadpool_destroy(netp->threadpool);

@@ -117,8 +117,10 @@ extern int output_overlap;
 extern ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
 
 //For smart gateway
-extern unsigned int recv_counters[CLI_NUM];
-extern float* recv_data[CLI_NUM][PARTITIONS];
+extern unsigned int recv_counters[IMG_NUM][CLI_NUM];
+extern float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
+extern unsigned int frame_counters[CLI_NUM][PARTITIONS];
+
 
 
 //For reuse data serialization and deserialization
@@ -135,8 +137,6 @@ extern int result_down[PARTITIONS][STAGES];
 extern unsigned int result_ir_data_size[PARTITIONS];
 extern int need_ir_data[PARTITIONS];
 extern int coverage[PARTITIONS_H][PARTITIONS_W];
-
-
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2);
 sub_index calculate_range(sub_index output, layer l);

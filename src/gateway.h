@@ -1,5 +1,35 @@
 #include "darknet_dist.h"
 
+inline int get_cli(int all){
+   int cli = 0;
+   cli = all >> 8;  
+   return cli;
+}
+
+inline int get_part(int all){
+   int part = 0;
+   part = all & 0x000f;  
+   return part;
+}
+
+
+
+void init_recv_counter(){
+//unsigned int recv_counters[IMG_NUM][CLI_NUM];
+//unsigned int frame_counters[CLI_NUM][PARTITIONS];
+    for(int i; i < IMG_NUM; i ++){
+	for(int j; j < CLI_NUM; j ++){
+	   recv_counters[i][j] = 0; 
+	}
+    }
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   frame_counters[i][j] = 0; 
+	}
+    }
+
+}
+
 
 void task_recorder(int portno)
 {  
@@ -25,6 +55,7 @@ void task_recorder(int portno)
 
    int job_id;
    char *blob_buffer;
+   init_recv_counter();
 
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -62,20 +93,24 @@ void task_recorder(int portno)
 		//std::cout <<  *it << std::endl;
 	     //}
         }else if(strcmp (request_type,"result") == 0){
-	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+             int all;
+	     read_sock(newsockfd, (char*)&all, sizeof(all));
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     int cli_id = get_client_id(inet_ntoa(cli_addr.sin_addr) );
+	     int cli_id = get_cli(all);
+             job_id = get_part(all);
 	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-             recv_data[cli_id][job_id]=(float*)blob_buffer;
-	     recv_counters[cli_id] = recv_counters[cli_id] + 1; 
-	     if(recv_counters[cli_id] == PARTITIONS) {
+             int frame_num = frame_counters[cli_id][job_id];
+             frame_counters[cli_id][job_id]++;
+	     //unsigned int recv_counters[IMG_NUM][CLI_NUM];
+	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
+             recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
+	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
+	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
-                  recv_counters[cli_id] = 0;
 		  ready_queue.Enqueue(cli_id);
 	     }
         }

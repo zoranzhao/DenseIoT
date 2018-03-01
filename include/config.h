@@ -10,16 +10,15 @@
 #define GATEWAY "10.157.89.51"//"192.168.4.1"
 #define AP "192.168.4.1"
 
-#define PINK0    "192.168.4.16"
-#define BLUE0    "192.168.4.14"
-#define ORANGE0  "192.168.4.15"
-
-#define PINK1    "192.168.4.4"
 #define BLUE1    "192.168.4.9"
 #define ORANGE1  "192.168.4.8"
+#define PINK1    "192.168.4.4"
+
+#define BLUE0    "192.168.4.14"
+#define ORANGE0  "192.168.4.15"
+#define PINK0    "192.168.4.16"
 
 #define CLI_NUM 6
-#define ACT_CLI 6
 #define IMG_NUM 4
 
 #define DEBUG_DIST 0
@@ -29,5 +28,8 @@
 #define PARTITIONS 6
 #define THREAD_NUM 1
 
+
+#define ACT_CLI 6
+#define CUR_CLI BLUE1
 
 #endif
