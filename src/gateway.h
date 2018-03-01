@@ -8,13 +8,13 @@ inline int get_cli(int all){
 
 inline int get_part(int all){
    int part = 0;
-   part = all & 0x000f;  
+   part = all & 0x00ff;  
    return part;
 }
 
 inline int get_frame(int all){
    int part = 0;
-   part = all & 0x000f;  
+   part = all & 0x00ff;  
    return part;
 }
 
