@@ -12,7 +12,13 @@ inline int get_part(int all){
    return part;
 }
 
+inline int get_frame(int all){
+   int part = 0;
+   part = all & 0x000f;  
+   return part;
+}
 
+inline int merge(int cli, int part);
 
 void init_recv_counter(){
 //unsigned int recv_counters[IMG_NUM][CLI_NUM];
@@ -111,7 +117,8 @@ void task_recorder(int portno)
 	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
 	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
-		  ready_queue.Enqueue(cli_id);
+		  all = merge(cli_id, frame_num);
+		  ready_queue.Enqueue(all);
 	     }
         }
 
@@ -132,8 +139,8 @@ inline void gateway_compute(network *netp, int cli_id)
 
 
     for(int part = 0; part < PARTITIONS; part ++){
-       join_output(part, recv_data[cli_id][part],  stage_out, upto, net);
-       free(recv_data[cli_id][part]);
+       join_output(part, recv_data[get_frame(cli_id)][get_cli(cli_id)][part],  stage_out, upto, net);
+       free(recv_data[get_frame(cli_id)][get_cli(cli_id)][part]);
     }
 
     net.input = stage_out;
