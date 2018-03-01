@@ -317,6 +317,10 @@ inline void forward_network_dist_prof(network *netp)
     network net = *netp;
     int i;
 //Profiling of communication and computation time
+    double t0 = what_time_is_it_now();
+    double t1 = 0;
+    FILE *layer_exe;
+    layer_exe = fopen("layer_exe_time.log", "w");  
 /*
     double t0 = what_time_is_it_now();
     double t1 = 0;
@@ -373,8 +377,12 @@ inline void forward_network_dist_prof(network *netp)
 	else
            fprintf(layer_weight, "%f\n", (float)(net.layers[i].nweights*sizeof(float))/1024.0/1024.0 );
 */
-        net.layers[i].forward(net.layers[i], net);
+//        net.layers[i].forward(net.layers[i], net);
 //Profiling of communication and computation time
+        t0 = what_time_is_it_now();
+        net.layers[i].forward(net.layers[i], net);
+        t1 = what_time_is_it_now() - t0;
+        fprintf(layer_exe, "%f\n", t1);
 /*
         t0 = what_time_is_it_now();
         net.layers[i].forward(net.layers[i], net);
@@ -395,6 +403,7 @@ inline void forward_network_dist_prof(network *netp)
     }
 
 //Profiling of communication and computation time
+    fclose(layer_exe);
 /*
     fclose(layer_comm);
     fclose(layer_exe);
@@ -417,8 +426,8 @@ inline float *network_predict_dist_prof(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    //forward_network_dist_prof(net);
-    forward_network_dist(net, orig);
+    forward_network_dist_prof(net);
+    //forward_network_dist(net, orig);
     float *out = net->output;
     *net = orig;
     return out;
