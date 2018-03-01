@@ -20,9 +20,7 @@ void gateway_service_shuffle(std::string thread_name){
     int id = 0;
     while(1){
 	cli_id = ready_queue.Dequeue();
-	g_t1 = what_time_is_it_now() - g_t0;
-	std::cout << g_t1 << std::endl;
-	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+
 	gateway_compute(&net, cli_id);
 
 
@@ -79,7 +77,6 @@ void smart_gateway_shuffle(){
     std::thread t1(gateway_sync, "gateway_sync");
     std::thread t2(gateway_service_shuffle, "gateway_service");
     exec_control(START_CTRL);
-    g_t0 = what_time_is_it_now();
     g_t1 = 0;
     t1.join();
     t2.join();
