@@ -171,25 +171,25 @@ inline void req_ir_data_deserialization(network net, int part, float* input, int
 
       for(int i = startfrom; i < upto; ++i){
 	if(up[part][i]==1){
-		std::cout << i << " up part "<< part << "size is: "<< ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float) <<  std::endl;
+		//std::cout << i << " up part "<< part << "size is: "<< ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float) <<  std::endl;
 		ir_output[i][p_h-1][p_w].down = (float*)malloc(   ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h-1][p_w].down, input_data, ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c;
 	}
 	if(left[part][i]==1){
-		std::cout << i << " left part "<< part << "size is: "<<ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c*sizeof(float) <<  std::endl;
+		//std::cout << i << " left part "<< part << "size is: "<<ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c*sizeof(float) <<  std::endl;
 		ir_output[i][p_h][p_w-1].right = (float*)malloc(   ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w-1].right, input_data, ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c;
 	}
 	if(down[part][i]==1){
-		std::cout << i << " down part "<< part<< "size is: "<< ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c*sizeof(float)<< std::endl;
+		//std::cout << i << " down part "<< part<< "size is: "<< ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c*sizeof(float)<< std::endl;
 		ir_output[i][p_h+1][p_w].up = (float*)malloc(   ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h+1][p_w].up, input_data, ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c;
 	}
 	if(right[part][i]==1){
-		std::cout << i << " right part "<< part <<"size is: "<<  ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c*sizeof(float) <<std::endl;
+		//std::cout << i << " right part "<< part <<"size is: "<<  ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c*sizeof(float) <<std::endl;
 		ir_output[i][p_h][p_w+1].left = (float*)malloc(   ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c*sizeof(float));
 		memcpy(ir_output[i][p_h][p_w+1].left, input_data, ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c*sizeof(float) ); 
 		input_data = input_data + ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c;
