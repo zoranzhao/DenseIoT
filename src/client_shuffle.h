@@ -231,13 +231,13 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
     while(1){
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		continue;
 	}
         int ready = 0;
 	dataBlob* blob = steal_and_return_shuffle(*netp, &ready, inet_ntoa(addr.sin_addr), PORTNO);
         if(blob->getID() == -1){
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		continue;
 	}
 	data = (float*)(blob -> getDataPtr());
