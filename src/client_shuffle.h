@@ -50,11 +50,11 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
     for(part = 0; 1; part ++){
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {
-	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
+	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
 	   break;
        }
-       std::cout<< "Processing task "<< part_id <<std::endl;
+       //std::cout<< "Processing task "<< part_id <<std::endl;
        if( is_part_ready(part_id) != 1 && need_ir_data[part_id]==1){
 		net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data[part_id], startfrom, upto, net);
        }else{
@@ -62,7 +62,7 @@ inline void forward_network_dist_gateway_shuffle(network *netp, network orig)
        }
        if(need_ir_data[part_id]==0){set_coverage(part_id);}
 
-       std::cout<< "Processed task "<< part_id <<std::endl;
+       //std::cout<< "Processed task "<< part_id <<std::endl;
 
        int cli_id = get_client_id(CUR_CLI);
        int all = merge(cli_id, part_id);
@@ -150,7 +150,7 @@ dataBlob* steal_and_return_shuffle(network net, int *ready, const char *dest_ip,
 
      if(job_id != -1){
           if(need_ir_data[job_id]==1){
-	     std::cout << "Stealing reuse data for partition number: "<< job_id << std::endl;
+	     //std::cout << "Stealing reuse data for partition number: "<< job_id << std::endl;
 	     char *reuse_data;
 	     unsigned int reuse_data_length;
 	     int reuse_part_id;
@@ -160,9 +160,9 @@ dataBlob* steal_and_return_shuffle(network net, int *ready, const char *dest_ip,
 		     read_sock(sockfd, (char*)&reuse_data_length, sizeof(reuse_data_length));
 		     reuse_data = (char*)malloc(reuse_data_length);
 		     read_sock(sockfd, reuse_data, reuse_data_length);
-		     std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
+		     //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
 		     req_ir_data_deserialization(net, reuse_part_id, (float*)reuse_data, 0, STAGES-1);
-		     std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
+		     //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
 		     free(reuse_data);
 	     }
            }
@@ -231,19 +231,19 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
     while(1){
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		continue;
 	}
         int ready = 0;
 	dataBlob* blob = steal_and_return_shuffle(*netp, &ready, inet_ntoa(addr.sin_addr), PORTNO);
         if(blob->getID() == -1){
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		continue;
 	}
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
+	//std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
 
 	if( ready == 0 && need_ir_data[part_id]==1){
 		net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
@@ -256,7 +256,7 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
 	        float* reuse_data = result_ir_data_serialization(*netp, part_id, 0, STAGES-1);
 		dataBlob* ir_blob = (new dataBlob((void*)reuse_data, result_ir_data_size[part_id]*sizeof(float), part_id));
 		send_ir_data(ir_blob, inet_ntoa(addr.sin_addr), PORTNO);
-	        std::cout << "For partition number: "<< part_id << ", reuse data "<< result_ir_data_size[part_id]*sizeof(float) << " has been sent to victim client"<< std::endl;
+	        //std::cout << "For partition number: "<< part_id << ", reuse data "<< result_ir_data_size[part_id]*sizeof(float) << " has been sent to victim client"<< std::endl;
 		delete ir_blob;
 	}
         int cli_id = get_client_id(inet_ntoa(addr.sin_addr));
@@ -313,7 +313,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     put_result((void*)blob_buffer, bytes_length, job_id);
 	     //std::cout << "At time " << g_t1 << ", put result " << job_id << " into res_queue" <<std::endl;  
 	}else if(strcmp (request_type,"steals") == 0){
-	     std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     try_get_job((void**)&blob_buffer, &bytes_length, &job_id);
 	     if(blob_buffer == NULL) {
 		bytes_length = 4; blob_buffer = (char*)malloc(bytes_length+1); 
@@ -322,7 +322,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	    	write_sock(newsockfd, blob_buffer, bytes_length);
 	     }else{
 		     if(need_ir_data[job_id]==0){
-			std::cout << "Serve steal of part number "<< job_id << " no need for reused data..." << std::endl;
+			//std::cout << "Serve steal of part number "<< job_id << " no need for reused data..." << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 			write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 			write_sock(newsockfd, blob_buffer, bytes_length);
@@ -331,20 +331,20 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 		     	write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		    	write_sock(newsockfd, blob_buffer, bytes_length);
-			std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
+			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
 			float* reuse_data = req_ir_data_serialization(net, job_id, 0, STAGES-1);
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 			unsigned int reuse_size = ir_data_size[job_id]*sizeof(float);
 			write_sock(newsockfd, (char*)&(reuse_size), sizeof(reuse_size));
 			write_sock(newsockfd, (char*)reuse_data, reuse_size);
-			std::cout << "Served the stealing of reuse data for partition number: "<< job_id << std::endl;
+			//std::cout << "Served the stealing of reuse data for partition number: "<< job_id << std::endl;
 			free(reuse_data);
 		     }else if( need_ir_data[job_id]==1 ) {
 			bytes_length = input_ranges[job_id][0].w*input_ranges[job_id][0].h*net.layers[0].c*sizeof(float);
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		    	write_sock(newsockfd, (char*)part_data[job_id], bytes_length);
-			std::cout << "Serve the stealing of reuse data for partition number: "<< job_id<<", well it is not ready yet ...." << std::endl;
+			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id<<", well it is not ready yet ...." << std::endl;
 			job_id = -1; 
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		     }
@@ -356,7 +356,7 @@ void serve_steal_and_gather_result_shuffle(network net, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
-	     std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id]*sizeof(float) << " has been arrived at victim client.."<< std::endl;
+	     //std::cout << "For partition number: "<< job_id << ", reuse data "<< result_ir_data_size[job_id]*sizeof(float) << " has been arrived at victim client.."<< std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
 	     set_coverage(job_id);
 	     free(blob_buffer);
