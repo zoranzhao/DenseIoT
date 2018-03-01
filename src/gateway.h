@@ -117,6 +117,7 @@ void task_recorder(int portno)
 	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
              recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
+	     std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
 	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
 		  g_t1 = what_time_is_it_now() - g_t0;
