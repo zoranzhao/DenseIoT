@@ -220,9 +220,6 @@ inline void steal_through_gateway_shuffle(network *netp, std::string thread_name
     network net = *netp;
     int startfrom = 0;
     int upto = STAGES-1;
-    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-    float* stage_in = net.input; 
     float* data;
     int part_id;
     unsigned int size;

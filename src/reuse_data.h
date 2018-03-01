@@ -383,7 +383,10 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 	    net.layers[i].inputs = net.layers[i].h * net.layers[i].w * net.layers[i].c; 
 	}
 
-
+	int to_free_cropped_output = 0;
+	float * cropped_output;
+	int to_free_next_input = 0;
+	float* next_input;
     	for(int i = startfrom; i < upto+1; i++){
 		//std::cout << "-----------At layer----------: " << i << std::endl;
 		//std::cout << "Input is: "<< std::endl;
@@ -391,12 +394,16 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 		//std::cout << "Output is: "<< std::endl;
 		//print_subindex(reuse_output_ranges[part][i]);
 		net.layers[i].forward(net.layers[i], net);
-		float * cropped_output;
+	        if (to_free_cropped_output == 1) {
+		    free(cropped_output); 
+		    to_free_cropped_output = 0; //Free the memory allocated by the reshape_input function call;
+	        }
 	        if(net.layers[i].type == CONVOLUTIONAL){
 			//std::cout<< "We should crop the output of the conv layer first..." <<std::endl;
 			layer l = net.layers[i]; 
 			sub_index tmp = crop_ranges(reuse_input_ranges[part][i], reuse_output_ranges[part][i]);   
 			cropped_output = reshape_input(net.layers[i].output, l.out_w, l.out_h, l.out_c,  tmp.w1, tmp.w2, tmp.h1, tmp.h2);
+			to_free_cropped_output = 1;
 		}else{
 			cropped_output = net.layers[i].output;
 		}
@@ -499,7 +506,11 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 		  }
                 }
 
-		float* next_input;
+	        if (to_free_next_input == 1) {
+		    free(next_input); 
+		    to_free_next_input = 0; //Free the memory allocated by the reshape_input function call;
+	        }
+
 		if(i < upto){
 
 			sub_index main_index;
@@ -518,6 +529,7 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 		        next_input = (float*)malloc(reuse_input_ranges[part_id[p_h][p_w]][i+1].w*reuse_input_ranges[part_id[p_h][p_w]][i+1].h*net.layers[i].out_c*sizeof(float));
 		        copy_input_to_output(cropped_output, next_input, reuse_input_ranges[part_id[p_h][p_w]][i+1].w, reuse_input_ranges[part_id[p_h][p_w]][i+1].h, 
 							net.layers[i].out_c, main_index.w1, main_index.w2, main_index.h1, main_index.h2);
+			to_free_next_input = 1;
 		}
 
 		//std::cout<< ".....................OK, let us do it then....................." <<std::endl;
@@ -586,6 +598,8 @@ inline network forward_stage_reuse_full(int p_h, int p_w, float *input,int start
 	}
         //std::cout << "==========Finish=============: " << part_id[p_h][p_w] << std::endl;
 
+	if (to_free_next_input == 1)   free(next_input); 
+	if (to_free_cropped_output == 1)  free(cropped_output); 
 	return net;
 
 }
