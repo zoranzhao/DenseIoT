@@ -21,7 +21,7 @@ inline float* req_ir_data_serialization_v2(network net, int part, int startfrom,
 		output = output + ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c;
 		//profile_num += ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c;
 		//std::cout  << "Shift number is ... "<< profile_num << std::endl;
-		*size = *size + ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c*sizeof(float);
+		*size = *size + ir_output[i][p_h-1][p_w].down_range.w*ir_output[i][p_h-1][p_w].down_range.h*net.layers[i].out_c;
 	}
 	if(left[part][i]==1&&req[1]){
 		//std::cout << "Serializing the left block of the " << std::endl;
@@ -30,7 +30,7 @@ inline float* req_ir_data_serialization_v2(network net, int part, int startfrom,
 		output = output + ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c;
 		//profile_num +=  ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c;
 		//std::cout  << "Shift number is ... "<< profile_num << std::endl;
-		*size = *size + ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c*sizeof(float);
+		*size = *size + ir_output[i][p_h][p_w-1].right_range.w*ir_output[i][p_h][p_w-1].right_range.h*net.layers[i].out_c;
 	}
 	if(down[part][i]==1&&req[2]){
 		//std::cout << "Serializing the down block of the " << std::endl;
@@ -39,7 +39,7 @@ inline float* req_ir_data_serialization_v2(network net, int part, int startfrom,
 		output = output + ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c;
 		//profile_num +=  ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c;
 		//std::cout  << "Shift number is ... "<< profile_num << std::endl;
-		*size = *size + ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c*sizeof(float);
+		*size = *size + ir_output[i][p_h+1][p_w].up_range.w*ir_output[i][p_h+1][p_w].up_range.h*net.layers[i].out_c;
 	}
 	if(right[part][i]==1&&req[3]){
 		//std::cout << "Serializing the right block of the " << std::endl;
@@ -48,12 +48,16 @@ inline float* req_ir_data_serialization_v2(network net, int part, int startfrom,
 		output = output + ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c;
 		//profile_num +=  ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c;
 		//std::cout  << "Shift number is ... "<< profile_num << std::endl;
-		*size = *size + ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c*sizeof(float);
+		*size = *size + ir_output[i][p_h][p_w+1].left_range.w*ir_output[i][p_h][p_w+1].left_range.h*net.layers[i].out_c;
 	}
 	//std::cout << "===================At layer: " << i  << std::endl;
       }
+      
+      unsigned int offset = *size;
 
-      return (output - ir_data_size[part]);
+      *size = (*size) * sizeof(float);
+      std::cout << "The size of IR data required to be transmitted is: " << *size << std::endl;
+      return (output - offset);
 }
 
 
