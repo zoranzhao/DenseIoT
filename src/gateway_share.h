@@ -129,7 +129,7 @@ void task_share(network net, int number_of_images, int portno)
 
 
 
-     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+     for(int part_cnt = 0; part_cnt < PARTITIONS; part_cnt ++ ){
 	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	  t0 = what_time_is_it_now();
 	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
