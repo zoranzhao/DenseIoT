@@ -52,7 +52,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 		dataBlob* blob = result_queue.Dequeue();
 		std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
 		std::cout <<"Sending results ID is: "<< blob->getID() << std::endl;  
-		send_result(blob, AP, PORTNO);
+		send_result_share(blob, AP, PORTNO);
 	    }
     }
 }
