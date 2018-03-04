@@ -91,11 +91,11 @@ inline void forward_network_dist_share(network *netp, int sockfd)
     for(int part = 0; 1; part ++){
        std::cout<< "Getting job task " <<std::endl;
        get_job((void**)&data, &size, &part_id);
-       if(part == (cur_client_task_num-1)) break;
        std::cout<< "Processing task "<< part_id <<std::endl;
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
+       if(part == (cur_client_task_num-1)) break;
     }
 
 }
