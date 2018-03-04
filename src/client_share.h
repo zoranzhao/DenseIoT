@@ -30,6 +30,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 	    if (newsockfd < 0) sock_error("ERROR on accept");
 	    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
 	    std::cout << "Recved task number is: "<< total_part_num << std::endl;
+	    cur_client_task_num = total_part_num;
 	    close(newsockfd);
 
 
@@ -87,10 +88,8 @@ inline void forward_network_dist_share(network *netp, int sockfd)
 
     for(int part = 0; 1; part ++){
        std::cout<< "Getting job task " <<std::endl;
-       try_get_job((void**)&data, &size, &part_id);
-       if(data == NULL) {
-	   break;
-       }
+       get_job((void**)&data, &size, &part_id);
+       if(part == (cur_client_task_num-1)) break;
        std::cout<< "Processing task "<< part_id <<std::endl;
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);

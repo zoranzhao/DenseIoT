@@ -84,6 +84,7 @@ float* recv_data_mr[IMG_NUM][PARTITIONS];
 
 //For work sharing reference
 int assigned_task_num[ACT_CLI];
+int cur_client_task_num;
 
 //Add some variable for communication and computation profiling
 double commu_time = 0.0;

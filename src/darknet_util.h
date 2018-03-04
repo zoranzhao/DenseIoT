@@ -184,6 +184,6 @@ extern double comp_time;
 #endif
 
 extern int assigned_task_num[ACT_CLI];
-
+extern int cur_client_task_num;
 
 
