@@ -183,7 +183,7 @@ extern double commu_time;
 extern double comp_time;
 #endif
 
-
+extern int assigned_task_num[ACT_CLI];
 
 
 

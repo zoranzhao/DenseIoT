@@ -5,6 +5,8 @@
 #include "client_shuffle.h"
 #include "client_mr.h"
 #include "gateway_mr.h"
+#include "client_share.h"
+#include "gateway_share.h"
 
 void get_image(image* im, int* im_id){
     unsigned int size;
