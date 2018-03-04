@@ -130,7 +130,7 @@ void task_and_ir_recorder(network net, int portno)
 		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
 		std::cout << "Delete task" << std::endl;
              }
-	     std::cout << "Task list is ... : " << std::endl;
+	     //std::cout << "Task list is ... : " << std::endl;
 	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
 		//std::cout <<  *it << std::endl;
 	     //}
