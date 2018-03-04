@@ -23,13 +23,13 @@
 
 #define DEBUG_DIST 0
 #define STAGES 16
-#define PARTITIONS_W 6
-#define PARTITIONS_H 1
-#define PARTITIONS 6
+#define PARTITIONS_W 3
+#define PARTITIONS_H 3
+#define PARTITIONS 9
 #define THREAD_NUM 1
 
 
-#define ACT_CLI 6
+#define ACT_CLI 1
 #define CUR_CLI BLUE1
 
 #endif
