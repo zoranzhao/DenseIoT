@@ -134,13 +134,12 @@ void task_share(network net, int number_of_images, int portno)
 	  t0 = what_time_is_it_now();
 	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+          std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 	  blob_buffer = (char*)malloc(bytes_length);
 	  read_sock(newsockfd, blob_buffer, bytes_length);
 	  t1 = what_time_is_it_now();
 	  commu_time = commu_time + t1 - t0;
      	  close(newsockfd);
-	  if(print_gateway)
-            std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
           recv_data[id][cli_id][job_id]=(float*)blob_buffer;
      }
      g_t1 = g_t1 + what_time_is_it_now() - g_t0;
