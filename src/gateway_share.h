@@ -111,6 +111,7 @@ void task_share(network net, int number_of_images, int portno)
      t0 = what_time_is_it_now();
      int part = 0;
      for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+	std::cout << "Sending to client" << addr_list[cli_cnt] << "Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
         send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
 	for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
 		if(print_gateway)
