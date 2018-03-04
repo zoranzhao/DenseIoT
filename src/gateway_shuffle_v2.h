@@ -36,10 +36,7 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
     int id = 0;
     while(1){
 	cli_id = ready_queue.Dequeue();
-
 	gateway_compute(&net, cli_id);
-
-
 	#ifdef DEBUG_DIST
 	image sized;
 	sized.w = net.w; sized.h = net.h; sized.c = net.c;
