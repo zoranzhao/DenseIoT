@@ -189,8 +189,12 @@ void task_and_ir_recorder(network net, int portno)
 	     notify_ir_ready(BLUE1, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
      	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-	     float* reuse_data = req_ir_data_serialization(net, job_id, 0, STAGES-1);
-	     unsigned int reuse_size = ir_data_size[job_id]*sizeof(float);
+	     bool *req = (bool*)malloc(4*sizeof(bool));
+             read_sock(newsockfd, (char*)req, 4*sizeof(bool));
+	     unsigned int reuse_size;
+	     float* reuse_data = req_ir_data_serialization_v2(net, job_id, 0, STAGES-1, req, &reuse_size);
+	     free(req);
+	     //unsigned int reuse_size = ir_data_size[job_id]*sizeof(float);
              write_sock(newsockfd, (char*)&(reuse_size), sizeof(reuse_size));
              write_sock(newsockfd, (char*)reuse_data, reuse_size);
              std::cout << "Served the stealing of reuse data for partition number: "<< job_id << std::endl;

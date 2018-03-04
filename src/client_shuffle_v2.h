@@ -24,11 +24,15 @@ void get_ir_data_from_gateway(network net, int part_id){
 		sock_error("ERROR connecting");
      write_sock(gateway_sock, "ir_data_r", 10);
      write_sock(gateway_sock, (char*)&job_id, sizeof(job_id));
+
+     bool* req = get_local_coverage(job_id);
+     write_sock(gateway_sock, (char*)req, 4*sizeof(bool));
+
      read_sock(gateway_sock, (char*)&reuse_data_length, sizeof(reuse_data_length));
      reuse_data = (char*)malloc(reuse_data_length);
      read_sock(gateway_sock, reuse_data, reuse_data_length);
      //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
-     req_ir_data_deserialization(net, job_id, (float*)reuse_data, 0, STAGES-1);
+     req_ir_data_deserialization_v2(net, job_id, (float*)reuse_data, 0, STAGES-1, req);
      //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
      free(reuse_data);	
      close(gateway_sock);
@@ -298,6 +302,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	free(data);
 	delete blob;
 	if(need_ir_data[part_id]==0){//Doesn't need intermediate data, which means it will generate IR data
+		set_coverage(part_id);
 	        float* reuse_data = result_ir_data_serialization(*netp, part_id, 0, STAGES-1);
 		dataBlob* ir_blob = (new dataBlob((void*)reuse_data, result_ir_data_size[part_id]*sizeof(float), part_id));
 		send_ir_data(ir_blob, AP, SMART_GATEWAY);
