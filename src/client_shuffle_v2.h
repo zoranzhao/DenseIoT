@@ -11,7 +11,11 @@ void get_ir_data_from_gateway(network net, int part_id){
      char *reuse_data;
      unsigned int reuse_data_length;
 
-
+     bool* req = get_local_coverage(job_id);
+     if((!req[0]) && (!req[1]) && (!req[2]) && (!req[3])){
+	free(req);	
+	return;
+     }
      struct sockaddr_in serv_addr;
      gateway_sock = socket(AF_INET, SOCK_STREAM, 0);
      if (gateway_sock < 0) 
@@ -24,8 +28,6 @@ void get_ir_data_from_gateway(network net, int part_id){
 		sock_error("ERROR connecting");
      write_sock(gateway_sock, "ir_data_r", 10);
      write_sock(gateway_sock, (char*)&job_id, sizeof(job_id));
-
-     bool* req = get_local_coverage(job_id);
      write_sock(gateway_sock, (char*)req, 4*sizeof(bool));
 
      read_sock(gateway_sock, (char*)&reuse_data_length, sizeof(reuse_data_length));
@@ -34,7 +36,8 @@ void get_ir_data_from_gateway(network net, int part_id){
      //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
      req_ir_data_deserialization_v2(net, job_id, (float*)reuse_data, 0, STAGES-1, req);
      //std::cout << "Stealing reuse data for partition number, size is: "<< reuse_data_length << std::endl;
-     free(reuse_data);	
+     free(reuse_data);
+     free(req);		
      close(gateway_sock);
 }
 
