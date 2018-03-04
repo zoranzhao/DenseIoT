@@ -1,7 +1,22 @@
 #include "darknet_dist_mr.h"
 void send_result_share(dataBlob* blob, const char *dest_ip, int portno);
 
-inline int bind_port_client();
+
+inline int bind_port_client_share(int portno){
+    int sockfd;
+    struct sockaddr_in serv_addr;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+	sock_error("ERROR opening socket");
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+	sock_error("ERROR on binding");
+    listen(sockfd, 10);//back_log numbers 
+    return sockfd;
+}
 
 void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd, std::string thread_name){
     int newsockfd;
@@ -145,10 +160,11 @@ void busy_client_share(){
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
     exec_control(START_CTRL);
-    int sockfd = bind_port_client();
+    int sockfd = bind_port_client_share(PORTNO);
+    int sockfd_syn = bind_port_client_share(SMART_GATEWAY);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_with_image_input_share, &net, number_of_jobs, sockfd, "client_with_image_input_share");
+    std::thread t1(client_with_image_input_share, &net, number_of_jobs, sockfd_syn, "client_with_image_input_share");
     std::thread t2(get_data_and_send_result_to_gateway, number_of_jobs, sockfd, "get_data_and_send_result_to_gateway");
     t1.join();
     t2.join();
@@ -161,7 +177,7 @@ void idle_client_share(){
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
     exec_control(START_CTRL);
-    int sockfd = bind_port_client();
+    int sockfd = bind_port_client_share(PORTNO);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
     std::thread t1(client_without_image_input_share, &net, number_of_jobs, sockfd, "client_without_image_input_share");

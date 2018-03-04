@@ -13,7 +13,7 @@ void cal_workload_mapping(){
 
 }
 
-
+inline int bind_port_client_share(int portno);
 
 
 void send_result_share(dataBlob* blob, const char *dest_ip, int portno)
@@ -90,7 +90,7 @@ void task_share(network net, int number_of_images, int portno)
 
    for(int id = 0; id < number_of_images; id++){
      //Receive the data from a single client;
-     gateway_require_data("start", BLUE1, portno);
+     gateway_require_data("start", BLUE1, SMART_GATEWAY);
      int cli_id;
      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
      g_t0 = what_time_is_it_now();
