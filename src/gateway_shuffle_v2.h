@@ -157,7 +157,7 @@ void task_and_ir_recorder(network net, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
-	     std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
+	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
 	     int cli_id = get_cli(all);
              job_id = get_part(all);
 	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
@@ -168,12 +168,12 @@ void task_and_ir_recorder(network net, int portno)
 	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
              recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
-	     std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
+	     //std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
 	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
 		  g_t1 = what_time_is_it_now() - g_t0;
 		  std::cout << g_t1/(frame_num+1) << std::endl;
-		  std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 		  all = merge(cli_id, frame_num);
 		  ready_queue.Enqueue(all);
 	     }

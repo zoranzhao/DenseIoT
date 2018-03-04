@@ -114,7 +114,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig)
        }
 
        //std::cout<< "Processing task "<< part_id <<std::endl;
-       if( is_part_ready(part_id) = 1 && need_ir_data[part_id]==1){
+       if( is_part_ready(part_id) == 1 && need_ir_data[part_id]==1){
 		std::cout << "Is able to reuse data for processing in part " << part_id << std::endl;
 		get_ir_data_from_gateway(net, part_id);
 		net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
