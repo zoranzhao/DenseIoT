@@ -51,11 +51,8 @@ unsigned int result_ir_data_size[PARTITIONS];
 float* reuse_part_data[PARTITIONS];
 int coverage[PARTITIONS_H][PARTITIONS_W];
 
-
 //Indicating whether a particular partition require intermediate data or not
 int need_ir_data[PARTITIONS];
-
-
 
 //Global variables for MapReduce-like task distribution 
 ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];

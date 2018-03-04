@@ -1,6 +1,9 @@
 #include "darknet_dist.h"
 #include "serialization_v2.h"
 
+
+
+
 void notify_ir_ready(const char *dest_ip, int portno)
 {
      int sockfd;
@@ -183,7 +186,7 @@ void task_and_ir_recorder(network net, int portno)
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
 	     set_coverage(job_id);
 	     free(blob_buffer);
-	     notify_ir_ready(BLUE1, PORTNO);//TODO
+	     //notify_ir_ready(BLUE1, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
      	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	     bool *req = (bool*)malloc(4*sizeof(bool));

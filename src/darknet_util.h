@@ -102,14 +102,11 @@ extern sub_index stage_output_range;
 extern sub_index stage_output_partition_ranges[PARTITIONS];
 extern float* part_data[PARTITIONS];
 
-
-
 //For data reuse
 extern sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 extern sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
 extern input_dim dims[STAGES];
 extern float* reuse_part_data[PARTITIONS];
-
 
 //Partition overlap
 extern int overlaps[STAGES];
@@ -120,8 +117,6 @@ extern ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
 extern unsigned int recv_counters[IMG_NUM][CLI_NUM];
 extern float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
 extern unsigned int frame_counters[CLI_NUM][PARTITIONS];
-
-
 
 //For reuse data serialization and deserialization
 extern int up[PARTITIONS][STAGES];
@@ -150,7 +145,6 @@ void clear_coverage();
 bool is_part_ready(int part_id);
 void print_subindex(sub_index index);
 
-
 //Global variables for MapReduce-like task distribution
 extern float* part_data_mr[PARTITIONS];
 extern float* output_part_data_mr[PARTITIONS];
@@ -164,26 +158,27 @@ extern int right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
 
-
 extern int result_up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int result_left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int result_right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int result_down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
 
-
 extern unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
 extern float* recv_data_mr[IMG_NUM][PARTITIONS];
 
-
-
 //Add some variable for communication and computation profiling
 extern double commu_time;
 extern double comp_time;
-#endif
 
+//Global variables for task sharing processing platform
 extern int assigned_task_num[ACT_CLI];
 extern int cur_client_task_num;
+
+//
+
+#endif
+
 
 
