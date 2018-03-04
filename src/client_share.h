@@ -86,6 +86,7 @@ inline void forward_network_dist_share(network *netp, int sockfd)
     unsigned int size;
 
     for(int part = 0; 1; part ++){
+       std::cout<< "Getting job task " <<std::endl;
        try_get_job((void**)&data, &size, &part_id);
        if(data == NULL) {
 	   break;
