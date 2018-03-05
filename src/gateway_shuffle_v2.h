@@ -1,13 +1,36 @@
 #include "darknet_dist.h"
 #include "serialization_v2.h"
 
+inline int merge_v2(int cli, int frame, int part){
+   int all = 0;
+   all = (cli << 16) + (frame << 8) + part;  
+   return all;
+}
+
+inline int get_cli_v2(int all){
+   int cli = 0;
+   cli = all >> 16;  
+   return cli;
+}
+
+inline int get_part_v2(int all){
+   int part = 0;
+   part = all & 0x00ff;  
+   return part;
+}
+
+inline int get_frame_v2(int all){
+   int frame = 0;
+   frame = all >> 8;  
+   frame = frame & 0x00ff;  
+   return frame;
+}
 
 
-
-void notify_ir_ready(const char *dest_ip, int job_id,  int portno)
+void notify_ir_ready(const char *dest_ip, int all,  int portno)
 {
      int sockfd;
-     int part_id = job_id; 
+     int cli_frame_part = all; 
      struct sockaddr_in serv_addr;
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
      if (sockfd < 0) 
@@ -20,12 +43,39 @@ void notify_ir_ready(const char *dest_ip, int job_id,  int portno)
 	sock_error("ERROR connecting");
      char request_type[10] = "ir_data";
      write_sock(sockfd, request_type, 10);
-     write_sock(sockfd, (char*)&part_id, sizeof(part_id));
+     write_sock(sockfd, (char*)&cli_frame_part, sizeof(cli_frame_part));
      close(sockfd);
 }
 
 
-inline void gateway_compute(network *netp, int cli_id);
+inline void gateway_compute_v2(network *netp, int all)
+{
+    network net = *netp;
+    int upto = STAGES-1;
+
+    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
+    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
+
+
+    for(int part = 0; part < PARTITIONS; part ++){
+       join_output(part, recv_data[get_frame_v2(all)][get_cli_v2(all)][part],  stage_out, upto, net);
+       free(recv_data[get_frame_v2(all)][get_cli_v2(all)][part]);
+    }
+
+    net.input = stage_out;
+    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
+        net.index = i;
+        if(net.layers[i].delta){	       
+            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
+        }
+        net.layers[i].forward(net.layers[i], net);
+        net.input = net.layers[i].output; //Layer output
+        if(net.layers[i].truth) {
+            net.truth = net.layers[i].output;
+        }
+    }
+    free(stage_out);
+}
 
 void gateway_service_shuffle_v2(network net, std::string thread_name){
 
@@ -37,11 +87,11 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
     nnp_initialize();
     net.threadpool = pthreadpool_create(THREAD_NUM);
 #endif
-    int cli_id;
+    int all;
     int id = 0;
     while(1){
-	cli_id = ready_queue.Dequeue();
-	gateway_compute(&net, cli_id);
+	all = ready_queue.Dequeue();
+	gateway_compute_v2(&net, all);
 	#ifdef DEBUG_DIST
 	image sized;
 	sized.w = net.w; sized.h = net.h; sized.c = net.c;
@@ -114,11 +164,11 @@ void collect_result(network net, int portno)
    int all;
    int job_id;
    int cli_id;
+   int frame;
    char *blob_buffer;
 
-
-
    bool g_t0_init = true;
+
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if(g_t0_init){g_t0 = what_time_is_it_now(); g_t0_init=false;}
@@ -130,23 +180,23 @@ void collect_result(network net, int portno)
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     cli_id = get_cli(all);
-             job_id = get_part(all);
-	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
+	     cli_id = get_cli_v2(all);
+             job_id = get_part_v2(all);
+             frame = get_frame_v2(all);
+	     std::cout << "[result]  .....Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " frame is: "<< frame <<std::endl;
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-             int frame_num = frame_counters[cli_id][job_id];
              frame_counters[cli_id][job_id]++;
 	     //unsigned int recv_counters[IMG_NUM][CLI_NUM];
 	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
-             recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
-	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
-	     //std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
-	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
+             recv_data[frame][cli_id][job_id]=(float*)blob_buffer;
+	     recv_counters[frame][cli_id] = recv_counters[frame][cli_id] + 1; 
+	     //std::cout << "recv_counters "<< frame <<"..."<< cli_id <<"..."<< recv_counters[frame][cli_id] <<std::endl;
+	     if(recv_counters[frame][cli_id] == PARTITIONS) {
 		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
 		  g_t1 = what_time_is_it_now() - g_t0;
-		  std::cout << g_t1/(frame_num+1) << std::endl;
+		  std::cout << g_t1/(frame+1) << std::endl;
 		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-		  all = merge(cli_id, frame_num);
+		  all = merge(cli_id, frame);
 		  ready_queue.Enqueue(all);
 	     }
         }
@@ -181,6 +231,7 @@ void task_and_ir_recorder(network net, int portno)
    int all;
    int job_id;
    int cli_id;
+   int frame;
    char *blob_buffer;
 
    bool g_t0_init = true;
@@ -217,35 +268,24 @@ void task_and_ir_recorder(network net, int portno)
 	     //}
         }else if(strcmp (request_type,"ir_data") == 0){//TODO IR data from different images and clients
      	     read_sock(newsockfd, (char*)&all, sizeof(all));
-	     cli_id = get_cli(all);
-             job_id = get_part(all);
+	     cli_id = get_cli_v2(all);
+             job_id = get_part_v2(all);
+             frame = get_frame_v2(all);
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
-             std::cout << "Recved reuse data for partition number: "<< job_id << std::endl;
+             std::cout << "[ir_data]  ..... Recved reuse data for partition number: "<< job_id << std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
-             int frame_num = frame_ir_res_counters[cli_id][job_id];
-	     frame_ir_res_counters[cli_id][job_id] ++;
-	     //Frame number for cli_id, partition job_id
-	     //set_coverage_v2(job_id, frame_num, cli_id);
-
 	     free(blob_buffer);
 	     if( get_client_id( inet_ntoa(cli_addr.sin_addr) ) != cli_id )
-	        notify_ir_ready(addr_list[cli_id], job_id, PORTNO);//TODO
+	        notify_ir_ready(addr_list[cli_id], all, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
 	     //get_local_coverage_v2(part_id, frame, resource);
      	     read_sock(newsockfd, (char*)&all, sizeof(all));
-	     cli_id = get_cli(all);
-             job_id = get_part(all);
-
-             int frame_num = frame_ir_req_counters[cli_id][job_id];
-	     frame_ir_req_counters[cli_id][job_id] ++;
-
-
-	
-	     std::cout << "Getting a ir reqeust, frame number is: " << frame_num<<", resource is: "<< cli_id << std::endl;
-
-		
+	     cli_id = get_cli_v2(all);
+             job_id = get_part_v2(all);
+             frame = get_frame_v2(all);
+	     std::cout << "[ir_data_r]  ..... Getting a ir reqeust, frame number is: " << frame<<", resource is: "<< cli_id << std::endl;
 	     bool *req = (bool*)malloc(4*sizeof(bool));
              read_sock(newsockfd, (char*)req, 4*sizeof(bool));
 	     unsigned int reuse_size;
@@ -253,7 +293,6 @@ void task_and_ir_recorder(network net, int portno)
 	     free(req);
              write_sock(newsockfd, (char*)&(reuse_size), sizeof(reuse_size));
              write_sock(newsockfd, (char*)reuse_data, reuse_size);
-
              free(reuse_data);
         }
      	close(newsockfd);
