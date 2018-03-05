@@ -272,7 +272,7 @@ inline void clear_coverage_v2(){
 
 
 inline bool* get_local_coverage_v2(int part_id, int frame, int resource){
-   std::cout << "Get local coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   //std::cout << "Get local coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
 
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
@@ -319,7 +319,7 @@ inline bool is_part_ready_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    bool ready = true;
-   std::cout << "Check ready for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   //std::cout << "Check ready for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
    //check down block
    if(p_h + 1 < PARTITIONS_H){
 	if(frame_coverage[frame][resource][p_h+1][p_w] == 0) {
@@ -392,14 +392,14 @@ void init_recv_counter(){
 inline void set_coverage_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
-   std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   //std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
    frame_coverage[frame][resource][p_h][p_w] = true;
 }
 
 inline void set_global_and_local_coverage_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
-   std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   //std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
    local_frame_coverage[frame][resource][p_h][p_w] = true;
    frame_coverage[frame][resource][p_h][p_w] = true;
 }
@@ -546,14 +546,14 @@ inline network reshape_network(int startfrom, int upto, network net){
 	    output_ranges[p][i] = calculate_layeroutput_range(input_ranges[p][i], net.layers[i]);
 	}
     }
-
+/*
     for(i = upto; i >= startfrom; i--){
         for(int p = 0; p < partition; p++){
 	    std::cout << "At layer: "<< i <<" ... :" << std::endl;
 	    print_subindex(output_ranges[p][i]);
 	}
     }
-
+*/
     for(p_h = 0; p_h < partition_h; p_h++){
 	for(p_w = 0; p_w < partition_w; p_w++){
 	    for(int i = 0; i < STAGES; i++){
@@ -882,8 +882,8 @@ void fork_input_reuse(int startfrom, float* stage_in, network net){
       reuse_part_data[part] = reshape_input(stage_in, stage_input_range.w, stage_input_range.h, net.layers[startfrom].c, 
 			reuse_input_ranges[part][startfrom].w1, reuse_input_ranges[part][startfrom].w2, 
 			reuse_input_ranges[part][startfrom].h1, reuse_input_ranges[part][startfrom].h2);
-			std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
-	 		print_subindex(reuse_input_ranges[part][startfrom]);
+			//std::cout << "Part ID is: " << part << ", the range is: " << std::endl;
+	 		//print_subindex(reuse_input_ranges[part][startfrom]);
     }
 
 }

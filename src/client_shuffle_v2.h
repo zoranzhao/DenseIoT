@@ -128,12 +128,12 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
 	   workload_amount = part;
 	   break;
        }
-       std::cout<< "Processing task "<< part_id <<std::endl;
+       //std::cout<< "Processing task "<< part_id <<std::endl;
        if( is_part_ready_v2(part_id, frame, cli_id) != 1 && need_ir_data[part_id]==1){
 		net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data[part_id], startfrom, upto, net);
        }else{
 		if(need_ir_data[part_id]==1){
-			std::cout << "[ir_data_r] .... Is able to reuse data for processing in frame: " << frame << ", part: "<< part_id << std::endl;
+			//std::cout << "[ir_data_r] .... Is able to reuse data for processing in frame: " << frame << ", part: "<< part_id << std::endl;
 			get_ir_data_from_gateway(net, all);
 		}
 		net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
@@ -141,7 +141,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
 
        }
        if(need_ir_data[part_id]==0){
-		std::cout << "[ir_data] ... Set coverage for local task..." << std::endl;
+		//std::cout << "[ir_data] ... Set coverage for local task..." << std::endl;
 		set_global_and_local_coverage_v2(part_id, frame, cli_id);
 		send_ir_data_to_gateway(net, all);
        }
@@ -297,7 +297,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
 	//std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
-	std::cout << "[steals] .... got task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
+	//std::cout << "[steals] .... got task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
 	if( ready == 0 && need_ir_data[part_id]==1){
 		net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
 	}else{ 
@@ -306,7 +306,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	free(data);
 	delete blob;
 	if(need_ir_data[part_id]==0){//Doesn't need intermediate data, which means it will generate IR data
-		std::cout << "[ir_data] .... Set coverage for stolen task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
+		//std::cout << "[ir_data] .... Set coverage for stolen task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
 		set_global_and_local_coverage_v2(part_id, frame, cli_id);
 		send_ir_data_to_gateway(net, all);
 	}
@@ -381,7 +381,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 		     	write_sock(newsockfd, (char*)&all, sizeof(all));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		    	write_sock(newsockfd, blob_buffer, bytes_length);
-			std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
+			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		}else if( need_ir_data[job_id]==1 ) {
 			bytes_length = input_ranges[job_id][0].w*input_ranges[job_id][0].h*net.layers[0].c*sizeof(float);
@@ -400,7 +400,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 	     int frame = get_frame_v2(all);
 	     int job_id = get_part_v2(all);
 	     cli_id = get_cli_v2(all);
-	     std::cout << "Recved a set_coverage request from gateway..." << std::endl;
+	     //std::cout << "Recved a set_coverage request from gateway..." << std::endl;
 	     set_coverage_v2(job_id, frame, cli_id);
         }
      	close(newsockfd);
