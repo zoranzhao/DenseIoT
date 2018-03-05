@@ -143,11 +143,10 @@ void collect_result(network net, int portno)
    int frame;
    char *blob_buffer;
 
-
+   int total_recved_num = 0;
 
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
 	if(strcmp (request_type,"result") == 0){
@@ -169,8 +168,10 @@ void collect_result(network net, int portno)
 	     //std::cout << "recv_counters "<< frame <<"..."<< cli_id <<"..."<< recv_counters[frame][cli_id] <<std::endl;
 	     if(recv_counters[frame][cli_id] == PARTITIONS) {
 		  std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
+		  total_recved_num++;
 		  g_t1 = what_time_is_it_now() - g_t0;
-		  std::cout << g_t1/(frame+1) << std::endl;
+		  std::cout << "The latency of client of " << cli_id << " is: " << g_t1/(frame+1) << std::endl;
+		  std::cout << "The entire throughput of is: " << ((float)(total_recved_num))/g_t1 << std::endl;
 		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 		  all = merge(cli_id, frame);
 		  ready_queue.Enqueue(all);
