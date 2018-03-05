@@ -141,11 +141,11 @@ void collect_result(network net, int portno)
    int frame;
    char *blob_buffer;
 
-   bool g_t0_init = true;
+
 
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	if(g_t0_init){g_t0 = what_time_is_it_now(); g_t0_init=false;}
+
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
 	if(strcmp (request_type,"result") == 0){

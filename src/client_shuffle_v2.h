@@ -398,6 +398,8 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
         }else if(strcmp (request_type,"ir_data") == 0){
 	     read_sock(newsockfd, (char*)&all, sizeof(all));
 	     int frame = get_frame_v2(all);
+	     int job_id = get_part_v2(all);
+	     cli_id = get_cli_v2(all);
 	     std::cout << "Recved a set_coverage request from gateway..." << std::endl;
 	     set_coverage_v2(job_id, frame, cli_id);
         }
