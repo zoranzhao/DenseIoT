@@ -48,34 +48,8 @@ void notify_ir_ready(const char *dest_ip, int all,  int portno)
 }
 
 
-inline void gateway_compute_v2(network *netp, int all)
-{
-    network net = *netp;
-    int upto = STAGES-1;
+inline void gateway_compute(network *netp, int all);
 
-    size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
-    float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
-
-
-    for(int part = 0; part < PARTITIONS; part ++){
-       join_output(part, recv_data[get_frame_v2(all)][get_cli_v2(all)][part],  stage_out, upto, net);
-       free(recv_data[get_frame_v2(all)][get_cli_v2(all)][part]);
-    }
-
-    net.input = stage_out;
-    for(int i = (upto + 1); i < net.n; ++i){ //Iteratively execute the layers
-        net.index = i;
-        if(net.layers[i].delta){	       
-            fill_cpu(net.layers[i].outputs * net.layers[i].batch, 0, net.layers[i].delta, 1);
-        }
-        net.layers[i].forward(net.layers[i], net);
-        net.input = net.layers[i].output; //Layer output
-        if(net.layers[i].truth) {
-            net.truth = net.layers[i].output;
-        }
-    }
-    free(stage_out);
-}
 
 void gateway_service_shuffle_v2(network net, std::string thread_name){
 
@@ -91,7 +65,7 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
     int id = 0;
     while(1){
 	all = ready_queue.Dequeue();
-	gateway_compute_v2(&net, all);
+	gateway_compute(&net, all);
 	#ifdef DEBUG_DIST
 	image sized;
 	sized.w = net.w; sized.h = net.h; sized.c = net.c;
@@ -192,7 +166,7 @@ void collect_result(network net, int portno)
 	     recv_counters[frame][cli_id] = recv_counters[frame][cli_id] + 1; 
 	     //std::cout << "recv_counters "<< frame <<"..."<< cli_id <<"..."<< recv_counters[frame][cli_id] <<std::endl;
 	     if(recv_counters[frame][cli_id] == PARTITIONS) {
-		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
+		  std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
 		  g_t1 = what_time_is_it_now() - g_t0;
 		  std::cout << g_t1/(frame+1) << std::endl;
 		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
