@@ -10,8 +10,8 @@ int main(int argc, char **argv)
     //idle_client_shuffle();
     //smart_gateway_shuffle();
 
-    victim_client_shuffle_v2();
-    //idle_client_shuffle_v2();
+    //victim_client_shuffle_v2();
+    idle_client_shuffle_v2();
     //smart_gateway_shuffle_v2();
 
     //idle_client();
