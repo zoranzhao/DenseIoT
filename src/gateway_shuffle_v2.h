@@ -248,7 +248,7 @@ void task_and_ir_recorder(network net, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
-             std::cout << "[ir_data]  ..... Recved reuse data for partition number: "<< job_id << std::endl;
+             //std::cout << "[ir_data]  ..... Recved reuse data for partition number: "<< job_id << std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
 	     free(blob_buffer);
 	     if( get_client_id( inet_ntoa(cli_addr.sin_addr) ) != cli_id )
@@ -259,7 +259,7 @@ void task_and_ir_recorder(network net, int portno)
 	     cli_id = get_cli_v2(all);
              job_id = get_part_v2(all);
              frame = get_frame_v2(all);
-	     std::cout << "[ir_data_r]  ..... Getting a ir reqeust, frame number is: " << frame<<", resource is: "<< cli_id << std::endl;
+	     //std::cout << "[ir_data_r]  ..... Getting a ir reqeust, frame number is: " << frame<<", resource is: "<< cli_id << std::endl;
 	     bool *req = (bool*)malloc(4*sizeof(bool));
              read_sock(newsockfd, (char*)req, 4*sizeof(bool));
 	     unsigned int reuse_size;
