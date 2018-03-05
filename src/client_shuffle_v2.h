@@ -368,21 +368,21 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 	    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	    	write_sock(newsockfd, blob_buffer, bytes_length);
 	     }else{
-		     int frame = steal_frame_counters[cli_id][job_id];
-      		     steal_frame_counters[cli_id][job_id]++;
-		     if(need_ir_data[job_id]==0){
+		int frame = steal_frame_counters[cli_id][job_id];
+		steal_frame_counters[cli_id][job_id]++;
+		if(need_ir_data[job_id]==0){
 			//std::cout << "Serve steal of part number "<< job_id << " no need for reused data..." << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 			write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 			write_sock(newsockfd, blob_buffer, bytes_length);
 		        //std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
-		     }else if( (need_ir_data[job_id]==1) && (is_part_ready_v2(job_id, frame, cli_id)) ){
+		}else if( (need_ir_data[job_id]==1) && (is_part_ready_v2(job_id, frame, cli_id)) ){
 		     	write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		    	write_sock(newsockfd, blob_buffer, bytes_length);
 			std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-		     }else if( need_ir_data[job_id]==1 ) {
+		}else if( need_ir_data[job_id]==1 ) {
 			bytes_length = input_ranges[job_id][0].w*input_ranges[job_id][0].h*net.layers[0].c*sizeof(float);
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		    	write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
@@ -390,11 +390,12 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id<<", well it is not ready yet ...." << std::endl;
 			job_id = -1; 
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-		     }
+		}
 
 	     }
 	     free(blob_buffer);
         }else if(strcmp (request_type,"ir_data") == 0){
+	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	     int frame = local_frame_counters[cli_id][job_id];
       	     local_frame_counters[cli_id][job_id]++;
 	     std::cout << "Recved a set_coverage request from gateway..." << std::endl;

@@ -4,9 +4,10 @@
 
 
 
-void notify_ir_ready(const char *dest_ip, int portno)
+void notify_ir_ready(const char *dest_ip, int job_id,  int portno)
 {
      int sockfd;
+     int part_id = job_id; 
      struct sockaddr_in serv_addr;
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
      if (sockfd < 0) 
@@ -19,6 +20,7 @@ void notify_ir_ready(const char *dest_ip, int portno)
 	sock_error("ERROR connecting");
      char request_type[10] = "ir_data";
      write_sock(sockfd, request_type, 10);
+     write_sock(sockfd, (char*)&part_id, sizeof(part_id));
      close(sockfd);
 }
 
@@ -208,7 +210,6 @@ void task_and_ir_recorder(network net, int portno)
 	     }else{
 		victim_addr = inet_addr("0.0.0.0");
 	     }
-	     
 	     write_sock(newsockfd, (char*)(&victim_addr), sizeof(in_addr_t));
 	     //std::cout << "Task list is ... : " << std::endl;
 	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
@@ -229,7 +230,8 @@ void task_and_ir_recorder(network net, int portno)
 	     //set_coverage_v2(job_id, frame_num, cli_id);
 	     //is_part_ready_v2(job_id, frame, cli_id);
 	     free(blob_buffer);
-	     //notify_ir_ready(BLUE1, PORTNO);//TODO
+	     if( get_client_id( inet_ntoa(cli_addr.sin_addr) ) != cli_id )
+	        notify_ir_ready(addr_list[cli_id], job_id, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
 	     //get_local_coverage_v2(part_id, frame, resource);
      	     read_sock(newsockfd, (char*)&all, sizeof(all));
