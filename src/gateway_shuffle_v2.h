@@ -87,6 +87,72 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
 #endif
 }
 
+void collect_result(network net, int portno)
+{  
+   int task_total;
+   int sockfd, newsockfd;
+   socklen_t clilen;
+   struct sockaddr_in serv_addr, cli_addr;
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd < 0) 
+	sock_error("ERROR opening socket");
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_addr.s_addr = INADDR_ANY;
+   serv_addr.sin_port = htons(portno);
+   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+	sock_error("ERROR on binding");
+   listen(sockfd, 10);//back_log numbers 
+   clilen = sizeof(cli_addr);
+   unsigned int bytes_length;
+   int job_num;
+   char request_type[10];
+   std::list< std::string > job_list;
+
+   int all;
+   int job_id;
+   int cli_id;
+   char *blob_buffer;
+
+
+
+   bool g_t0_init = true;
+   while(1){
+     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	if(g_t0_init){g_t0 = what_time_is_it_now(); g_t0_init=false;}
+	if (newsockfd < 0) sock_error("ERROR on accept");
+        read_sock(newsockfd, request_type, 10); 
+	if(strcmp (request_type,"result") == 0){
+	     read_sock(newsockfd, (char*)&all, sizeof(all));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
+	     cli_id = get_cli(all);
+             job_id = get_part(all);
+	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
+	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
+             int frame_num = frame_counters[cli_id][job_id];
+             frame_counters[cli_id][job_id]++;
+	     //unsigned int recv_counters[IMG_NUM][CLI_NUM];
+	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
+             recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
+	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
+	     //std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
+	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
+		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
+		  g_t1 = what_time_is_it_now() - g_t0;
+		  std::cout << g_t1/(frame_num+1) << std::endl;
+		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+		  all = merge(cli_id, frame_num);
+		  ready_queue.Enqueue(all);
+	     }
+        }
+     	close(newsockfd);
+   }
+   close(sockfd);
+}
+
 
 void task_and_ir_recorder(network net, int portno)
 {  
@@ -114,8 +180,6 @@ void task_and_ir_recorder(network net, int portno)
    int job_id;
    int cli_id;
    char *blob_buffer;
-   init_recv_counter();
-   clear_coverage_v2();
 
    bool g_t0_init = true;
    while(1){
@@ -150,32 +214,6 @@ void task_and_ir_recorder(network net, int portno)
 	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
 		//std::cout <<  *it << std::endl;
 	     //}
-        }else if(strcmp (request_type,"result") == 0){
-
-	     read_sock(newsockfd, (char*)&all, sizeof(all));
-	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	     blob_buffer = (char*)malloc(bytes_length);
-	     read_sock(newsockfd, blob_buffer, bytes_length);
-	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     cli_id = get_cli(all);
-             job_id = get_part(all);
-	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-             int frame_num = frame_counters[cli_id][job_id];
-             frame_counters[cli_id][job_id]++;
-	     //unsigned int recv_counters[IMG_NUM][CLI_NUM];
-	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
-             recv_data[frame_num][cli_id][job_id]=(float*)blob_buffer;
-	     recv_counters[frame_num][cli_id] = recv_counters[frame_num][cli_id] + 1; 
-	     //std::cout << "recv_counters "<< frame_num <<"..."<< cli_id <<"..."<< recv_counters[frame_num][cli_id] <<std::endl;
-	     if(recv_counters[frame_num][cli_id] == PARTITIONS) {
-		  //std::cout << "Data from client " << cli_id << " have been fully collected ..." <<std::endl;
-		  g_t1 = what_time_is_it_now() - g_t0;
-		  std::cout << g_t1/(frame_num+1) << std::endl;
-		  //std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-		  all = merge(cli_id, frame_num);
-		  ready_queue.Enqueue(all);
-	     }
         }else if(strcmp (request_type,"ir_data") == 0){//TODO IR data from different images and clients
      	     read_sock(newsockfd, (char*)&all, sizeof(all));
 	     cli_id = get_cli(all);
@@ -188,22 +226,23 @@ void task_and_ir_recorder(network net, int portno)
              int frame_num = frame_ir_res_counters[cli_id][job_id];
 	     frame_ir_res_counters[cli_id][job_id] ++;
 	     //Frame number for cli_id, partition job_id
-	     set_coverage_v2(job_id, frame_num, cli_id);
+	     //set_coverage_v2(job_id, frame_num, cli_id);
 	     //is_part_ready_v2(job_id, frame, cli_id);
 	     free(blob_buffer);
 	     //notify_ir_ready(BLUE1, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
 	     //get_local_coverage_v2(part_id, frame, resource);
-             cli_id =  get_client_id( job_list.front().c_str() );
-     	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+     	     read_sock(newsockfd, (char*)&all, sizeof(all));
+	     cli_id = get_cli(all);
+             job_id = get_part(all);
 
              int frame_num = frame_ir_req_counters[cli_id][job_id];
 	     frame_ir_req_counters[cli_id][job_id] ++;
-	     is_part_ready_v2(job_id, frame_num, cli_id);
+	     //is_part_ready_v2(job_id, frame_num, cli_id);
 
 	
 	     std::cout << "Getting a ir reqeust, frame number is: " << frame_num<<", resource is: "<< cli_id << std::endl;
-	     std::cout << "Is part "<< job_id <<" ready: "<< is_part_ready_v2(job_id, frame_num, cli_id) <<std::endl;
+	     //std::cout << "Is part "<< job_id <<" ready: "<< is_part_ready_v2(job_id, frame_num, cli_id) <<std::endl;
 		
 	     bool *req = (bool*)malloc(4*sizeof(bool));
              read_sock(newsockfd, (char*)req, 4*sizeof(bool));
@@ -219,11 +258,34 @@ void task_and_ir_recorder(network net, int portno)
    }
    close(sockfd);
 }
+/*
+void shuffle_task_order(){
+    int index = 0;
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		task_list[index]=part_id[p_h][p_w];
+		index++;
+	}
+    }
+    for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
+	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
+		task_list[index]=part_id[p_h][p_w];
+		index++;
+	}
+    }
+}
+*/
 
 void gateway_sync_and_ir(network net, std::string thread_name){
+    init_recv_counter();
+    clear_coverage_v2();
+
     task_and_ir_recorder(net, SMART_GATEWAY);
 }
 
+void gateway_collect_result(network net, std::string thread_name){
+    collect_result(net, PORTNO);
+}
 
 void smart_gateway_shuffle_v2(){
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
@@ -231,9 +293,11 @@ void smart_gateway_shuffle_v2(){
     network net = reshape_network_shuffle(0, STAGES-1, *netp);
     std::thread t1(gateway_sync_and_ir, net, "gateway_sync_and_ir");
     std::thread t2(gateway_service_shuffle_v2, net, "gateway_service");
+    std::thread t3(gateway_collect_result, net, "gateway_collect_result");
     exec_control(START_CTRL);
     g_t1 = 0;
     t1.join();
     t2.join();
+    t3.join();
 }
 

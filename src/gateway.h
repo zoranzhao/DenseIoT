@@ -41,6 +41,14 @@ void init_recv_counter(){
 	}
     }
 
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   local_frame_counters[i][j] = 0; 
+	   steal_frame_counters[i][j] = 0; 
+	   remote_frame_counters[i][j] = 0; 
+	}
+    }
+
 }
 
 

@@ -181,8 +181,14 @@ extern int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
 extern unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS];
 extern unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS];
 void clear_coverage_v2();
+bool is_part_ready_v2(int part_id, int frame, int resource);
+bool* get_local_coverage_v2(int part_id, int frame, int resource);
+void set_coverage_v2(int part_id, int frame, int resource);
 
 
+extern unsigned int local_frame_counters[CLI_NUM][PARTITIONS];
+extern unsigned int steal_frame_counters[CLI_NUM][PARTITIONS];
+extern unsigned int remote_frame_counters[CLI_NUM][PARTITIONS];
 
 #endif
 

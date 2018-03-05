@@ -95,3 +95,9 @@ int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
 unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS];
 unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS];
 
+unsigned int local_frame_counters[CLI_NUM][PARTITIONS];
+unsigned int steal_frame_counters[CLI_NUM][PARTITIONS];
+unsigned int remote_frame_counters[CLI_NUM][PARTITIONS];
+
+
+

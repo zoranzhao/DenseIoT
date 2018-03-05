@@ -271,6 +271,8 @@ inline void clear_coverage_v2(){
 
 
 inline bool* get_local_coverage_v2(int part_id, int frame, int resource){
+   std::cout << "Get local coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl
+
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    bool* req = (bool*) malloc(4*sizeof(bool));
@@ -316,7 +318,7 @@ inline bool is_part_ready_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    bool ready = true;
-
+   std::cout << "Check ready for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl
    //check down block
    if(p_h + 1 < PARTITIONS_H){
 	if(frame_coverage[frame][resource][p_h+1][p_w] == 0) {
@@ -357,6 +359,7 @@ inline bool is_part_ready_v2(int part_id, int frame, int resource){
 inline void set_coverage_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
+   std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl
    frame_coverage[frame][resource][p_h][p_w] = true;
 }
 
