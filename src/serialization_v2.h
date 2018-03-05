@@ -57,6 +57,7 @@ inline float* req_ir_data_serialization_v2(network net, int part, int startfrom,
 
       *size = (*size) * sizeof(float);
       std::cout << "The size of IR data required to be transmitted is: " << *size << std::endl;
+      std::cout << "Total size: " << ir_data_size[part]*sizeof(float) << std::endl;
       return (output - offset);
 }
 
