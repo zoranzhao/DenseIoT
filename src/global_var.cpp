@@ -51,6 +51,8 @@ unsigned int result_ir_data_size[PARTITIONS];
 float* reuse_part_data[PARTITIONS];
 int coverage[PARTITIONS_H][PARTITIONS_W];
 
+
+
 //Indicating whether a particular partition require intermediate data or not
 int need_ir_data[PARTITIONS];
 
@@ -87,4 +89,9 @@ int cur_client_task_num;
 double commu_time = 0.0;
 double comp_time = 0.0;
 
+
+//Using gateway to record IR data and send out data
+int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
+unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS];
+unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS];
 

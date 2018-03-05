@@ -255,6 +255,112 @@ inline void set_coverage(int part_id){
    coverage[p_h][p_w] = true;
 }
 
+//int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
+inline void clear_coverage_v2(){
+  for(int frame = 0; frame < IMG_NUM; frame++){
+   for(int resource = 0; resource < CLI_NUM; resource++){
+     for(int i = 0; i < PARTITIONS_H; i++){
+       for(int j = 0; j < PARTITIONS_W; j++){
+         frame_coverage[frame][resource][i][j] = 0;
+       }
+     }
+   }
+  }
+}
+
+
+
+inline bool* get_local_coverage_v2(int part_id, int frame, int resource){
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
+   bool* req = (bool*) malloc(4*sizeof(bool));
+   req[0] = false;//up
+   req[1] = false;//left
+   req[2] = false;//down
+   req[3] = false;//right
+     
+   //check up block
+   if(p_h > 0){
+	if(frame_coverage[frame][resource][p_h-1][p_w] == 0) {
+		req[0] = true;
+	}	
+   }
+
+   //check left block
+   if(p_w > 0){
+	if(frame_coverage[frame][resource][p_h][p_w-1] == 0) {
+		req[1] = true;
+	}	
+   }
+
+   //check down block
+   if(p_h + 1 < PARTITIONS_H){
+	if(frame_coverage[frame][resource][p_h+1][p_w] == 0) {
+		req[2] = true;
+	}	
+   }
+
+   //check right block
+   if(p_w + 1 < PARTITIONS_W){
+	if(frame_coverage[frame][resource][p_h][p_w+1] == 0) {
+		req[3] = true;
+	}	
+   }
+
+   return req;
+
+}
+
+
+inline bool is_part_ready_v2(int part_id, int frame, int resource){
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
+   bool ready = true;
+
+   //check down block
+   if(p_h + 1 < PARTITIONS_H){
+	if(frame_coverage[frame][resource][p_h+1][p_w] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check right block
+   if(p_w + 1 < PARTITIONS_W){
+	if(frame_coverage[frame][resource][p_h][p_w+1] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check left block
+   if(p_w > 0){
+	if(frame_coverage[frame][resource][p_h][p_w-1] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   //check up block
+   if(p_h > 0){
+	if(frame_coverage[frame][resource][p_h-1][p_w] == 0) {
+		ready = false;
+		return ready;
+	}	
+   }
+
+   return ready;
+
+}
+
+
+inline void set_coverage_v2(int part_id, int frame, int resource){
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
+   frame_coverage[frame][resource][p_h][p_w] = true;
+}
+
+
 
 sub_index calculate_range(sub_index output, layer l){
     sub_index input; 

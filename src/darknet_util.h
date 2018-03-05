@@ -176,7 +176,13 @@ extern double comp_time;
 extern int assigned_task_num[ACT_CLI];
 extern int cur_client_task_num;
 
-//
+//Using gateway to record IR data and send out data
+extern int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
+extern unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS];
+extern unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS];
+void clear_coverage_v2();
+
+
 
 #endif
 

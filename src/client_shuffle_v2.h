@@ -12,10 +12,10 @@ void get_ir_data_from_gateway(network net, int part_id){
      unsigned int reuse_data_length;
 
      bool* req = get_local_coverage(job_id);
-     if((!req[0]) && (!req[1]) && (!req[2]) && (!req[3])){
-	free(req);	
-	return;
-     }
+     //if((!req[0]) && (!req[1]) && (!req[2]) && (!req[3])){
+	//free(req);	
+	//return;
+     //}
      struct sockaddr_in serv_addr;
      gateway_sock = socket(AF_INET, SOCK_STREAM, 0);
      if (gateway_sock < 0) 
@@ -42,7 +42,7 @@ void get_ir_data_from_gateway(network net, int part_id){
 }
 
 
-void send_ir_data_to_gateway(network net, int part_id){
+void send_ir_data_to_gateway(network net, int part_id, int cli_id){
      int job_id = part_id;
      int gateway_sock;      
      char *reuse_data;
@@ -62,8 +62,8 @@ void send_ir_data_to_gateway(network net, int part_id){
 
      reuse_data_length = result_ir_data_size[part_id]*sizeof(float);
      reuse_data = (char*) result_ir_data_serialization(net, part_id, 0, STAGES-1);
-
-     write_sock(gateway_sock, (char*)&job_id, sizeof(job_id));
+     int all = merge(cli_id, part_id);	
+     write_sock(gateway_sock, (char*)&all, sizeof(all));
      write_sock(gateway_sock, (char*)&reuse_data_length, sizeof(reuse_data_length));
      write_sock(gateway_sock, reuse_data, reuse_data_length);
 
@@ -110,6 +110,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig)
     float* data;
     int part_id;
     unsigned int size;
+    int cli_id = get_client_id(CUR_CLI);
 
     for(part = 0; 1; part ++){
        try_get_job((void**)&data, &size, &part_id);
@@ -119,6 +120,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig)
 	   workload_amount = part;
 	   break;
        }
+       int all = merge(cli_id, part_id);
 
        //std::cout<< "Processing task "<< part_id <<std::endl;
        if( is_part_ready(part_id) != 1 && need_ir_data[part_id]==1){
@@ -134,12 +136,12 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig)
        }
        if(need_ir_data[part_id]==0){
 		set_coverage(part_id);
-		send_ir_data_to_gateway(net, part_id);
+		send_ir_data_to_gateway(net, part_id, cli_id);
        }
        //std::cout<< "Processed task "<< part_id <<std::endl;
 
-       int cli_id = get_client_id(CUR_CLI);
-       int all = merge(cli_id, part_id);
+
+
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
        free(data);
     }
@@ -292,6 +294,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		continue;
 	}
+        int cli_id = get_client_id(inet_ntoa(addr.sin_addr));
 	data = (float*)(blob -> getDataPtr());
 	part_id = blob -> getID();
 	size = blob -> getSize();
@@ -306,13 +309,9 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	delete blob;
 	if(need_ir_data[part_id]==0){//Doesn't need intermediate data, which means it will generate IR data
 		set_coverage(part_id);
-	        float* reuse_data = result_ir_data_serialization(*netp, part_id, 0, STAGES-1);
-		dataBlob* ir_blob = (new dataBlob((void*)reuse_data, result_ir_data_size[part_id]*sizeof(float), part_id));
-		send_ir_data(ir_blob, AP, SMART_GATEWAY);
-	        //std::cout << "For partition number: "<< part_id << ", reuse data "<< result_ir_data_size[part_id]*sizeof(float) << " has been sent to victim client"<< std::endl;
-		delete ir_blob;
+		send_ir_data_to_gateway(net, part_id, cli_id);
 	}
-        int cli_id = get_client_id(inet_ntoa(addr.sin_addr));
+
         int all = merge(cli_id, part_id);
 	std::cout << workload_amount << std::endl;
 	workload_amount ++ ;

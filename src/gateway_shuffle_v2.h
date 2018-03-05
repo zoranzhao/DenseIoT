@@ -110,9 +110,12 @@ void task_and_ir_recorder(network net, int portno)
    char request_type[10];
    std::list< std::string > job_list;
 
+   int all;
    int job_id;
+   int cli_id;
    char *blob_buffer;
    init_recv_counter();
+   clear_coverage_v2();
 
    bool g_t0_init = true;
    while(1){
@@ -130,10 +133,6 @@ void task_and_ir_recorder(network net, int portno)
 		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
 		std::cout << "Delete task" << std::endl;
              }
-	     //std::cout << "Task list is ... : " << std::endl;
-	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
-		//std::cout <<  *it << std::endl;
-	     //}
 	}else if(strcmp (request_type,"steals") == 0){
 	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     in_addr_t victim_addr;
@@ -152,13 +151,13 @@ void task_and_ir_recorder(network net, int portno)
 		//std::cout <<  *it << std::endl;
 	     //}
         }else if(strcmp (request_type,"result") == 0){
-             int all;
+
 	     read_sock(newsockfd, (char*)&all, sizeof(all));
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
-	     int cli_id = get_cli(all);
+	     cli_id = get_cli(all);
              job_id = get_part(all);
 	     std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
@@ -178,30 +177,44 @@ void task_and_ir_recorder(network net, int portno)
 		  ready_queue.Enqueue(all);
 	     }
         }else if(strcmp (request_type,"ir_data") == 0){//TODO IR data from different images and clients
-     	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+     	     read_sock(newsockfd, (char*)&all, sizeof(all));
+	     cli_id = get_cli(all);
+             job_id = get_part(all);
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
              std::cout << "Recved reuse data for partition number: "<< job_id << std::endl;
 	     result_ir_data_deserialization(net, job_id, (float*)blob_buffer, 0, STAGES-1);
-	     set_coverage(job_id);
+             int frame_num = frame_ir_res_counters[cli_id][job_id];
+	     frame_ir_res_counters[cli_id][job_id] ++;
+	     //Frame number for cli_id, partition job_id
+	     set_coverage_v2(job_id, frame_num, cli_id);
+	     //is_part_ready_v2(job_id, frame, cli_id);
 	     free(blob_buffer);
 	     //notify_ir_ready(BLUE1, PORTNO);//TODO
         }else if(strcmp (request_type,"ir_data_r") == 0){//TODO IR data from different images and clients
+	     //get_local_coverage_v2(part_id, frame, resource);
+             cli_id =  get_client_id( job_list.front().c_str() );
      	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+
+             int frame_num = frame_ir_req_counters[cli_id][job_id];
+	     frame_ir_req_counters[cli_id][job_id] ++;
+	     is_part_ready_v2(job_id, frame_num, cli_id);
+
+	
+	     std::cout << "Getting a ir reqeust, frame number is: " << frame_num<<", resource is: "<< cli_id << std::endl;
+	     std::cout << "Is part "<< job_id <<" ready: "<< is_part_ready_v2(job_id, frame_num, cli_id) <<std::endl;
+		
 	     bool *req = (bool*)malloc(4*sizeof(bool));
              read_sock(newsockfd, (char*)req, 4*sizeof(bool));
 	     unsigned int reuse_size;
 	     float* reuse_data = req_ir_data_serialization_v2(net, job_id, 0, STAGES-1, req, &reuse_size);
 	     free(req);
-	     //unsigned int reuse_size = ir_data_size[job_id]*sizeof(float);
              write_sock(newsockfd, (char*)&(reuse_size), sizeof(reuse_size));
              write_sock(newsockfd, (char*)reuse_data, reuse_size);
-             std::cout << "Served the stealing of reuse data for partition number: "<< job_id << std::endl;
+
              free(reuse_data);
         }
-
-
      	close(newsockfd);
    }
    close(sockfd);

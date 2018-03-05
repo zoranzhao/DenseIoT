@@ -34,6 +34,13 @@ void init_recv_counter(){
 	}
     }
 
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   frame_ir_req_counters[i][j] = 0; 
+	   frame_ir_res_counters[i][j] = 0; 
+	}
+    }
+
 }
 
 
