@@ -127,8 +127,6 @@ void task_share(network net, int number_of_images, int portno)
      t1 = what_time_is_it_now();
      commu_time = commu_time + t1 - t0;
 
-
-
      for(int part_cnt = 0; part_cnt < PARTITIONS; part_cnt ++ ){
 	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	  t0 = what_time_is_it_now();
@@ -143,9 +141,9 @@ void task_share(network net, int number_of_images, int portno)
           recv_data[id][cli_id][job_id]=(float*)blob_buffer;
      }
      g_t1 = g_t1 + what_time_is_it_now() - g_t0;
-     std::cout <<"Total latency is: "<< g_t1/((float)(id + 1)) << std::endl;
-     std::cout <<"Communication latency is: "<< commu_time/((float)(id + 1)) << std::endl;
-     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+     std::cout << "Total latency is: " << g_t1/((float)(id + 1)) << std::endl;
+     std::cout << "Communication latency is: " << commu_time/((float)(id + 1)) << std::endl;
+     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
      ready_queue.Enqueue(cli_id);
    }
    close(sockfd);

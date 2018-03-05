@@ -228,7 +228,7 @@ void task_and_ir_recorder(network net, int portno)
 	     frame_ir_res_counters[cli_id][job_id] ++;
 	     //Frame number for cli_id, partition job_id
 	     //set_coverage_v2(job_id, frame_num, cli_id);
-	     //is_part_ready_v2(job_id, frame, cli_id);
+
 	     free(blob_buffer);
 	     if( get_client_id( inet_ntoa(cli_addr.sin_addr) ) != cli_id )
 	        notify_ir_ready(addr_list[cli_id], job_id, PORTNO);//TODO
@@ -240,11 +240,11 @@ void task_and_ir_recorder(network net, int portno)
 
              int frame_num = frame_ir_req_counters[cli_id][job_id];
 	     frame_ir_req_counters[cli_id][job_id] ++;
-	     //is_part_ready_v2(job_id, frame_num, cli_id);
+
 
 	
 	     std::cout << "Getting a ir reqeust, frame number is: " << frame_num<<", resource is: "<< cli_id << std::endl;
-	     //std::cout << "Is part "<< job_id <<" ready: "<< is_part_ready_v2(job_id, frame_num, cli_id) <<std::endl;
+
 		
 	     bool *req = (bool*)malloc(4*sizeof(bool));
              read_sock(newsockfd, (char*)req, 4*sizeof(bool));

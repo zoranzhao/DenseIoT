@@ -20,36 +20,7 @@ inline int get_frame(int all){
 
 inline int merge(int cli, int part);
 
-void init_recv_counter(){
-//unsigned int recv_counters[IMG_NUM][CLI_NUM];
-//unsigned int frame_counters[CLI_NUM][PARTITIONS];
-    for(int i; i < IMG_NUM; i ++){
-	for(int j; j < CLI_NUM; j ++){
-	   recv_counters[i][j] = 0; 
-	}
-    }
-    for(int i; i < CLI_NUM; i ++){
-	for(int j; j < PARTITIONS; j ++){
-	   frame_counters[i][j] = 0; 
-	}
-    }
-
-    for(int i; i < CLI_NUM; i ++){
-	for(int j; j < PARTITIONS; j ++){
-	   frame_ir_req_counters[i][j] = 0; 
-	   frame_ir_res_counters[i][j] = 0; 
-	}
-    }
-
-    for(int i; i < CLI_NUM; i ++){
-	for(int j; j < PARTITIONS; j ++){
-	   local_frame_counters[i][j] = 0; 
-	   steal_frame_counters[i][j] = 0; 
-	   remote_frame_counters[i][j] = 0; 
-	}
-    }
-
-}
+void init_recv_counter();
 
 
 void task_recorder(int portno)

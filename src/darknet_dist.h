@@ -262,6 +262,7 @@ inline void clear_coverage_v2(){
      for(int i = 0; i < PARTITIONS_H; i++){
        for(int j = 0; j < PARTITIONS_W; j++){
          frame_coverage[frame][resource][i][j] = 0;
+	 local_frame_coverage[frame][resource][i][j] = 0;
        }
      }
    }
@@ -283,28 +284,28 @@ inline bool* get_local_coverage_v2(int part_id, int frame, int resource){
      
    //check up block
    if(p_h > 0){
-	if(frame_coverage[frame][resource][p_h-1][p_w] == 0) {
+	if(local_frame_coverage[frame][resource][p_h-1][p_w] == 0) {
 		req[0] = true;
 	}	
    }
 
    //check left block
    if(p_w > 0){
-	if(frame_coverage[frame][resource][p_h][p_w-1] == 0) {
+	if(local_frame_coverage[frame][resource][p_h][p_w-1] == 0) {
 		req[1] = true;
 	}	
    }
 
    //check down block
    if(p_h + 1 < PARTITIONS_H){
-	if(frame_coverage[frame][resource][p_h+1][p_w] == 0) {
+	if(local_frame_coverage[frame][resource][p_h+1][p_w] == 0) {
 		req[2] = true;
 	}	
    }
 
    //check right block
    if(p_w + 1 < PARTITIONS_W){
-	if(frame_coverage[frame][resource][p_h][p_w+1] == 0) {
+	if(local_frame_coverage[frame][resource][p_h][p_w+1] == 0) {
 		req[3] = true;
 	}	
    }
@@ -355,11 +356,51 @@ inline bool is_part_ready_v2(int part_id, int frame, int resource){
 
 }
 
+void init_recv_counter(){
+//unsigned int recv_counters[IMG_NUM][CLI_NUM];
+//unsigned int frame_counters[CLI_NUM][PARTITIONS];
+    for(int i; i < IMG_NUM; i ++){
+	for(int j; j < CLI_NUM; j ++){
+	   recv_counters[i][j] = 0; 
+	}
+    }
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   frame_counters[i][j] = 0; 
+	}
+    }
+
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   frame_ir_req_counters[i][j] = 0; 
+	   frame_ir_res_counters[i][j] = 0; 
+	}
+    }
+
+    for(int i; i < CLI_NUM; i ++){
+	for(int j; j < PARTITIONS; j ++){
+	   local_frame_counters[i][j] = 0; 
+	   steal_frame_counters[i][j] = 0; 
+	   remote_frame_counters[i][j] = 0; 
+	}
+    }
+
+}
+
+
 
 inline void set_coverage_v2(int part_id, int frame, int resource){
    int p_w = part_id%PARTITIONS_W;
    int p_h = part_id/PARTITIONS_W;
    std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   frame_coverage[frame][resource][p_h][p_w] = true;
+}
+
+inline void set_global_and_local_coverage_v2(int part_id, int frame, int resource){
+   int p_w = part_id%PARTITIONS_W;
+   int p_h = part_id/PARTITIONS_W;
+   std::cout << "Set the coverage for part:" << part_id <<", frame:" << frame << ", resource:" << resource << std::endl;
+   local_frame_coverage[frame][resource][p_h][p_w] = true;
    frame_coverage[frame][resource][p_h][p_w] = true;
 }
 

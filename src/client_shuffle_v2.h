@@ -139,7 +139,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig)
        }
        if(need_ir_data[part_id]==0){
 		std::cout << "Set coverage for local task..." << std::endl;
-		set_coverage_v2(part_id, frame, cli_id);
+		set_global_and_local_coverage_v2(part_id, frame, cli_id);
 		send_ir_data_to_gateway(net, part_id, cli_id);
        }
        //std::cout<< "Processed task "<< part_id <<std::endl;
@@ -304,7 +304,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	        int frame = remote_frame_counters[cli_id][part_id];
       	        remote_frame_counters[cli_id][part_id]++;
 		std::cout << "Set coverage for stolen task..." << std::endl;
-		set_coverage_v2(part_id, frame, cli_id);
+		set_global_and_local_coverage_v2(part_id, frame, cli_id);
 		send_ir_data_to_gateway(net, part_id, cli_id);
 	}
 
