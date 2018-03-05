@@ -87,6 +87,25 @@ typedef struct overlapped_data{
 
 } ir_data;
 
+
+typedef struct gateway_overlapped_data{
+   float *down[CLI_NUM];
+   float *right[CLI_NUM];
+   float *up[CLI_NUM];
+   float *left[CLI_NUM];
+   float *corner[CLI_NUM];
+   float *corner_mr[4];
+   
+   sub_index down_range;
+   sub_index right_range;
+   sub_index left_range;
+   sub_index up_range;
+
+   sub_index corner_range_mr[4];
+   sub_index corner_range;
+
+} ir_data_gateway;
+
 extern bool cover[PARTITIONS_H][PARTITIONS_W];
 
 
@@ -186,7 +205,7 @@ bool is_part_ready_v2(int part_id, int frame, int resource);
 bool* get_local_coverage_v2(int part_id, int frame, int resource);
 void set_coverage_v2(int part_id, int frame, int resource);
 
-
+extern ir_data_gateway ir_output_gateway[STAGES][PARTITIONS_H][PARTITIONS_W];
 extern unsigned int local_frame_counters[CLI_NUM][PARTITIONS];
 extern unsigned int steal_frame_counters[CLI_NUM][PARTITIONS];
 extern unsigned int remote_frame_counters[CLI_NUM][PARTITIONS];

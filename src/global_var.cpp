@@ -28,7 +28,7 @@ input_dim dims[STAGES];
 int overlaps[STAGES];
 int output_overlap = 0;
 ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
-
+ir_data_gateway ir_output_gateway[STAGES][PARTITIONS_H][PARTITIONS_W];
 
 //For smart gateway
 unsigned int recv_counters[IMG_NUM][CLI_NUM];
