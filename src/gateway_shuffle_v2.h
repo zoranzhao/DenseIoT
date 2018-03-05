@@ -26,6 +26,7 @@ inline int get_frame_v2(int all){
    return frame;
 }
 
+inline int get_cli(int all);
 
 void notify_ir_ready(const char *dest_ip, int all,  int portno)
 {
@@ -65,6 +66,7 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
     int id = 0;
     while(1){
 	all = ready_queue.Dequeue();
+	std::cout << "Processing image from" << get_cli(all) << std::endl;
 	gateway_compute(&net, all);
 	#ifdef DEBUG_DIST
 	image sized;
