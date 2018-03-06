@@ -1,26 +1,28 @@
 #include "darknet_dist.h"
 
+inline int merge(int cli, int part);
 inline int get_cli(int all){
    int cli = 0;
    cli = all >> 8;  
    return cli;
 }
-
 inline int get_part(int all){
    int part = 0;
    part = all & 0x00ff;  
    return part;
 }
-
 inline int get_frame(int all){
    int part = 0;
    part = all & 0x00ff;  
    return part;
 }
-
-inline int merge(int cli, int part);
+inline int merge_v2(int cli, int frame, int part);
+inline int get_cli_v2(int all);
+inline int get_part_v2(int all);
+inline int get_frame_v2(int all);
 
 void init_recv_counter();
+
 
 
 void task_recorder(int portno)
@@ -151,10 +153,11 @@ inline void gateway_compute(network *netp, int cli_id)
 }
 
 
-void gateway_service(std::string thread_name){
-    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
-    set_batch_network(netp, 1);
-    network net = reshape_network(0, STAGES-1, *netp);
+
+
+
+void gateway_service(network net, std::string thread_name){
+
     net.truth = 0;
     net.train = 0;
     net.delta = 0;
@@ -165,8 +168,6 @@ void gateway_service(std::string thread_name){
 #endif
     int cli_id;
     int id = 0;
-
-
 
     while(1){
 	cli_id = ready_queue.Dequeue();
@@ -227,15 +228,25 @@ void gateway_sync(std::string thread_name){
     task_recorder(SMART_GATEWAY);
 }
 
-
+void gateway_sync_and_ir(network net, std::string thread_name);
+void gateway_collect_result(network net, std::string thread_name);
 
 void smart_gateway(){
-    std::thread t1(gateway_sync, "gateway_sync");
-    std::thread t2(gateway_service, "gateway_service");
+
+    network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
+    set_batch_network(netp, 1);
+    network net = reshape_network(0, STAGES-1, *netp);
+
+
+    //std::thread t1(gateway_sync, "gateway_sync");
+    std::thread t1(gateway_sync_and_ir, net, "gateway_sync_and_ir");
+    std::thread t2(gateway_service, net, "gateway_service");
+    std::thread t3(gateway_collect_result, net, "gateway_collect_result");
     exec_control(START_CTRL);
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
     t1.join();
     t2.join();
+    //t3.join();
 }
 
