@@ -37,9 +37,9 @@ inline int forward_network_dist_gateway(network *netp, network orig, int frame)
 	   break;
        }
        std::cout<< "Processing task "<< part_id <<std::endl;
-       time0 = what_the_time_is_it_now();
+       time0 = what_time_is_it_now();
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
-       time1 = what_the_time_is_it_now();
+       time1 = what_time_is_it_now();
        comp_time = comp_time + (time1 - time0); 
        
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
@@ -150,9 +150,9 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
 	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
-        time0 = what_the_time_is_it_now();
+        time0 = what_time_is_it_now();
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
-        time1 = what_the_time_is_it_now();
+        time1 = what_time_is_it_now();
 	comp_time = comp_time + (time1 - time0);
 	free(data);
 	delete blob;
