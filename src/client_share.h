@@ -89,9 +89,9 @@ inline void forward_network_dist_share(network *netp, int sockfd)
     unsigned int size;
 
     for(int part = 0; 1; part ++){
-       std::cout<< "Getting job task " <<std::endl;
+       std::cout << "Getting job task " << std::endl;
        get_job((void**)&data, &size, &part_id);
-       std::cout<< "Processing task "<< part_id <<std::endl;
+       std::cout << "Processing task " << part_id << std::endl;
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
@@ -157,7 +157,7 @@ void client_without_image_input_share(network *netp, unsigned int number_of_jobs
 
 
 void busy_client_share(){
-    unsigned int number_of_jobs = 4;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
@@ -174,7 +174,7 @@ void busy_client_share(){
 
 
 void idle_client_share(){
-    unsigned int number_of_jobs = 4;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);

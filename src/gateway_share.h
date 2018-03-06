@@ -250,7 +250,7 @@ void gateway_sync_share(network net, int number_of_images, std::string thread_na
 
 
 void smart_gateway_share(){
-    int number_of_images = 4;
+    int number_of_images = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1); 
     network net = reshape_network(0, STAGES-1, *netp);
