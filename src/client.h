@@ -234,7 +234,7 @@ void froward_result_to_gateway(std::string thread_name){
 
 
 void victim_client(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
@@ -251,7 +251,7 @@ void victim_client(){
 
 
 void idle_client(){
-    unsigned int number_of_jobs = 1;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network(0, STAGES-1, *netp);
