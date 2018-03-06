@@ -193,6 +193,7 @@ void serve_steal(int portno)
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"result") == 0){
+	     std::cout << "WARNING: Result should not be returned to the data resource device ... " << std::endl;
 	     //std::cout << "At time " << g_t1 << ", recv result " << job_id  <<std::endl;  
 	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
@@ -227,7 +228,7 @@ void steal_server(std::string thread_name){
 void froward_result_to_gateway(std::string thread_name){
     while(1){
 	dataBlob* blob = result_queue.Dequeue();
-	send_result(blob, AP, SMART_GATEWAY);
+	send_result(blob, AP, PORTNO);
     }
 }
 
