@@ -154,7 +154,7 @@ inline void gateway_compute(network *netp, int cli_id)
 
 
 
-
+void gateway_service_shuffle_v2(network net, std::string thread_name);
 
 void gateway_service(network net, std::string thread_name){
 
@@ -166,15 +166,13 @@ void gateway_service(network net, std::string thread_name){
     nnp_initialize();
     net.threadpool = pthreadpool_create(THREAD_NUM);
 #endif
-    int cli_id;
+    int all;
     int id = 0;
 
     while(1){
-	cli_id = ready_queue.Dequeue();
-	g_t1 = what_time_is_it_now() - g_t0;
-	std::cout << g_t1 << std::endl;
-	std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-	gateway_compute(&net, cli_id);
+	all = ready_queue.Dequeue();
+	std::cout << "Data from client " << get_cli(all) << " has been fully collected and begin to compute ..."<< std::endl;
+	gateway_compute(&net, all);
 
 
 	#ifdef DEBUG_DIST
@@ -240,7 +238,7 @@ void smart_gateway(){
 
     //std::thread t1(gateway_sync, "gateway_sync");
     std::thread t1(gateway_sync_and_ir, net, "gateway_sync_and_ir");
-    std::thread t2(gateway_service, net, "gateway_service");
+    std::thread t2(gateway_service_shuffle_v2, net, "gateway_service_shuffle_v2");
     std::thread t3(gateway_collect_result, net, "gateway_collect_result");
     exec_control(START_CTRL);
     g_t0 = what_time_is_it_now();

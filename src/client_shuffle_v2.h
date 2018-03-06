@@ -130,14 +130,19 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
        }
        //std::cout<< "Processing task "<< part_id <<std::endl;
        if( is_part_ready_v2(part_id, frame, cli_id) != 1 && need_ir_data[part_id]==1){
+		time0 = what_time_is_it_now();
 		net = forward_stage( part_id/PARTITIONS_W, part_id%PARTITIONS_W, part_data[part_id], startfrom, upto, net);
+		time1 = what_time_is_it_now();
+		comp_time = comp_time + (time1 - time0);
        }else{
 		if(need_ir_data[part_id]==1){
 			//std::cout << "[ir_data_r] .... Is able to reuse data for processing in frame: " << frame << ", part: "<< part_id << std::endl;
 			get_ir_data_from_gateway(net, all);
 		}
+		time0 = what_time_is_it_now();
 		net = forward_stage_reuse_full( part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
-
+		time1 = what_time_is_it_now();
+		comp_time = comp_time + (time1 - time0);
 
        }
        if(need_ir_data[part_id]==0){
@@ -194,6 +199,10 @@ void client_compute_shuffle_v2(network *netp, unsigned int number_of_jobs, std::
 	workload_amount = workload_amount + network_predict_dist_shuffle_v2(net, X, cnt);
 	std::cout << workload_amount << std::endl;
         free_image(sized);
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
@@ -299,9 +308,15 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	//std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
 	//std::cout << "[steals] .... got task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
 	if( ready == 0 && need_ir_data[part_id]==1){
+		time0 = what_time_is_it_now();
 		net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+		time1 = what_time_is_it_now();
+		comp_time = comp_time + (time1 - time0);
 	}else{ 
+		time0 = what_time_is_it_now();
 		net = forward_stage_reuse_full(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+		time1 = what_time_is_it_now();
+		comp_time = comp_time + (time1 - time0);
 	}
 	free(data);
 	delete blob;
@@ -353,6 +368,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 	//TODO Need to handle fail on stealing
 
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	time0 = what_time_is_it_now();
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"result") == 0){
@@ -395,6 +411,8 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 
 	     }
 	     free(blob_buffer);
+	     time1 = what_time_is_it_now();
+	     commu_time = commu_time + (time1 - time0);
         }else if(strcmp (request_type,"ir_data") == 0){
 	     read_sock(newsockfd, (char*)&all, sizeof(all));
 	     int frame = get_frame_v2(all);
@@ -431,8 +449,6 @@ void victim_client_shuffle_v2(){
     network net = reshape_network_shuffle(0, STAGES-1, *netp);
     init_recv_counter();
     exec_control(START_CTRL);
-    g_t1 = 0;
-    g_t0 = what_time_is_it_now();
     std::thread t1(client_compute_shuffle_v2, &net, number_of_images, "client_compute");
     std::thread t2(steal_server_shuffle_v2, net, "steal_server");
     std::thread t3(froward_result_to_gateway_v2, "froward_result_to_gateway");
@@ -448,8 +464,6 @@ void idle_client_shuffle_v2(){
     network net = reshape_network_shuffle(0, STAGES-1, *netp);
     init_recv_counter();
     exec_control(START_CTRL);
-    g_t1 = 0;
-    g_t0 = what_time_is_it_now();
     std::thread t1(steal_through_gateway_shuffle_v2, &net,  "steal_forward");
     std::thread t2(froward_result_to_gateway_v2, "froward_result_to_gateway");
     t1.join();

@@ -148,6 +148,7 @@ void collect_result(network net, int portno)
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if (newsockfd < 0) sock_error("ERROR on accept");
+	time0 = what_time_is_it_now();
         read_sock(newsockfd, request_type, 10); 
 	if(strcmp (request_type,"result") == 0){
 	     read_sock(newsockfd, (char*)&all, sizeof(all));
@@ -178,6 +179,9 @@ void collect_result(network net, int portno)
 	     }
         }
      	close(newsockfd);
+	time1 = what_time_is_it_now();
+	commu_time = commu_time + (time1 - time0); 
+	if(total_recved_num == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
    }
    close(sockfd);
 }
@@ -216,6 +220,7 @@ void task_and_ir_recorder(network net, int portno)
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if(g_t0_init){g_t0 = what_time_is_it_now(); g_t0_init=false;}
 	if (newsockfd < 0) sock_error("ERROR on accept");
+	time0 = what_time_is_it_now();
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"register") == 0){
 	     std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
@@ -273,6 +278,8 @@ void task_and_ir_recorder(network net, int portno)
              free(reuse_data);
         }
      	close(newsockfd);
+	time1 = what_time_is_it_now();
+	commu_time = commu_time + (time1 - time0); 
    }
    close(sockfd);
 }

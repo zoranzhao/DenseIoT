@@ -1,7 +1,8 @@
 #include "darknet_dist.h"
 
-inline void forward_network_dist_gateway(network *netp, network orig, int frame)
+inline int forward_network_dist_gateway(network *netp, network orig, int frame)
 {
+    int workload_amount;
     int part;
     network net = *netp;
 
@@ -28,38 +29,46 @@ inline void forward_network_dist_gateway(network *netp, network orig, int frame)
        int all;
        try_get_job((void**)&data, &size, &all);
        part_id = get_part_v2(all);
+
        if(data == NULL) {
 	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
+	   workload_amount = part;
 	   break;
        }
        std::cout<< "Processing task "<< part_id <<std::endl;
+       time0 = what_the_time_is_it_now();
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
+       time1 = what_the_time_is_it_now();
+       comp_time = comp_time + (time1 - time0); 
+       
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
        free(data);
     }
+
+    return workload_amount;
 
 }
 
 
 
-inline float *network_predict_dist(network *net, float *input, int frame)
+inline int network_predict_dist(network *net, float *input, int frame)
 {
     network orig = *net;
     net->input = input;
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
-    forward_network_dist_gateway(net, orig,  frame);
+    int workload_amount = forward_network_dist_gateway(net, orig,  frame);
     float *out = net->output;
     *net = orig;
-    return out;
+    return workload_amount;
 }
 
 
 void client_compute(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
-
+    int workload_amount = 0;
     network *net = netp;
     srand(2222222);
 #ifdef NNPACK
@@ -76,10 +85,14 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
 	id = cnt;
         load_image_by_number(&sized, id);
         float *X = sized.data;
-        double t1=what_time_is_it_now();
-	network_predict_dist(net, X, cnt);
-        double t2=what_time_is_it_now();
+	workload_amount  = workload_amount + network_predict_dist(net, X, cnt);
         free_image(sized);
+	std::cout << workload_amount << std::endl;
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
+
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
@@ -109,6 +122,7 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
     double t1 = 0; 
     struct sockaddr_in addr;
     int frame ;
+    int workload_amount = 0;
     while(1){
         //t0 = get_real_time_now();
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
@@ -136,7 +150,10 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
 	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+        time0 = what_the_time_is_it_now();
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
+        time1 = what_the_time_is_it_now();
+	comp_time = comp_time + (time1 - time0);
 	free(data);
 	delete blob;
 	//blob -> setData((void*)(net.layers[upto].output));
@@ -147,6 +164,8 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	//send_result(blob, inet_ntoa(addr.sin_addr), PORTNO);
 	//send_result(blob, AP, SMART_GATEWAY);
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), all);
+	workload_amount++;
+	std::cout << workload_amount <<std::endl;
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
 
@@ -190,6 +209,7 @@ void serve_steal(int portno)
 	//TODO Need to handle fail on stealing
 
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	time0 = what_time_is_it_now();
 	if (newsockfd < 0) sock_error("ERROR on accept");
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"result") == 0){
@@ -212,6 +232,8 @@ void serve_steal(int portno)
 	     write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     write_sock(newsockfd, blob_buffer, bytes_length);
 	     free(blob_buffer);
+	     time1 = what_time_is_it_now();
+             commu_time = commu_time + (time1 - time0);
         }
 	//free(blob_buffer);//
      	close(newsockfd);
