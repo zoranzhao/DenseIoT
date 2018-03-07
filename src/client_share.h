@@ -31,22 +31,23 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 	    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
 	    std::cout << "Recved task number is: "<< total_part_num << std::endl;
 	    cur_client_task_num = total_part_num;
-	    close(newsockfd);
+	    //close(newsockfd);
 
 
 	    int job_id; 
 	    unsigned int bytes_length;  
 	    char* blob_buffer;
 	    for(int i = 0; i < total_part_num; i++){
-	       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	       //newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	       read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	       read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	       blob_buffer = (char*)malloc(bytes_length);
 	       read_sock(newsockfd, blob_buffer, bytes_length);
 	       std::cout << "Recved task : "<< job_id << " Size is: "<< bytes_length << std::endl;
 	       put_job(blob_buffer, bytes_length, job_id);
-	       close(newsockfd);
+
 	    }
+            close(newsockfd);
 
 	    for(int i = 0; i < total_part_num; i++){
 		dataBlob* blob = result_queue.Dequeue();

@@ -143,7 +143,6 @@ void data_map_reduce(network net, int number_of_images, int portno)
 	  if(print_gateway)
             std::cout << "Sending IR result at layer"<<(ii+1)<<" to client" << cur_addr << " part "<< cur_id << std::endl;
 	  send_result_mr(blob, cur_addr.c_str(), portno);
-          commu_time = commu_time + time1 - time0;
 	  free(blob_buffer);
 	  delete blob;
 	}

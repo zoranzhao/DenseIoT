@@ -160,7 +160,7 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
         time0 = what_time_is_it_now();
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
         time1 = what_time_is_it_now();
-	std::cout << "partition time is: " << (time1 - time0)<< std::endl;
+	//std::cout << "partition time is: " << (time1 - time0)<< std::endl;
 	comp_time = comp_time + (time1 - time0);
 	free(data);
 	delete blob;

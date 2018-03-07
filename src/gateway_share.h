@@ -16,7 +16,7 @@ void cal_workload_mapping(){
 inline int bind_port_client_share(int portno);
 
 
-void send_result_share(dataBlob* blob, const char *dest_ip, int portno)
+inline void send_result_share(dataBlob* blob, const char *dest_ip, int portno)
 {
      int sockfd;
      struct sockaddr_in serv_addr;
@@ -43,8 +43,20 @@ void send_result_share(dataBlob* blob, const char *dest_ip, int portno)
      close(sockfd);
 }
 
+inline void send_input_share(int sockfd, dataBlob* blob)
+{
+     char *blob_buffer;
+     unsigned int bytes_length;
+     int job_id;
+     blob_buffer = (char*)(blob -> getDataPtr());
+     job_id = blob -> getID();
+     bytes_length = blob -> getSize();
+     write_sock(sockfd, (char*)&job_id, sizeof(job_id));
+     write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
+     write_sock(sockfd, blob_buffer, bytes_length);
+}
 
-void send_one_number(unsigned int number, const char *dest_ip, int portno)
+inline int send_one_number(unsigned int number, const char *dest_ip, int portno)
 {
      int sockfd;
      struct sockaddr_in serv_addr;
@@ -59,7 +71,8 @@ void send_one_number(unsigned int number, const char *dest_ip, int portno)
 	sock_error("ERROR connecting");
      unsigned int bytes_length = number;
      write_sock(sockfd, (char*)&bytes_length, sizeof(bytes_length));
-     close(sockfd);
+     //close(sockfd);
+     return sockfd;
 }
 
 void gateway_require_data(char* request_type, const char *cli_ip, int portno);
@@ -110,17 +123,19 @@ void task_share(network net, int number_of_images, int portno)
      int part = 0;
      for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
 	std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
-        send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
+        int input_sockfd = send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
 	for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
 		if(print_gateway)
 		  std::cout << "Sending the partition "<< part << " to client" << addr_list[cli_cnt] << std::endl;
 		bytes_length = input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float);
 		dataBlob* blob = new dataBlob(part_data[part], bytes_length, part); 
-		send_result_share(blob, addr_list[cli_cnt], portno);
+		//send_result_share(blob, addr_list[cli_cnt], portno);
+                send_input_share(input_sockfd, blob);
 	       	free(part_data[part]);
 		delete blob;
 		part++;
 	}
+	close(input_sockfd);
      }
      time1 = what_time_is_it_now();
      commu_time = commu_time + time1 - time0;
