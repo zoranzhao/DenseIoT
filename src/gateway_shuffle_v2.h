@@ -181,7 +181,7 @@ void collect_result(network net, int portno)
      	close(newsockfd);
 	time1 = what_time_is_it_now();
 	commu_time = commu_time + (time1 - time0); 
-	if(total_recved_num == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
+	if(total_recved_num == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM  << std::endl;
    }
    close(sockfd);
 }

@@ -164,9 +164,9 @@ void data_map_reduce(network net, int number_of_images, int portno)
      }
      g_t1 = g_t1 + what_time_is_it_now() - g_t0;
      std::cout <<"Total latency is: "<< g_t1/((float)(id + 1)) << std::endl;
-     std::cout <<"Communication latency is: "<< commu_time/((float)(id + 1)) << std::endl;
+     std::cout << "The entire throughput of is: " << ((float)(id + 1))/g_t1 << std::endl;
      std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-     if((id + 1) == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
+     if((id + 1) == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM  << std::endl;
      ready_queue.Enqueue(cli_id);
    }
    close(sockfd);

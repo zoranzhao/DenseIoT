@@ -89,8 +89,8 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
         free_image(sized);
 	std::cout << workload_amount << std::endl;
 	if((cnt+1) == IMG_NUM) {
-		std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
-		std::cout << "Computation time is: " << comp_time << std::endl;
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
 
     }
@@ -165,9 +165,13 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	//send_result(blob, AP, SMART_GATEWAY);
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), all);
 	workload_amount++;
-	std::cout << workload_amount <<std::endl;
         //t1 =  get_real_time_now() - t0;
         //std::cout << "Send result cost is: "<<t1<< std::endl;
+	if((frame+1) == IMG_NUM) {
+		std::cout << workload_amount <<std::endl;
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
+	}
 
     }
 #ifdef NNPACK

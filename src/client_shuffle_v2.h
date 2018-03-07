@@ -200,8 +200,8 @@ void client_compute_shuffle_v2(network *netp, unsigned int number_of_jobs, std::
 	std::cout << workload_amount << std::endl;
         free_image(sized);
 	if((cnt+1) == IMG_NUM) {
-		std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
-		std::cout << "Computation time is: " << comp_time << std::endl;
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
     }
 #ifdef NNPACK
@@ -325,7 +325,12 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 		set_global_and_local_coverage_v2(part_id, frame, cli_id);
 		send_ir_data_to_gateway(net, all);
 	}
-	std::cout << workload_amount << std::endl;
+
+	if((frame+1) == IMG_NUM) {
+		std::cout << workload_amount <<std::endl;
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
+	}
 	workload_amount ++ ;
 	put_result((void*)net.layers[upto].output, net.layers[upto].outputs*sizeof(float), all);
     }

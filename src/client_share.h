@@ -127,7 +127,7 @@ void client_with_image_input_share(network *netp, unsigned int number_of_jobs, i
         net->delta = 0;
         forward_network_dist_share(net, sockfd);
 	if((cnt+1) == IMG_NUM) {
-		std::cout << "Computation time is: " << comp_time << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
         free_image(sized);
     }
@@ -153,7 +153,7 @@ void client_without_image_input_share(network *netp, unsigned int number_of_jobs
         net->delta = 0;
         forward_network_dist_share(net, sockfd);
 	if((cnt+1) == IMG_NUM) {
-		std::cout << "Computation time is: " << comp_time << std::endl;
+		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
     }
 #ifdef NNPACK
