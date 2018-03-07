@@ -100,19 +100,6 @@ void client_compute_local_mr(network *netp, unsigned int number_of_jobs, std::st
     nnp_initialize();
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
-
-#ifdef DEBUG_DIST
-    image **alphabet = load_alphabet();
-    list *options = read_data_cfg((char*)"cfg/coco.data");
-    char *name_list = option_find_str(options, (char*)"names", (char*)"data/names.list");
-    char **names = get_labels(name_list);
-    char filename[256];
-    char outfile[256];
-    float thresh = .24;
-    float hier_thresh = .5;
-    float nms=.3;
-#endif
-
     int j;
     int id = 0;//5000 > id > 0
     unsigned int cnt = 0;//5000 > id > 0
@@ -123,35 +110,10 @@ void client_compute_local_mr(network *netp, unsigned int number_of_jobs, std::st
 	id = cnt;
         load_image_by_number(&sized, id);
         float *X = sized.data;
-        double t1=what_time_is_it_now();
-	network_predict_dist_mr(net, X);
-        double t2=what_time_is_it_now();
 
-#ifdef DEBUG_DIST
-	sprintf(filename, "data/val2017/%d.jpg", id);
-	sprintf(outfile, "%d", id);
-        layer l = net->layers[net->n-1];
-        float **masks = 0;
-        if (l.coords > 4){
-            masks = (float **)calloc(l.w*l.h*l.n, sizeof(float*));
-            for(j = 0; j < l.w*l.h*l.n; ++j) masks[j] = (float *)calloc(l.coords-4, sizeof(float *));
-        }
-        float **probs = (float **)calloc(l.w*l.h*l.n, sizeof(float *));
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float *)calloc(l.classes + 1, sizeof(float *));
-	printf("%s: Predicted in %f s.\n", filename, t2 - t1);
-        image im = load_image_color(filename,0,0);
-        box *boxes = (box *)calloc(l.w*l.h*l.n, sizeof(box));
-        get_region_boxes(l, im.w, im.h, net->w, net->h, thresh, probs, boxes, masks, 0, 0, hier_thresh, 1);
-        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, masks, names, alphabet, l.classes);
-        save_image(im, outfile);
-        free(boxes);
-        free_ptrs((void **)probs, l.w*l.h*l.n);
-        if (l.coords > 4){
-        	free_ptrs((void **)masks, l.w*l.h*l.n);
-	}
-        free_image(im);
-#endif
+	network_predict_dist_mr(net, X);
+
+
         free_image(sized);
     }
 #ifdef NNPACK
@@ -178,9 +140,6 @@ inline int bind_port_client(){
 
 inline void forward_network_dist_mr(network *netp, int sockfd)
 {
-
-
-
     int newsockfd;
     socklen_t clilen;
     network net = *netp;
@@ -218,8 +177,10 @@ inline void forward_network_dist_mr(network *netp, int sockfd)
         output_part_data_mr[job_id] = (float*)malloc(
 						(input_ranges_mr[job_id][ii].w/net.layers[ii].stride)*
 						(input_ranges_mr[job_id][ii].h/net.layers[ii].stride)*net.layers[ii].out_c*sizeof(float));
-
+        time0 = what_time_is_it_now();
 	net = forward_stage_mr( job_id/PARTITIONS_W, job_id%PARTITIONS_W, part_data_mr[job_id], ii, ii, net); 
+        time1 = what_time_is_it_now();
+	comp_time = comp_time +  time1 - time0;
 	memcpy(output_part_data_mr[job_id], net.layers[ii].output, net.layers[ii].out_w*net.layers[ii].out_h*net.layers[ii].out_c*sizeof(float));
 	if(ii < STAGES - 1){
 	     //Send current results
@@ -278,6 +239,9 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
         net->train = 0;
         net->delta = 0;
         forward_network_dist_mr(net, sockfd);
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
         free_image(sized);
     }
 #ifdef NNPACK
@@ -303,6 +267,9 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
         net->train = 0;
         net->delta = 0;
         forward_network_dist_mr(net, sockfd);
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);
