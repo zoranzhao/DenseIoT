@@ -70,6 +70,9 @@ inline void forward_network_dist_share(network *netp, int sockfd)
 
     int startfrom = 0;
     int upto = STAGES-1;
+    double time0 = 0.0;
+    double time1 = 0.0;
+
     if(netp -> input != NULL ){
 
       char request_type[10];

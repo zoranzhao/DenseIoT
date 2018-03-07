@@ -145,6 +145,9 @@ void collect_result(network net, int portno)
 
    int total_recved_num = 0;
 
+   double time0 = 0.0;
+   double time1 = 0.0;
+
    while(1){
      	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	if (newsockfd < 0) sock_error("ERROR on accept");
@@ -214,6 +217,8 @@ void task_and_ir_recorder(network net, int portno)
    int cli_id;
    int frame;
    char *blob_buffer;
+   double time0 = 0.0;
+   double time1 = 0.0;
 
    bool g_t0_init = true;
    while(1){

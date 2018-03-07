@@ -90,6 +90,9 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
     float* stage_in = net.input; 
     int cli_id = (CUR_CLI);
     //Partition and shuffle the input data for the processing stage
+    double time0 = 0.0;
+    double time1 = 0.0;
+
     fork_input_reuse(startfrom, stage_in, net);
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
@@ -287,6 +290,9 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
     struct sockaddr_in addr;
     int workload_amount = 0;
     int frame ;
+    double time0 = 0.0;
+    double time1 = 0.0;
+
     while(1){
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
 	if(addr.sin_addr.s_addr == inet_addr("0.0.0.0")){
@@ -368,6 +374,9 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
    unsigned int id;
    char request_type[10];
    int cli_id = (CUR_CLI);
+   double time0 = 0.0;
+   double time1 = 0.0;
+
    while(1){
 	//Recieving stealing request from client devices
 	//TODO Need to handle fail on stealing

@@ -149,6 +149,8 @@ inline void forward_network_dist_mr(network *netp, int sockfd)
     char* blob_buffer;
     int job_id;
 
+    double time0 = 0.0;
+    double time1 = 0.0;
 
     int upto = STAGES-1;
     if(netp -> input != NULL ){

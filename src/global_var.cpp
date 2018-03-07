@@ -88,8 +88,7 @@ int cur_client_task_num;
 //Add some variable for communication and computation profiling
 double commu_time = 0.0;
 double comp_time = 0.0;
-double time0 = 0.0;
-double time1 = 0.0;
+
 
 //Using gateway to record IR data and send out data
 int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H_MAX][PARTITIONS_W_MAX];

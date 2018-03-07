@@ -86,7 +86,8 @@ void task_share(network net, int number_of_images, int portno)
    int job_id;
    unsigned int bytes_length;
    char *blob_buffer;
-
+   double time0 = 0.0;
+   double time1 = 0.0;
 
    for(int id = 0; id < number_of_images; id++){
      //Receive the data from a single client;

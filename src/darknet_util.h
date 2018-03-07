@@ -190,8 +190,8 @@ extern float* recv_data_mr[IMG_NUM][PARTITIONS_MAX];
 //Add some variable for communication and computation profiling
 extern double commu_time;
 extern double comp_time;
-extern double time0;
-extern double time1;
+
+
 
 
 //Global variables for task sharing processing platform

@@ -77,6 +77,8 @@ void data_map_reduce(network net, int number_of_images, int portno)
    char *blob_buffer;
    std::list< std::string > cli_list;
    std::list< int > job_id_list;
+   double time0 = 0.0;
+   double time1 = 0.0;
 
    for(int id = 0; id < number_of_images; id++){
      //Receive the data from a single client;

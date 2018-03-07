@@ -25,6 +25,9 @@ inline int forward_network_dist_gateway(network *netp, network orig, int frame)
     int part_id;
     unsigned int size;
 
+    double time0 = 0.0;
+    double time1 = 0.0;
+
     for(part = 0; 1; part ++){
        int all;
        try_get_job((void**)&data, &size, &all);
@@ -124,6 +127,9 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
     struct sockaddr_in addr;
     int frame ;
     int workload_amount = 0;
+    double time0 = 0.0;
+    double time1 = 0.0;
+
     while(1){
         //t0 = get_real_time_now();
 	addr.sin_addr.s_addr = ask_gateway(steal, AP, SMART_GATEWAY);
@@ -210,6 +216,9 @@ void serve_steal(int portno)
    unsigned int id;
    char request_type[10];
    int cli_id = CUR_CLI;
+   double time0 = 0.0;
+   double time1 = 0.0;
+
    while(1){
 	//Recieving stealing request from client devices
 	//TODO Need to handle fail on stealing
