@@ -86,7 +86,7 @@ void task_share(network net, int number_of_images, int portno)
    int job_id;
    unsigned int bytes_length;
    char *blob_buffer;
-   double t0, t1;
+
 
    for(int id = 0; id < number_of_images; id++){
      //Receive the data from a single client;
@@ -95,20 +95,17 @@ void task_share(network net, int number_of_images, int portno)
      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
      g_t0 = what_time_is_it_now();
 
-     t0 = what_time_is_it_now();
+     time0 = what_time_is_it_now();
      read_sock(newsockfd, (char*)&cli_id, sizeof(cli_id));
      read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
      blob_buffer = (char*)malloc(bytes_length);
      read_sock(newsockfd, blob_buffer, bytes_length);
      close(newsockfd);
-     t1 = what_time_is_it_now();
-     commu_time = commu_time + t1 - t0;
      if(print_gateway)
         std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
      cal_workload_mapping();
      //Distribute the data 
      fork_input(0, (float*)blob_buffer, net);
-     t0 = what_time_is_it_now();
      int part = 0;
      for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
 	std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
@@ -124,19 +121,19 @@ void task_share(network net, int number_of_images, int portno)
 		part++;
 	}
      }
-     t1 = what_time_is_it_now();
-     commu_time = commu_time + t1 - t0;
+     time1 = what_time_is_it_now();
+     commu_time = commu_time + time1 - time0;
 
      for(int part_cnt = 0; part_cnt < PARTITIONS; part_cnt ++ ){
 	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	  t0 = what_time_is_it_now();
+	  time0 = what_time_is_it_now();
 	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
           std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 	  blob_buffer = (char*)malloc(bytes_length);
 	  read_sock(newsockfd, blob_buffer, bytes_length);
-	  t1 = what_time_is_it_now();
-	  commu_time = commu_time + t1 - t0;
+	  time1 = what_time_is_it_now();
+	  commu_time = commu_time + time1 - time0;
      	  close(newsockfd);
           recv_data[id][cli_id][job_id]=(float*)blob_buffer;
      }
@@ -144,6 +141,7 @@ void task_share(network net, int number_of_images, int portno)
      std::cout << "Total latency is: " << g_t1/((float)(id + 1)) << std::endl;
      std::cout << "Communication latency is: " << commu_time/((float)(id + 1)) << std::endl;
      std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
+     if((id + 1) == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time << std::endl;
      ready_queue.Enqueue(cli_id);
    }
    close(sockfd);

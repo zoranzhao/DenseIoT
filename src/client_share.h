@@ -88,6 +88,7 @@ inline void forward_network_dist_share(network *netp, int sockfd)
     int part_id;
     unsigned int size;
 
+    time0 = what_time_is_it_now();
     for(int part = 0; 1; part ++){
        std::cout << "Getting job task " << std::endl;
        get_job((void**)&data, &size, &part_id);
@@ -97,6 +98,8 @@ inline void forward_network_dist_share(network *netp, int sockfd)
        free(data);
        if(part == (cur_client_task_num-1)) break;
     }
+    time1 = what_time_is_it_now();
+    comp_time = comp_time + (time1 - time0); 
 
 }
 
@@ -123,6 +126,9 @@ void client_with_image_input_share(network *netp, unsigned int number_of_jobs, i
         net->train = 0;
         net->delta = 0;
         forward_network_dist_share(net, sockfd);
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
         free_image(sized);
     }
 #ifdef NNPACK
@@ -146,6 +152,9 @@ void client_without_image_input_share(network *netp, unsigned int number_of_jobs
         net->train = 0;
         net->delta = 0;
         forward_network_dist_share(net, sockfd);
+	if((cnt+1) == IMG_NUM) {
+		std::cout << "Computation time is: " << comp_time << std::endl;
+	}
     }
 #ifdef NNPACK
     pthreadpool_destroy(net->threadpool);

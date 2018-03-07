@@ -26,8 +26,6 @@ int main(int argc, char **argv)
 		std::cout <<"gateway" << std::endl;
 		smart_gateway();
 	}
-
-
     }else if(0 == strcmp(argv[2], "shuffle")){
 	std::cout <<"shuffle" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
@@ -44,8 +42,6 @@ int main(int argc, char **argv)
 		std::cout <<"gateway" << std::endl;
 		smart_gateway_shuffle_v2();
 	}
-
-
     }else if(0 == strcmp(argv[2], "mapreduce")){
 	std::cout <<"mapreduce" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
@@ -62,7 +58,6 @@ int main(int argc, char **argv)
 		std::cout <<"gateway" << std::endl;
 		smart_gateway_mr();
 	}
-
     }else if(0 == strcmp(argv[2], "share")){
 	std::cout <<"share" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
