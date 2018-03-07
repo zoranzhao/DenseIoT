@@ -10,7 +10,7 @@ inline int forward_network_dist_gateway(network *netp, network orig, int frame)
     int upto = STAGES-1;
 
     float* stage_in = net.input; 
-    int cli_id = get_client_id(CUR_CLI);
+    int cli_id = (CUR_CLI);
     fork_input(startfrom, stage_in, net);
     char reg[10] = "register";
 
@@ -203,7 +203,7 @@ void serve_steal(int portno)
    int all;
    unsigned int id;
    char request_type[10];
-   int cli_id = get_client_id(CUR_CLI);
+   int cli_id = CUR_CLI;
    while(1){
 	//Recieving stealing request from client devices
 	//TODO Need to handle fail on stealing

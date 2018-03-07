@@ -66,7 +66,7 @@ inline int forward_network_dist_gateway_shuffle(network *netp, network orig)
 
        //std::cout<< "Processed task "<< part_id <<std::endl;
 
-       int cli_id = get_client_id(CUR_CLI);
+       int cli_id = (CUR_CLI);
        int all = merge(cli_id, part_id);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
        free(data);

@@ -88,7 +88,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
     int upto = STAGES-1;
 
     float* stage_in = net.input; 
-    int cli_id = get_client_id(CUR_CLI);
+    int cli_id = (CUR_CLI);
     //Partition and shuffle the input data for the processing stage
     fork_input_reuse(startfrom, stage_in, net);
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
@@ -362,7 +362,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
    int all;
    unsigned int id;
    char request_type[10];
-   int cli_id = get_client_id(CUR_CLI);
+   int cli_id = (CUR_CLI);
    while(1){
 	//Recieving stealing request from client devices
 	//TODO Need to handle fail on stealing

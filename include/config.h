@@ -23,13 +23,17 @@
 
 #define DEBUG_DIST 0
 #define STAGES 16
-#define PARTITIONS_W 3
-#define PARTITIONS_H 3
-#define PARTITIONS 9
+#define PARTITIONS_W_MAX 5
+#define PARTITIONS_H_MAX 5
+#define PARTITIONS_MAX 25
 #define THREAD_NUM 1
 
-
-#define ACT_CLI 1
-#define CUR_CLI BLUE1
+extern int ACT_CLI;
+extern int CUR_CLI;
+extern int PARTITIONS;
+extern int PARTITIONS_W;
+extern int PARTITIONS_H;
+//#define ACT_CLI 1
+//#define CUR_CLI BLUE1
 
 #endif

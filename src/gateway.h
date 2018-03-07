@@ -131,7 +131,6 @@ inline void gateway_compute(network *netp, int cli_id)
     size_t stage_outs =  (stage_output_range.w)*(stage_output_range.h)*(net.layers[upto].out_c);
     float* stage_out = (float*) malloc( sizeof(float) * stage_outs );  
 
-
     for(int part = 0; part < PARTITIONS; part ++){
        join_output(part, recv_data[get_frame(cli_id)][get_cli(cli_id)][part],  stage_out, upto, net);
        free(recv_data[get_frame(cli_id)][get_cli(cli_id)][part]);

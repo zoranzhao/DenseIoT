@@ -58,7 +58,7 @@ $(OBJDIR)%.o: %.cpp $(DEPS)
 	$(CXX) $(COMMON) $(CFLAGS) -c $< -o $@
 
 test:
-	./$(EXEC)
+	./$(EXEC) ${ARGS}
 
 obj:
 	mkdir -p obj

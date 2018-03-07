@@ -106,51 +106,51 @@ typedef struct gateway_overlapped_data{
 
 } ir_data_gateway;
 
-extern bool cover[PARTITIONS_H][PARTITIONS_W];
+extern bool cover[PARTITIONS_H_MAX][PARTITIONS_W_MAX];
 
 
 //A table for partition ID
 //A mapping of partition IDs
-extern int part_id[PARTITIONS_H][PARTITIONS_W];
+extern int part_id[PARTITIONS_H_MAX][PARTITIONS_W_MAX];
 
 //Partitioned DNN parameters 
-extern sub_index input_ranges[PARTITIONS][STAGES];//Required input ranges for each layer
-extern sub_index output_ranges[PARTITIONS][STAGES];//Corrrect output ranges for each layer
+extern sub_index input_ranges[PARTITIONS_MAX][STAGES];//Required input ranges for each layer
+extern sub_index output_ranges[PARTITIONS_MAX][STAGES];//Corrrect output ranges for each layer
 extern sub_index stage_input_range;
 extern sub_index stage_output_range;
-extern sub_index stage_output_partition_ranges[PARTITIONS];
-extern float* part_data[PARTITIONS];
+extern sub_index stage_output_partition_ranges[PARTITIONS_MAX];
+extern float* part_data[PARTITIONS_MAX];
 
 //For data reuse
-extern sub_index reuse_input_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
-extern sub_index reuse_output_ranges[PARTITIONS][STAGES];//Cropped output ranges without overlap for each layer
+extern sub_index reuse_input_ranges[PARTITIONS_MAX][STAGES];//Cropped output ranges without overlap for each layer
+extern sub_index reuse_output_ranges[PARTITIONS_MAX][STAGES];//Cropped output ranges without overlap for each layer
 extern input_dim dims[STAGES];
-extern float* reuse_part_data[PARTITIONS];
+extern float* reuse_part_data[PARTITIONS_MAX];
 
 //Partition overlap
 extern int overlaps[STAGES];
 extern int output_overlap;
-extern ir_data ir_output[STAGES][PARTITIONS_H][PARTITIONS_W];
+extern ir_data ir_output[STAGES][PARTITIONS_H_MAX][PARTITIONS_W_MAX];
 
 //For smart gateway
 extern unsigned int recv_counters[IMG_NUM][CLI_NUM];
-extern float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
-extern unsigned int frame_counters[CLI_NUM][PARTITIONS];
+extern float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS_MAX];
+extern unsigned int frame_counters[CLI_NUM][PARTITIONS_MAX];
 
 //For reuse data serialization and deserialization
-extern int up[PARTITIONS][STAGES];
-extern int left[PARTITIONS][STAGES];	
-extern int right[PARTITIONS][STAGES];
-extern int down[PARTITIONS][STAGES];
-extern unsigned int ir_data_size[PARTITIONS];
+extern int up[PARTITIONS_MAX][STAGES];
+extern int left[PARTITIONS_MAX][STAGES];	
+extern int right[PARTITIONS_MAX][STAGES];
+extern int down[PARTITIONS_MAX][STAGES];
+extern unsigned int ir_data_size[PARTITIONS_MAX];
 
-extern int result_up[PARTITIONS][STAGES];
-extern int result_left[PARTITIONS][STAGES];	
-extern int result_right[PARTITIONS][STAGES];
-extern int result_down[PARTITIONS][STAGES];
-extern unsigned int result_ir_data_size[PARTITIONS];
-extern int need_ir_data[PARTITIONS];
-extern int coverage[PARTITIONS_H][PARTITIONS_W];
+extern int result_up[PARTITIONS_MAX][STAGES];
+extern int result_left[PARTITIONS_MAX][STAGES];	
+extern int result_right[PARTITIONS_MAX][STAGES];
+extern int result_down[PARTITIONS_MAX][STAGES];
+extern unsigned int result_ir_data_size[PARTITIONS_MAX];
+extern int need_ir_data[PARTITIONS_MAX];
+extern int coverage[PARTITIONS_H_MAX][PARTITIONS_W_MAX];
 
 inline void stage_output_partition(int w1, int w2, int h1, int h2);
 sub_index calculate_range(sub_index output, layer l);
@@ -165,27 +165,27 @@ bool is_part_ready(int part_id);
 void print_subindex(sub_index index);
 
 //Global variables for MapReduce-like task distribution
-extern float* part_data_mr[PARTITIONS];
-extern float* output_part_data_mr[PARTITIONS];
-extern ir_data ir_output_mr[STAGES][PARTITIONS_H][PARTITIONS_W];
-extern sub_index input_ranges_mr[PARTITIONS][STAGES];//Required input ranges for each layer
-extern sub_index output_ranges_mr[PARTITIONS][STAGES];//Corrrect output ranges for each layer
+extern float* part_data_mr[PARTITIONS_MAX];
+extern float* output_part_data_mr[PARTITIONS_MAX];
+extern ir_data ir_output_mr[STAGES][PARTITIONS_H_MAX][PARTITIONS_W_MAX];
+extern sub_index input_ranges_mr[PARTITIONS_MAX][STAGES];//Required input ranges for each layer
+extern sub_index output_ranges_mr[PARTITIONS_MAX][STAGES];//Corrrect output ranges for each layer
 
-extern int up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int up_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int left_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int right_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int down_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int corners_mr[4][PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
 
-extern int result_up_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int result_left_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int result_right_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int result_down_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern int result_corners_mr[4][PARTITIONS_H][PARTITIONS_W][STAGES];
+extern int result_up_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int result_left_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int result_right_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int result_down_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern int result_corners_mr[4][PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
 
-extern unsigned int result_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern unsigned int req_ir_data_size_mr[PARTITIONS_H][PARTITIONS_W][STAGES];
-extern float* recv_data_mr[IMG_NUM][PARTITIONS];
+extern unsigned int result_ir_data_size_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern unsigned int req_ir_data_size_mr[PARTITIONS_H_MAX][PARTITIONS_W_MAX][STAGES];
+extern float* recv_data_mr[IMG_NUM][PARTITIONS_MAX];
 
 //Add some variable for communication and computation profiling
 extern double commu_time;
@@ -195,23 +195,23 @@ extern double time1;
 
 
 //Global variables for task sharing processing platform
-extern int assigned_task_num[ACT_CLI];
+extern int assigned_task_num[CLI_NUM];
 extern int cur_client_task_num;
 
 //Using gateway to record IR data and send out data
-extern int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
-extern int local_frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H][PARTITIONS_W];
-extern unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS];
-extern unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS];
+extern int frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H_MAX][PARTITIONS_W_MAX];
+extern int local_frame_coverage[IMG_NUM][CLI_NUM][PARTITIONS_H_MAX][PARTITIONS_W_MAX];
+extern unsigned int frame_ir_res_counters[CLI_NUM][PARTITIONS_MAX];
+extern unsigned int frame_ir_req_counters[CLI_NUM][PARTITIONS_MAX];
 void clear_coverage_v2();
 bool is_part_ready_v2(int part_id, int frame, int resource);
 bool* get_local_coverage_v2(int part_id, int frame, int resource);
 void set_coverage_v2(int part_id, int frame, int resource);
 
-extern ir_data_gateway ir_output_gateway[STAGES][PARTITIONS_H][PARTITIONS_W];
-extern unsigned int local_frame_counters[CLI_NUM][PARTITIONS];
-extern unsigned int steal_frame_counters[CLI_NUM][PARTITIONS];
-extern unsigned int remote_frame_counters[CLI_NUM][PARTITIONS];
+extern ir_data_gateway ir_output_gateway[STAGES][PARTITIONS_H_MAX][PARTITIONS_W_MAX];
+extern unsigned int local_frame_counters[CLI_NUM][PARTITIONS_MAX];
+extern unsigned int steal_frame_counters[CLI_NUM][PARTITIONS_MAX];
+extern unsigned int remote_frame_counters[CLI_NUM][PARTITIONS_MAX];
 
 #endif
 
