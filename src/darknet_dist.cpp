@@ -18,6 +18,7 @@ int main(int argc, char **argv)
         DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
+	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	std::cout <<"nonshuffle" << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
@@ -36,6 +37,7 @@ int main(int argc, char **argv)
         DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
+	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
 		idle_client_shuffle_v2();
@@ -53,6 +55,7 @@ int main(int argc, char **argv)
         DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
+	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
 		idle_client_mr();
@@ -70,6 +73,7 @@ int main(int argc, char **argv)
         DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
+	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
 		idle_client_share();
