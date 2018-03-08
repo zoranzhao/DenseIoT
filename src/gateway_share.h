@@ -153,6 +153,7 @@ void task_share(network net, int number_of_images, int portno)
 		  commu_time = commu_time + time1 - time0;
 	     	  close(newsockfd);
 		  recv_data[id][cli_id][job_id]=(float*)blob_buffer;
+		  std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 	     }
 	     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
 	     std::cout << "Global time is: " << g_t1 <<std::endl;
