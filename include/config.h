@@ -23,9 +23,9 @@
 
 #define DEBUG_DIST 0
 #define STAGES 16
-#define PARTITIONS_W_MAX 5
-#define PARTITIONS_H_MAX 5
-#define PARTITIONS_MAX 25
+#define PARTITIONS_W_MAX 6
+#define PARTITIONS_H_MAX 6
+#define PARTITIONS_MAX 36
 #define THREAD_NUM 1
 
 extern int ACT_CLI;
