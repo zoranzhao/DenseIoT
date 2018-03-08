@@ -122,7 +122,7 @@ void client_compute_local_mr(network *netp, unsigned int number_of_jobs, std::st
 #endif
 }
 
-inline int bind_port_client(){
+inline int bind_port_client_mr(int portno){
     int sockfd;
     struct sockaddr_in serv_addr;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -131,7 +131,7 @@ inline int bind_port_client(){
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(PORTNO);
+    serv_addr.sin_port = htons(portno);
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
 	sock_error("ERROR on binding");
     listen(sockfd, 10);//back_log numbers 
@@ -152,6 +152,7 @@ inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
     double time0 = 0.0;
     double time1 = 0.0;
     int upto = STAGES-1;
+/*
     if(netp -> input != NULL ){
 
       char request_type[10];
@@ -165,7 +166,7 @@ inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
       //free(netp -> input);
       delete blob;
     }
-
+*/
     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if (newsockfd < 0) sock_error("ERROR on accept");
     read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
@@ -215,7 +216,7 @@ inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
 
 }
 
-
+/*
 void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
     network *net = netp;
@@ -228,7 +229,9 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
     int id = 0;//5000 > id > 0
     unsigned int cnt = 0;//5000 > id > 0
 
-    int sockfd = bind_port_client();
+
+    int sockfd = bind_port_client_mr(PORTNO);
+
 
     for(cnt = 0; cnt < number_of_jobs; cnt ++){
         image sized;
@@ -250,6 +253,8 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
     nnp_deinitialize();
 #endif
 }
+*/
+
 
 void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, std::string thread_name)
 {
@@ -260,7 +265,8 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
     net->threadpool = pthreadpool_create(THREAD_NUM);
 #endif
 
-    int sockfd = bind_port_client();
+    int sockfd = bind_port_client_mr(PORTNO);
+
 
     for(int cnt = 0; cnt < number_of_jobs; cnt ++){
         net->input  = NULL;
@@ -268,7 +274,7 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
         net->train = 0;
         net->delta = 0;
         forward_network_dist_mr(net, sockfd, cnt);
-	if((cnt+1) == IMG_NUM) {
+	if((cnt+1) == IMG_NUM*DATA_CLI) {
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
     }
@@ -288,29 +294,33 @@ void victim_client_local_mr(){
     t1.join();
 }
 
+void send_all_input_to_gateway(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name);
 
 void busy_client_mr(){
-    unsigned int number_of_jobs = 4;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
+    int sockfd_syn = bind_port_client_mr(SMART_GATEWAY);
     network net = reshape_network_mr(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_with_image_input_mr, &net, number_of_jobs, "client_with_image_input_mr");
+    std::thread t1(send_all_input_to_gateway, &net, number_of_jobs, sockfd_syn, "send_all_input_to_gateway");
+    std::thread t2(client_without_image_input_mr, &net, number_of_jobs*DATA_CLI, "client_without_image_input_mr");
     t1.join();
+    t2.join();
 }
 
 
 void idle_client_mr(){
-    unsigned int number_of_jobs = 4;
+    unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_without_image_input_mr, &net, number_of_jobs, "client_without_image_input_mr");
+    std::thread t1(client_without_image_input_mr, &net, number_of_jobs*DATA_CLI, "client_without_image_input_mr");
     t1.join();
 
 }

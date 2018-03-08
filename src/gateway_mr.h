@@ -83,7 +83,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
    for(int id = 0; id < number_of_images; id++){
 	for(int cli_id = 0; cli_id < DATA_CLI; cli_id++){	
 	     //Receive the data from a single client;
-	     gateway_require_data("start", addr_list[cli_id], portno);
+	     gateway_require_data("start", addr_list[cli_id], SMART_GATEWAY);
 	     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	     g_t0 = what_time_is_it_now();
 
@@ -161,7 +161,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 	     	  close(newsockfd);
 		  if(print_gateway)
 		    std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
-		  recv_data_mr[id][job_id]=(float*)blob_buffer;
+		  recv_data[id][cli_id][job_id]=(float*)blob_buffer;
 	     }
 	     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
 	     std::cout << "Global time is: " << g_t1 <<std::endl;
@@ -169,7 +169,8 @@ void data_map_reduce(network net, int number_of_images, int portno)
 	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
 	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
 	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
-	     ready_queue.Enqueue(cli_id);
+	     int all = merge_v2(cli_id, id, 0);
+	     ready_queue.Enqueue(all);
 	}
    }
 
@@ -187,8 +188,8 @@ inline void gateway_compute_mr(network *netp, int cli_id, int image_id)
 
 
     for(int part = 0; part < PARTITIONS; part ++){
-       join_output_mr(part, recv_data_mr[image_id][part],  stage_out, upto, net);
-       free(recv_data_mr[image_id][part]);
+       join_output_mr(part, recv_data[image_id][cli_id][part],  stage_out, upto, net);
+       free(recv_data[image_id][cli_id][part]);
     }
 
     net.input = stage_out;
@@ -218,10 +219,14 @@ void gateway_service_mr(network net, int number_of_images, std::string thread_na
     net.threadpool = pthreadpool_create(THREAD_NUM);
 #endif
     int cli_id;
+    int all;
+    int frame;
     int id = 0;
     for(id = 0; id < number_of_images; id++){
-	cli_id = ready_queue.Dequeue();
-	gateway_compute_mr(&net, cli_id, id);
+	all = ready_queue.Dequeue();
+	cli_id = get_cli_v2(all);
+	frame = get_frame_v2(all);
+	gateway_compute_mr(&net, cli_id, frame);
 
 
 	#ifdef DEBUG_DIST
@@ -277,13 +282,13 @@ void gateway_sync_mr(network net, int number_of_images, std::string thread_name)
 
 
 void smart_gateway_mr(){
-    int number_of_images = 4;
+    int number_of_images = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
     network net = reshape_network_mr(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     std::thread t1(gateway_sync_mr, net, number_of_images, "gateway_sync_mr");
-    std::thread t2(gateway_service_mr, net, number_of_images, "gateway_service_mr");
+    std::thread t2(gateway_service_mr, net, number_of_images*DATA_CLI, "gateway_service_mr");
 
     g_t0 = what_time_is_it_now();
     g_t1 = 0;
