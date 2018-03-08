@@ -58,14 +58,30 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
     }
 }
 
-
-
-inline void forward_network_dist_share(network *netp, int sockfd, int frame)
+inline void send_yolo_input(network *netp, int sockfd, int frame)
 {
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in cli_addr;
     clilen = sizeof(cli_addr);
+    network net = *netp;
+    if(netp -> input != NULL ){
+      char request_type[10];
+      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+      read_sock(newsockfd, request_type, 10);
+      dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
+      std::cout << "Sending the entire input to gateway ..." << std::endl;
+      send_result_share(blob, AP, PORTNO);
+      //free(netp -> input);
+      delete blob;
+    }
+
+}
+
+
+inline void forward_network_dist_share(network *netp, int sockfd, int frame)
+{
+
 
     network net = *netp;
 
@@ -74,6 +90,12 @@ inline void forward_network_dist_share(network *netp, int sockfd, int frame)
     double time0 = 0.0;
     double time1 = 0.0;
 
+
+/*
+    int newsockfd;
+    socklen_t clilen;
+    struct sockaddr_in cli_addr;
+    clilen = sizeof(cli_addr);
     if(netp -> input != NULL ){
 
       char request_type[10];
@@ -86,6 +108,7 @@ inline void forward_network_dist_share(network *netp, int sockfd, int frame)
       //free(netp -> input);
       delete blob;
     }
+*/
 
     float* data;
     int part_id;
@@ -103,6 +126,29 @@ inline void forward_network_dist_share(network *netp, int sockfd, int frame)
     }
     time1 = what_time_is_it_now();
     comp_time = comp_time + (time1 - time0); 
+
+}
+
+
+void send_all_input_to_gateway(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name)
+{
+    network *net = netp;
+    srand(2222222);
+    int id = 0;//5000 > id > 0
+    unsigned int cnt = 0;//5000 > id > 0
+
+    for(cnt = 0; cnt < number_of_jobs; cnt ++){
+        image sized;
+	sized.w = net->w; sized.h = net->h; sized.c = net->c;
+	id = cnt;
+        load_image_by_number(&sized, id);
+        net->input  = sized.data;
+        net->truth = 0;
+        net->train = 0;
+        net->delta = 0;
+        send_yolo_input(net, sockfd, cnt);
+        free_image(sized);
+    }
 
 }
 
@@ -129,7 +175,7 @@ void client_with_image_input_share(network *netp, unsigned int number_of_jobs, i
         net->train = 0;
         net->delta = 0;
         forward_network_dist_share(net, sockfd, cnt);
-	if((cnt+1) == IMG_NUM) {
+	if((cnt+1) == IMG_NUM*DATA_CLI) {
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
         free_image(sized);
@@ -155,7 +201,7 @@ void client_without_image_input_share(network *netp, unsigned int number_of_jobs
         net->train = 0;
         net->delta = 0;
         forward_network_dist_share(net, sockfd, cnt);
-	if((cnt+1) == IMG_NUM) {
+	if((cnt+1) == IMG_NUM*DATA_CLI) {
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
     }
@@ -178,10 +224,12 @@ void busy_client_share(){
     int sockfd_syn = bind_port_client_share(SMART_GATEWAY);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_with_image_input_share, &net, number_of_jobs, sockfd_syn, "client_with_image_input_share");
-    std::thread t2(get_data_and_send_result_to_gateway, number_of_jobs, sockfd, "get_data_and_send_result_to_gateway");
+    std::thread t1(send_all_input_to_gateway, &net, number_of_jobs, sockfd_syn, "send_all_input_to_gateway");
+    std::thread t2(client_without_image_input_share, &net, number_of_jobs*DATA_CLI, sockfd_syn, "client_without_image_input_share");
+    std::thread t3(get_data_and_send_result_to_gateway, number_of_jobs*DATA_CLI, sockfd, "get_data_and_send_result_to_gateway");
     t1.join();
     t2.join();
+    t3.join();
 }
 
 
@@ -194,8 +242,8 @@ void idle_client_share(){
     int sockfd = bind_port_client_share(PORTNO);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
-    std::thread t1(client_without_image_input_share, &net, number_of_jobs, sockfd, "client_without_image_input_share");
-    std::thread t2(get_data_and_send_result_to_gateway, number_of_jobs, sockfd, "get_data_and_send_result_to_gateway");
+    std::thread t1(client_without_image_input_share, &net, number_of_jobs*DATA_CLI, sockfd, "client_without_image_input_share");
+    std::thread t2(get_data_and_send_result_to_gateway, number_of_jobs*DATA_CLI, sockfd, "get_data_and_send_result_to_gateway");
     t1.join();
     t2.join();
 }
