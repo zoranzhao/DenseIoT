@@ -31,7 +31,7 @@ def plot_mem_prof(ax, filename1="", filename2="", filename3="",  filename4=""):
     print x
 
 
-    width = 0.5
+    width = 0.7
 
 
     ax.bar(x, y1, width, label='Output data', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
@@ -42,7 +42,7 @@ def plot_mem_prof(ax, filename1="", filename2="", filename3="",  filename4=""):
     ax.set_xticks(x)
     layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
     layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
-    ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    ax.set_xticklabels(layer_names_yolo_608, rotation=90)
     #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
     ax.set_xlim([-1,len(x)])
     plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
@@ -84,7 +84,7 @@ def plot_time_prof(ax, filename1="", filename2=""):
     y2 =  load_data(filename2)
     x = np.arange(len(y1))
     print x
-    width = 0.5
+    width = 0.7
 
     ax.bar(x, y1, width, label='Computation', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
     ax.bar(x, y2, width, bottom=y1, label='Communication', color=[0.3, 0.3, 0.3], edgecolor=[0.3, 0.3, 0.3])
@@ -93,7 +93,7 @@ def plot_time_prof(ax, filename1="", filename2=""):
     ax.set_xticks(x)
     layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2", "conv3", "conv4", "conv5", "max3", "conv6", "conv7", "conv8", "max4", "conv9", "conv10", "conv11", "conv12", "conv13", "max5", "conv14", "conv15", "conv16", "conv17", "conv18", "conv19", "conv20", "route1", "conv21", "reorg", "route2", "conv22", "conv23", "region"]
     layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
-    ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    ax.set_xticklabels(layer_names_yolo_608, rotation=90)
     #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
     ax.set_xlim([-1,len(x)])
     plt.legend(loc=9, ncol=4, bbox_to_anchor=(0.5, 1.16), framealpha=1)
@@ -306,9 +306,9 @@ def plot_mem_footprint(ax, filename_list=[""]):
 			"profile/yolo608/5X5/layer_output_ir.log",
 			"profile/yolo608/5X5/layer_weight.log", 
 			"profile/yolo608/5X5/layer_other.log"]
-    y7 = np.array(load_data(filename_list[0])) + np.array(load_data(filename_list[1]))
+    y7 = np.array(load_data(filename_list[0])) + np.array(load_data(filename_list[1])) + np.array(load_data(filename_list[2]))
     y8=  load_data(filename_list[3])
-    y9 = np.array(load_data(filename_list[4])) + np.array(load_data(filename_list[2]))
+    y9 = np.array(load_data(filename_list[4]))
 
 
 
@@ -317,29 +317,29 @@ def plot_mem_footprint(ax, filename_list=[""]):
     print x
 
 
-    width = 0.3
+    width = 0.25
+    space = 0.30
 
-
-    ax.bar(x-width, y1, width, label='Data (Original)', color=[0.5, 0.5, 0.5],  edgecolor =[0.5, 0.5, 0.5])
+    ax.bar(x-space, y1, width, label='Data (Original)', color=[0.5, 0.5, 0.5],  edgecolor =[0.5, 0.5, 0.5])
     ax.bar(x,       y4, width, label='Data (BODP-4)', color=[0.7, 0.7, 0.7],  edgecolor =[0.7, 0.7, 0.7])
-    ax.bar(x+width, y7, width, label='Data (FG-5X5)', color=[0.9, 0.9, 0.9],  edgecolor =[0.9, 0.9, 0.9])
+    ax.bar(x+space, y7, width, label='Data (FG-5X5)', color=[0.9, 0.9, 0.9],  edgecolor =[0.9, 0.9, 0.9])
 
-    ax.bar(x-width, y2, width, bottom=y1, label='Weight', color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
-    ax.bar(x-width, y3, width, bottom=[sum(yy) for yy in zip(y1, y2)], label='Other', color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
+    ax.bar(x-space, y2, width, bottom=y1, label='Weight', color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
+    ax.bar(x-space, y3, width, bottom=[sum(yy) for yy in zip(y1, y2)], label='Other', color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
 
     ax.bar(x, y5, width, bottom=y4,  color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
     ax.bar(x, y6, width, bottom=[sum(yy) for yy in zip(y4, y5)],  color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
 
-    ax.bar(x+width, y8, width, bottom=y7,  color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
-    ax.bar(x+width, y9, width, bottom=[sum(yy) for yy in zip(y7, y8)],  color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
+    ax.bar(x+space, y8, width, bottom=y7,  color=[0.9, 0.9, 0.9], edgecolor =[0.5, 0.5, 0.5], hatch='/////')
+    ax.bar(x+space, y9, width, bottom=[sum(yy) for yy in zip(y7, y8)],  color= [0.1, 0.1, 0.1], edgecolor= [0.1, 0.1, 0.1])
 
     ax.set_xticks(x)
     layer_names_yolo_608 = ["conv1", "max1", "conv2", "max2",  "conv3", "conv4", "conv5", "max3",  "conv6", "conv7", "conv8", "max4",  "conv9", "conv10", "conv11", "conv12"]
     layer_names_tiny_yolo = ["conv1", "max1", "conv2", "max2", "conv3", "max3", "conv4", "max4", "conv5", "max5", "conv6", "max6", "conv7", "conv8", "conv9", "region"]
-    ax.set_xticklabels(layer_names_yolo_608, rotation=30)
+    ax.set_xticklabels(layer_names_yolo_608, rotation=0)
     #ax.set_xticklabels(layer_names_tiny_yolo, rotation=30)
     ax.set_xlim([-1,len(x)])
-    plt.legend(loc=9, ncol=5, bbox_to_anchor=(0.5, 1.16), framealpha=1)
+    plt.legend(loc=9, ncol=5, bbox_to_anchor=(0.5, 1.1), framealpha=1)
 
     return ax
 
@@ -489,6 +489,6 @@ if __name__ == "__main__":
     #fig = plot_figure_time_prof()
     #fig = plot_figure_one_input_resource()
     #fig = plot_figure_reuse_benefit()
-    #fig = plot_figure_mem_footprint()
-    fig = plot_figure_mem_total()
+    fig = plot_figure_mem_footprint()
+    #fig = plot_figure_mem_total()
     plt.show()
