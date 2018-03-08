@@ -1,5 +1,10 @@
 #include "darknet_dist_mr.h"
 //ACT_CLI
+inline int merge_v2(int cli, int frame, int part);
+inline int get_cli_v2(int all);
+inline int get_part_v2(int all);
+inline int get_frame_v2(int all);
+
 void cal_workload_mapping(){
    int min = PARTITIONS/ACT_CLI;
    int remain = PARTITIONS%ACT_CLI;
@@ -161,7 +166,8 @@ void task_share(network net, int number_of_images, int portno)
 	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
 	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
 	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
-	     ready_queue.Enqueue(cli_id);
+	     int all = merge_v2(cli_id, id, 0);
+	     ready_queue.Enqueue(all);
 	}
    }
    close(sockfd);
@@ -209,10 +215,14 @@ void gateway_service_share(network net, int number_of_images, std::string thread
     net.threadpool = pthreadpool_create(THREAD_NUM);
 #endif
     int cli_id;
+    int all;
+    int frame;
     int id = 0;
     for(id = 0; id < number_of_images; id++){
-	cli_id = ready_queue.Dequeue();
-	gateway_compute_share(&net, cli_id, id);
+	all = ready_queue.Dequeue();
+	cli_id = get_cli_v2(all);
+	frame = get_frame_v2(all);
+	gateway_compute_share(&net, cli_id, frame);
 
 
 	#ifdef DEBUG_DIST
@@ -274,7 +284,7 @@ void smart_gateway_share(){
     network net = reshape_network(0, STAGES-1, *netp);
     exec_control(START_CTRL);
     std::thread t1(gateway_sync_share, net, number_of_images, "gateway_sync_share");
-    std::thread t2(gateway_service_share, net, number_of_images, "gateway_service_share");
+    std::thread t2(gateway_service_share, net, number_of_images*DATA_CLI, "gateway_service_share");
 
     g_t1 = 0;
     t1.join();
