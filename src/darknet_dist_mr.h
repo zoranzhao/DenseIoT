@@ -30,13 +30,13 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
     int start_h = 0;
     int end_h = stride_h - 1;
 
-    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    //std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
 
     for(int p_h = 0; p_h < partition_h; p_h++){
        start_w = 0;
        end_w = stride_w - 1;	 
        for(int p_w = 0; p_w < partition_w; p_w++){
-    	   std::cout << " start_w: " << start_w << " end_w: " << end_w << std::endl;
+    	   //std::cout << " start_w: " << start_w << " end_w: " << end_w << std::endl;
 	   output_ranges_mr[part_id[p_h][p_w]][i].w1 = start_w;
 	   output_ranges_mr[part_id[p_h][p_w]][i].w2 = end_w;
 	   output_ranges_mr[part_id[p_h][p_w]][i].h1 = start_h;
@@ -189,7 +189,7 @@ void cal_reuse_overlap_range_mr(int p_h, int p_w,  int i, sub_index output_range
 
 
 inline network reshape_network_mr(int startfrom, int upto, network net){
-    int print_reshape_info = 0;
+    int print_reshape_info = 1;
     numbering_part_id();
     cal_each_layer_partition_mr(net, startfrom, upto);
 
