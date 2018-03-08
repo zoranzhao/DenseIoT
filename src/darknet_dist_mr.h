@@ -59,7 +59,7 @@ inline void cal_each_layer_partition_mr(network net, int startfrom, int upto){
     for(int i = startfrom; i < upto+1; i++){
 	layer_output_partition_mr(net, i);
     }
-    std::cout << "Fuck the whole world !!!!!!!!!" << std::endl;
+
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = 0; p_w < PARTITIONS_W; p_w++){ 
 	   for(int i = upto; i >= startfrom; i--){
