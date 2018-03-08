@@ -21,7 +21,7 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
     int h = net.layers[i].out_h;
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
-    std::cout << " w: " << w << " h: " << h << "  " << partition_w << "  " << partition_h << std::endl;
+    //std::cout << " w: " << w << " h: " << h << "  " << partition_w << "  " << partition_h << std::endl;
     int stride_w = ceil(((float)w)/((float)partition_w));    
     int start_w = 0;
     int end_w = stride_w - 1;
@@ -39,6 +39,7 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
        std::cout << " start_w: " << start_w << " end_w: " << end_w << std::endl;
        for(int p_w = 0; p_w < partition_w; p_w++){
     	   std::cout << " start_w: " << start_w << " end_w: " << end_w << std::endl;
+           std::cout << " p_w: " << p_w << " p_h: " << p_h << "part_id[p_h][p_w]: " << part_id[p_h][p_w] << std::endl;
 	   output_ranges_mr[part_id[p_h][p_w]][i].w1 = start_w;
 	   output_ranges_mr[part_id[p_h][p_w]][i].w2 = end_w;
 	   output_ranges_mr[part_id[p_h][p_w]][i].h1 = start_h;
