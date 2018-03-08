@@ -16,11 +16,12 @@ void join_output_mr(int part, float* part_result, float* stage_out, int upto, ne
 
 
 inline void layer_output_partition_mr(network net, int i){//partition the output of layer i
+    std::cout << "Layer is" << i << std::endl
     int w = net.layers[i].out_w;
     int h = net.layers[i].out_h;
     int partition_w = PARTITIONS_W;
     int partition_h = PARTITIONS_H;
-
+    std::cout << " w: " << w << " h: " << h << "  " << partition_w << "  " << partition_h << std::endl
     int stride_w = ceil(((float)w)/((float)partition_w));    
     int start_w = 0;
     int end_w = stride_w - 1;
@@ -28,6 +29,8 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
     int stride_h = ceil(((float)h)/((float)partition_h));    
     int start_h = 0;
     int end_h = stride_h - 1;
+
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h  std::endl
 
     for(int p_h = 0; p_h < partition_h; p_h++){
        start_w = 0;
@@ -51,6 +54,7 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
        else
 	       end_h = end_h + stride_h; 
     }
+    std::cout << "Layer is" << i << std::endl
 }
 
 
