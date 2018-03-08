@@ -4,8 +4,10 @@ int main(int argc, char **argv)
 {
     std::cout << "ACT_CLI " << atoi(argv[1]) << std::endl;
     std::cout << "CUR_CLI " << atoi(argv[1]) << std::endl;
+   
     ACT_CLI = atoi(argv[1]);
     CUR_CLI = atoi(argv[1]);
+
 
     if(0 == strcmp(argv[2], "toggle")){  
 	std::cout <<"toggle" << std::endl;
@@ -13,6 +15,7 @@ int main(int argc, char **argv)
     }else if(0 == strcmp(argv[2], "steal")){
 	PARTITIONS_W = atoi(argv[4]);
 	PARTITIONS_H = atoi(argv[5]);
+        DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
 	std::cout <<"nonshuffle" << std::endl;
@@ -30,6 +33,7 @@ int main(int argc, char **argv)
 	std::cout <<"shuffle" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
 	PARTITIONS_H = atoi(argv[5]);
+        DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
@@ -46,6 +50,7 @@ int main(int argc, char **argv)
 	std::cout <<"mapreduce" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
 	PARTITIONS_H = atoi(argv[5]);
+        DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
@@ -62,6 +67,7 @@ int main(int argc, char **argv)
 	std::cout <<"share" << std::endl;
 	PARTITIONS_W = atoi(argv[4]);
 	PARTITIONS_H = atoi(argv[5]);
+        DATA_CLI = atoi(argv[6]);
 	PARTITIONS = PARTITIONS_W*PARTITIONS_H;
 	std::cout << "P_W: "<<PARTITIONS_W << ", P_H: " << PARTITIONS_H << std::endl;
 	if(0 == strcmp(argv[3], "idle")){

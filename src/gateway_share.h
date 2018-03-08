@@ -101,64 +101,67 @@ void task_share(network net, int number_of_images, int portno)
    char *blob_buffer;
    double time0 = 0.0;
    double time1 = 0.0;
-
+   int frame;
    for(int id = 0; id < number_of_images; id++){
-     //Receive the data from a single client;
-     gateway_require_data("start", BLUE1, SMART_GATEWAY);
-     int cli_id;
-     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-     g_t0 = what_time_is_it_now();
+  	for(int cli_id = 0; cli_id < DATA_CLI; cli_id++){	
+	     //Receive the data from a single client;
+	     gateway_require_data("start", addr_list[cli_id], SMART_GATEWAY);
 
-     time0 = what_time_is_it_now();
-     read_sock(newsockfd, (char*)&cli_id, sizeof(cli_id));
-     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-     blob_buffer = (char*)malloc(bytes_length);
-     read_sock(newsockfd, blob_buffer, bytes_length);
-     close(newsockfd);
-     if(print_gateway)
-        std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
-     cal_workload_mapping();
-     //Distribute the data 
-     fork_input(0, (float*)blob_buffer, net);
-     int part = 0;
-     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-	std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
-        int input_sockfd = send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
-	for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
-		if(print_gateway)
-		  std::cout << "Sending the partition "<< part << " to client" << addr_list[cli_cnt] << std::endl;
-		bytes_length = input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float);
-		dataBlob* blob = new dataBlob(part_data[part], bytes_length, part); 
-		//send_result_share(blob, addr_list[cli_cnt], portno);
-                send_input_share(input_sockfd, blob);
-	       	free(part_data[part]);
-		delete blob;
-		part++;
+	     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	     g_t0 = what_time_is_it_now();
+
+	     time0 = what_time_is_it_now();
+	     read_sock(newsockfd, (char*)&frame, sizeof(frame));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     close(newsockfd);
+	     if(print_gateway)
+		std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
+	     cal_workload_mapping();
+	     //Distribute the data 
+	     fork_input(0, (float*)blob_buffer, net);
+	     int part = 0;
+	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+		std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
+		int input_sockfd = send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
+		for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
+			if(print_gateway)
+			  std::cout << "Sending the partition "<< part << " to client" << addr_list[cli_cnt] << std::endl;
+			bytes_length = input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float);
+			dataBlob* blob = new dataBlob(part_data[part], bytes_length, part); 
+			//send_result_share(blob, addr_list[cli_cnt], portno);
+		        send_input_share(input_sockfd, blob);
+		       	free(part_data[part]);
+			delete blob;
+			part++;
+		}
+		close(input_sockfd);
+	     }
+	     time1 = what_time_is_it_now();
+	     commu_time = commu_time + time1 - time0;
+
+	     for(int part_cnt = 0; part_cnt < PARTITIONS; part_cnt ++ ){
+		  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		  time0 = what_time_is_it_now();
+		  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+		  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+		  std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
+		  blob_buffer = (char*)malloc(bytes_length);
+		  read_sock(newsockfd, blob_buffer, bytes_length);
+		  time1 = what_time_is_it_now();
+		  commu_time = commu_time + time1 - time0;
+	     	  close(newsockfd);
+		  recv_data[id][cli_id][job_id]=(float*)blob_buffer;
+	     }
+	     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
+	     std::cout << "Global time is: " << g_t1 <<std::endl;
+	     std::cout << "Total latency for client "<< cli_id << " is: " << g_t1/((float)(id + 1)) << std::endl;
+	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
+	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
+	     if( ((id + 1) == IMG_NUM) && (cli_id == ACT_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
+	     ready_queue.Enqueue(cli_id);
 	}
-	close(input_sockfd);
-     }
-     time1 = what_time_is_it_now();
-     commu_time = commu_time + time1 - time0;
-
-     for(int part_cnt = 0; part_cnt < PARTITIONS; part_cnt ++ ){
-	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	  time0 = what_time_is_it_now();
-	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-          std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
-	  blob_buffer = (char*)malloc(bytes_length);
-	  read_sock(newsockfd, blob_buffer, bytes_length);
-	  time1 = what_time_is_it_now();
-	  commu_time = commu_time + time1 - time0;
-     	  close(newsockfd);
-          recv_data[id][cli_id][job_id]=(float*)blob_buffer;
-     }
-     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
-     std::cout << "Total latency is: " << g_t1/((float)(id + 1)) << std::endl;
-     std::cout << "The entire throughput of is: " << ((float)(id + 1))/g_t1 << std::endl;
-     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
-     if((id + 1) == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
-     ready_queue.Enqueue(cli_id);
    }
    close(sockfd);
 }

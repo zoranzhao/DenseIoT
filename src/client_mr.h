@@ -138,7 +138,7 @@ inline int bind_port_client(){
     return sockfd;
 }
 
-inline void forward_network_dist_mr(network *netp, int sockfd)
+inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
 {
     int newsockfd;
     socklen_t clilen;
@@ -151,7 +151,6 @@ inline void forward_network_dist_mr(network *netp, int sockfd)
 
     double time0 = 0.0;
     double time1 = 0.0;
-
     int upto = STAGES-1;
     if(netp -> input != NULL ){
 
@@ -159,8 +158,8 @@ inline void forward_network_dist_mr(network *netp, int sockfd)
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
       read_sock(newsockfd, request_type, 10);
 
-      int cli_id = 0;//TODO
-      dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), cli_id); 
+
+      dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
       std::cout << "Sending the entire input to gateway ..." << std::endl;
       send_result_mr(blob, AP, PORTNO);
       //free(netp -> input);
@@ -240,7 +239,7 @@ void client_with_image_input_mr(network *netp, unsigned int number_of_jobs, std:
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-        forward_network_dist_mr(net, sockfd);
+        forward_network_dist_mr(net, sockfd, cnt);
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
@@ -268,7 +267,7 @@ void client_without_image_input_mr(network *netp, unsigned int number_of_jobs, s
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-        forward_network_dist_mr(net, sockfd);
+        forward_network_dist_mr(net, sockfd, cnt);
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}

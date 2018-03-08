@@ -79,97 +79,100 @@ void data_map_reduce(network net, int number_of_images, int portno)
    std::list< int > job_id_list;
    double time0 = 0.0;
    double time1 = 0.0;
-
+   int frame;
    for(int id = 0; id < number_of_images; id++){
-     //Receive the data from a single client;
-     gateway_require_data("start", BLUE1, portno);
-     int cli_id;
-     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-     g_t0 = what_time_is_it_now();
+	for(int cli_id = 0; cli_id < DATA_CLI; cli_id++){	
+	     //Receive the data from a single client;
+	     gateway_require_data("start", addr_list[cli_id], portno);
+	     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	     g_t0 = what_time_is_it_now();
 
-     time0 = what_time_is_it_now();
-     read_sock(newsockfd, (char*)&cli_id, sizeof(cli_id));
-     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-     blob_buffer = (char*)malloc(bytes_length);
-     read_sock(newsockfd, blob_buffer, bytes_length);
-     close(newsockfd);
-     time1 = what_time_is_it_now();
-     commu_time = commu_time + time1 - time0;
-     if(print_gateway)
-        std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
+	     time0 = what_time_is_it_now();
+	     read_sock(newsockfd, (char*)&frame, sizeof(frame));
+	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+	     blob_buffer = (char*)malloc(bytes_length);
+	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     close(newsockfd);
+	     time1 = what_time_is_it_now();
+	     commu_time = commu_time + time1 - time0;
+	     if(print_gateway)
+		std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
 
-     time0 = what_time_is_it_now();
-     //Distribute the data 
-     fork_input_mr(0, (float*)blob_buffer, net);
-     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-        if(print_gateway)
-          std::cout << "Sending the partition "<< cli_cnt << " to client" << addr_list[cli_cnt] << std::endl;
-	bytes_length = input_ranges_mr[cli_cnt][0].w*input_ranges_mr[cli_cnt][0].h*net.layers[0].c*sizeof(float);
-	dataBlob* blob = new dataBlob(part_data_mr[cli_cnt], bytes_length, cli_cnt); 
-        send_result_mr(blob, addr_list[cli_cnt], portno);
-       	free(part_data_mr[cli_cnt]);
-	delete blob;
-     }
-     time1 = what_time_is_it_now();
-     commu_time = commu_time + time1 - time0;
+	     time0 = what_time_is_it_now();
+	     //Distribute the data 
+	     fork_input_mr(0, (float*)blob_buffer, net);
+	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+		if(print_gateway)
+		  std::cout << "Sending the partition "<< cli_cnt << " to client" << addr_list[cli_cnt] << std::endl;
+		bytes_length = input_ranges_mr[cli_cnt][0].w*input_ranges_mr[cli_cnt][0].h*net.layers[0].c*sizeof(float);
+		dataBlob* blob = new dataBlob(part_data_mr[cli_cnt], bytes_length, cli_cnt); 
+		send_result_mr(blob, addr_list[cli_cnt], portno);
+	       	free(part_data_mr[cli_cnt]);
+		delete blob;
+	     }
+	     time1 = what_time_is_it_now();
+	     commu_time = commu_time + time1 - time0;
 
-     for(int ii = 0; ii < STAGES - 1; ii ++){
-        for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-     	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	  time0 = what_time_is_it_now();
-	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	  blob_buffer = (char*)malloc(bytes_length);
-	  read_sock(newsockfd, blob_buffer, bytes_length);
-	  time1 = what_time_is_it_now();
-          commu_time = commu_time + time1 - time0;
-          if(print_gateway)
-             std::cout << "Receiving IR result at layer"<<ii<<" from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
-	  result_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii);
-	  free(blob_buffer);
-     	  close(newsockfd);
-  	  cli_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
-          job_id_list.push_back(job_id);
+	     for(int ii = 0; ii < STAGES - 1; ii ++){
+		for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+	     	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		  time0 = what_time_is_it_now();
+		  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+		  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+		  blob_buffer = (char*)malloc(bytes_length);
+		  read_sock(newsockfd, blob_buffer, bytes_length);
+		  time1 = what_time_is_it_now();
+		  commu_time = commu_time + time1 - time0;
+		  if(print_gateway)
+		     std::cout << "Receiving IR result at layer"<<ii<<" from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
+		  result_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii);
+		  free(blob_buffer);
+	     	  close(newsockfd);
+	  	  cli_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
+		  job_id_list.push_back(job_id);
+		}
+		time0 = what_time_is_it_now();
+		for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+		  std::string cur_addr = cli_list.front();
+		  cli_list.pop_front();
+		  int cur_id = job_id_list.front();
+		  job_id_list.pop_front();
+		  blob_buffer = (char*) req_ir_data_serialization_mr(net, cur_id, ii+1);
+		  bytes_length = req_ir_data_size_mr[cur_id/PARTITIONS_W][cur_id%PARTITIONS_W][ii+1]* sizeof(float);
+		  dataBlob* blob = new dataBlob(blob_buffer, bytes_length, cur_id); 
+		  if(print_gateway)
+		    std::cout << "Sending IR result at layer"<<(ii+1)<<" to client" << cur_addr << " part "<< cur_id << std::endl;
+		  send_result_mr(blob, cur_addr.c_str(), portno);
+		  free(blob_buffer);
+		  delete blob;
+		}
+		time1 = what_time_is_it_now();
+		commu_time = commu_time + time1 - time0;
+	     }
+	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+		  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		  time0 = what_time_is_it_now();
+		  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+		  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+		  blob_buffer = (char*)malloc(bytes_length);
+		  read_sock(newsockfd, blob_buffer, bytes_length);
+		  time1 = what_time_is_it_now();
+		  commu_time = commu_time + time1 - time0;
+	     	  close(newsockfd);
+		  if(print_gateway)
+		    std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
+		  recv_data_mr[id][job_id]=(float*)blob_buffer;
+	     }
+	     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
+	     std::cout << "Global time is: " << g_t1 <<std::endl;
+	     std::cout << "Total latency for client "<< cli_id << " is: " << g_t1/((float)(id + 1)) << std::endl;
+	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
+	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
+	     if( ((id + 1) == IMG_NUM) && (cli_id == ACT_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
+	     ready_queue.Enqueue(cli_id);
 	}
-        time0 = what_time_is_it_now();
-	for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-	  std::string cur_addr = cli_list.front();
-	  cli_list.pop_front();
-	  int cur_id = job_id_list.front();
-	  job_id_list.pop_front();
-	  blob_buffer = (char*) req_ir_data_serialization_mr(net, cur_id, ii+1);
-	  bytes_length = req_ir_data_size_mr[cur_id/PARTITIONS_W][cur_id%PARTITIONS_W][ii+1]* sizeof(float);
-	  dataBlob* blob = new dataBlob(blob_buffer, bytes_length, cur_id); 
-	  if(print_gateway)
-            std::cout << "Sending IR result at layer"<<(ii+1)<<" to client" << cur_addr << " part "<< cur_id << std::endl;
-	  send_result_mr(blob, cur_addr.c_str(), portno);
-	  free(blob_buffer);
-	  delete blob;
-	}
-        time1 = what_time_is_it_now();
-        commu_time = commu_time + time1 - time0;
-     }
-     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-	  newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	  time0 = what_time_is_it_now();
-	  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
-	  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-	  blob_buffer = (char*)malloc(bytes_length);
-	  read_sock(newsockfd, blob_buffer, bytes_length);
-	  time1 = what_time_is_it_now();
-          commu_time = commu_time + time1 - time0;
-     	  close(newsockfd);
-	  if(print_gateway)
-            std::cout << "Receiving IR result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
-          recv_data_mr[id][job_id]=(float*)blob_buffer;
-     }
-     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
-     std::cout <<"Total latency is: "<< g_t1/((float)(id + 1)) << std::endl;
-     std::cout << "The entire throughput of is: " << ((float)(id + 1))/g_t1 << std::endl;
-     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-     if((id + 1) == IMG_NUM) std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM  << std::endl;
-     ready_queue.Enqueue(cli_id);
    }
+
    close(sockfd);
 }
 

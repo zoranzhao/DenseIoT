@@ -103,6 +103,7 @@ unsigned int remote_frame_counters[CLI_NUM][PARTITIONS_MAX];
 
 int ACT_CLI;
 int CUR_CLI;
+int DATA_CLI;
 int PARTITIONS;
 int PARTITIONS_W;
 int PARTITIONS_H;

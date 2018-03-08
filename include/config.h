@@ -30,6 +30,7 @@
 
 extern int ACT_CLI;
 extern int CUR_CLI;
+extern int DATA_CLI;
 extern int PARTITIONS;
 extern int PARTITIONS_W;
 extern int PARTITIONS_H;
