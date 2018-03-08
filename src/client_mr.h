@@ -300,9 +300,9 @@ void busy_client_mr(){
     unsigned int number_of_jobs = IMG_NUM;
     network *netp = load_network((char*)"cfg/yolo.cfg", (char*)"yolo.weights", 0);
     set_batch_network(netp, 1);
-    int sockfd_syn = bind_port_client_mr(SMART_GATEWAY);
     network net = reshape_network_mr(0, STAGES-1, *netp);
     exec_control(START_CTRL);
+    int sockfd_syn = bind_port_client_mr(SMART_GATEWAY);
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
     std::thread t1(send_all_input_to_gateway, &net, number_of_jobs, sockfd_syn, "send_all_input_to_gateway");
