@@ -159,7 +159,7 @@ void task_share(network net, int number_of_images, int portno)
 	     std::cout << "Total latency for client "<< cli_id << " is: " << g_t1/((float)(id + 1)) << std::endl;
 	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
 	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
-	     if( ((id + 1) == IMG_NUM) && (cli_id == ACT_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
+	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
 	     ready_queue.Enqueue(cli_id);
 	}
    }
