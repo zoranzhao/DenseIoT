@@ -39,6 +39,36 @@ inline void layer_output_partition_mr(network net, int i){//partition the output
     std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
     std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
 
+
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+
+
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+
+
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+    std::cout << " stride_w: " << stride_w << " stride_h: " << stride_h << std::endl;
+
     for(int p_h = 0; p_h < partition_h; p_h++){
        start_w = 0;
        end_w = stride_w - 1;	 
