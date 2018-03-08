@@ -58,7 +58,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
     }
 }
 
-inline void send_yolo_input(network *netp, int sockfd, int frame)
+inline void send_yolo_input(network *netp, int sockfd, int frame, float* data)
 {
     int newsockfd;
     socklen_t clilen;
@@ -69,7 +69,7 @@ inline void send_yolo_input(network *netp, int sockfd, int frame)
       char request_type[10];
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
       read_sock(newsockfd, request_type, 10);
-      dataBlob* blob = new dataBlob(netp -> input, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
+      dataBlob* blob = new dataBlob((void*)data, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
       std::cout << "Sending the entire input to gateway ..." << std::endl;
       send_result_share(blob, AP, PORTNO);
       //free(netp -> input);
@@ -146,7 +146,7 @@ void send_all_input_to_gateway(network *netp, unsigned int number_of_jobs, int s
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-        send_yolo_input(net, sockfd, cnt);
+        send_yolo_input(net, sockfd, cnt, sized.data);
         free_image(sized);
     }
 
