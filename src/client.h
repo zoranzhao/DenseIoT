@@ -156,7 +156,7 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	part_id = get_part_v2(all);
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id <<", size is: "<< size <<std::endl;
+	std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size <<std::endl;
         time0 = what_time_is_it_now();
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
         time1 = what_time_is_it_now();

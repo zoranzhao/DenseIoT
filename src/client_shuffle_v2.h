@@ -311,7 +311,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	part_id = get_part_v2(all);
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
-	//std::cout << "Steal part " << part_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
+	std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
 	//std::cout << "[steals] .... got task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
 	if( ready == 0 && need_ir_data[part_id]==1){
 		time0 = what_time_is_it_now();
