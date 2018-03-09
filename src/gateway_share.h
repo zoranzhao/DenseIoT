@@ -120,6 +120,7 @@ void task_share(network net, int number_of_images, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     commu_data_amount = commu_data_amount + sizeof(job_id) + sizeof(bytes_length) + bytes_length; 
 	     close(newsockfd);
 	     if(print_gateway)
 		std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
@@ -137,6 +138,7 @@ void task_share(network net, int number_of_images, int portno)
 			dataBlob* blob = new dataBlob(part_data[part], bytes_length, part); 
 			//send_result_share(blob, addr_list[cli_cnt], portno);
 		        send_input_share(input_sockfd, blob);
+	                commu_data_amount = commu_data_amount + sizeof(job_id) + sizeof(bytes_length) + bytes_length; 
 		       	free(part_data[part]);
 			delete blob;
 			part++;
@@ -155,6 +157,7 @@ void task_share(network net, int number_of_images, int portno)
 		  blob_buffer = (char*)malloc(bytes_length);
 		  read_sock(newsockfd, blob_buffer, bytes_length);
 		  time1 = what_time_is_it_now();
+	          commu_data_amount = commu_data_amount + sizeof(job_id) + sizeof(bytes_length) + bytes_length; 
 		  commu_time = commu_time + time1 - time0;
 	     	  close(newsockfd);
 		  recv_data[id][cli_id][job_id]=(float*)blob_buffer;
@@ -165,7 +168,10 @@ void task_share(network net, int number_of_images, int portno)
 	     std::cout << "Total latency for client "<< cli_id << " is: " << g_t1/((float)(id + 1)) << std::endl;
 	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
 	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..." << std::endl;
-	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
+	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) {
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM) << std::endl;
+		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
+	     }
 	     int all = merge_v2(cli_id, id, 0);
 	     ready_queue.Enqueue(all);
 	}

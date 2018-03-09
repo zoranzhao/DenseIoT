@@ -94,6 +94,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 	     close(newsockfd);
 	     time1 = what_time_is_it_now();
+	     commu_data_amount = commu_data_amount + sizeof(frame) + sizeof(bytes_length) + bytes_length; 
 	     commu_time = commu_time + time1 - time0;
 	     if(print_gateway)
 		std::cout << "Receiving the entire input data to be distributed from client" << inet_ntoa(cli_addr.sin_addr) << std::endl;
@@ -107,6 +108,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 		bytes_length = input_ranges_mr[cli_cnt][0].w*input_ranges_mr[cli_cnt][0].h*net.layers[0].c*sizeof(float);
 		dataBlob* blob = new dataBlob(part_data_mr[cli_cnt], bytes_length, cli_cnt); 
 		send_result_mr(blob, addr_list[cli_cnt], portno);
+	        commu_data_amount = commu_data_amount + sizeof(frame) + sizeof(bytes_length) + bytes_length; 
 	       	free(part_data_mr[cli_cnt]);
 		delete blob;
 	     }
@@ -122,6 +124,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 		  blob_buffer = (char*)malloc(bytes_length);
 		  read_sock(newsockfd, blob_buffer, bytes_length);
 		  time1 = what_time_is_it_now();
+	          commu_data_amount = commu_data_amount + sizeof(frame) + sizeof(bytes_length) + bytes_length; 
 		  commu_time = commu_time + time1 - time0;
 		  if(print_gateway)
 		     std::cout << "Receiving IR result at layer"<<ii<<" from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
@@ -143,6 +146,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 		  if(print_gateway)
 		    std::cout << "Sending IR result at layer"<<(ii+1)<<" to client" << cur_addr << " part "<< cur_id << std::endl;
 		  send_result_mr(blob, cur_addr.c_str(), portno);
+	          commu_data_amount = commu_data_amount + sizeof(frame) + sizeof(bytes_length) + bytes_length; 
 		  free(blob_buffer);
 		  delete blob;
 		}
@@ -156,6 +160,7 @@ void data_map_reduce(network net, int number_of_images, int portno)
 		  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 		  blob_buffer = (char*)malloc(bytes_length);
 		  read_sock(newsockfd, blob_buffer, bytes_length);
+	          commu_data_amount = commu_data_amount + sizeof(frame) + sizeof(bytes_length) + bytes_length; 
 		  time1 = what_time_is_it_now();
 		  commu_time = commu_time + time1 - time0;
 	     	  close(newsockfd);
@@ -168,7 +173,10 @@ void data_map_reduce(network net, int number_of_images, int portno)
 	     std::cout << "Total latency for client "<< cli_id << " is: " << g_t1/((float)(id + 1)) << std::endl;
 	     std::cout << "The entire throughput of is: " << ((float)((id)*DATA_CLI + cli_id + 1))/g_t1 << std::endl;
 	     std::cout << "Data from client " << cli_id << " has been fully collected and begin to compute ..."<< std::endl;
-	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
+	     if( ((id + 1) == IMG_NUM) && (cli_id == DATA_CLI-1) ) {
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
+		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
+	     }
 	     int all = merge_v2(cli_id, id, 0);
 	     ready_queue.Enqueue(all);
 	}

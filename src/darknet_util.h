@@ -190,7 +190,7 @@ extern float* recv_data_mr[IMG_NUM][PARTITIONS_MAX];
 //Add some variable for communication and computation profiling
 extern double commu_time;
 extern double comp_time;
-
+extern double commu_data_amount;
 
 
 

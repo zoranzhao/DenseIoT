@@ -46,6 +46,7 @@ void notify_ir_ready(const char *dest_ip, int all,  int portno)
      write_sock(sockfd, request_type, 10);
      write_sock(sockfd, (char*)&cli_frame_part, sizeof(cli_frame_part));
      close(sockfd);
+     commu_data_amount = commu_data_amount + sizeof(cli_frame_part)  + 10 ; 
 }
 
 
@@ -158,15 +159,13 @@ void collect_result(network net, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     commu_data_amount = commu_data_amount + sizeof(bytes_length) + sizeof(all) + bytes_length ; 
 	     //std::cout << "Recving result from " << inet_ntoa(cli_addr.sin_addr) << "   ...    " << cli_addr.sin_addr.s_addr << std::endl;
 	     cli_id = get_cli_v2(all);
              job_id = get_part_v2(all);
              frame = get_frame_v2(all);
 	     std::cout << "[result]  .....Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " frame is: "<< frame <<std::endl;
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
-             frame_counters[cli_id][job_id]++;
-	     //unsigned int recv_counters[IMG_NUM][CLI_NUM];
-	     //float* recv_data[IMG_NUM][CLI_NUM][PARTITIONS];
              recv_data[frame][cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[frame][cli_id] = recv_counters[frame][cli_id] + 1; 
 	     //std::cout << "recv_counters "<< frame <<"..."<< cli_id <<"..."<< recv_counters[frame][cli_id] <<std::endl;
@@ -184,7 +183,10 @@ void collect_result(network net, int portno)
      	close(newsockfd);
 	time1 = what_time_is_it_now();
 	commu_time = commu_time + (time1 - time0); 
-	if(total_recved_num == (DATA_CLI*IMG_NUM)) std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
+	if(total_recved_num == (DATA_CLI*IMG_NUM)) {
+		std::cout << "Communication/synchronization overhead time is: " << commu_time/(IMG_NUM)  << std::endl;
+		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
+	}
    }
    close(sockfd);
 }
@@ -230,6 +232,7 @@ void task_and_ir_recorder(network net, int portno)
         if(strcmp (request_type,"register") == 0){
 	     std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     read_sock(newsockfd, (char*)&job_num, sizeof(job_num));
+	     commu_data_amount = commu_data_amount + sizeof(job_num); 
 	     if(job_num > 0){
 		job_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
 		std::cout << "Register task" << std::endl;
@@ -249,6 +252,7 @@ void task_and_ir_recorder(network net, int portno)
 		victim_addr = inet_addr("0.0.0.0");
 	     }
 	     write_sock(newsockfd, (char*)(&victim_addr), sizeof(in_addr_t));
+	     commu_data_amount = commu_data_amount + sizeof(in_addr_t); 
 	     //std::cout << "Task list is ... : " << std::endl;
 	     //for (std::list< std::string >::iterator it=job_list.begin(); it!=job_list.end(); ++it){
 		//std::cout <<  *it << std::endl;
@@ -261,6 +265,7 @@ void task_and_ir_recorder(network net, int portno)
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
 	     read_sock(newsockfd, blob_buffer, bytes_length);
+	     commu_data_amount = commu_data_amount + sizeof(bytes_length) + sizeof(all) + bytes_length ; 
              //std::cout << "[ir_data]  ..... Recved reuse data for partition number: "<< job_id << std::endl;
 	     result_ir_data_deserialization_gateway(net, job_id, (float*)blob_buffer, 0, STAGES-1, cli_id);
 	     free(blob_buffer);
@@ -280,6 +285,7 @@ void task_and_ir_recorder(network net, int portno)
 	     free(req);
              write_sock(newsockfd, (char*)&(reuse_size), sizeof(reuse_size));
              write_sock(newsockfd, (char*)reuse_data, reuse_size);
+	     commu_data_amount = commu_data_amount + sizeof(reuse_size) + sizeof(all) + reuse_size ; 
              free(reuse_data);
         }
      	close(newsockfd);

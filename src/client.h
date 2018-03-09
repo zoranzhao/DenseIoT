@@ -94,6 +94,7 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
 	std::cout << workload_amount << std::endl;
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
 
@@ -246,6 +247,7 @@ void serve_steal(int portno)
 	     write_sock(newsockfd, (char*)&all, sizeof(all));
 	     write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     write_sock(newsockfd, blob_buffer, bytes_length);
+	     commu_data_amount = commu_data_amount + sizeof(all) + sizeof(bytes_length) + bytes_length; 
 	     free(blob_buffer);
 	     time1 = what_time_is_it_now();
              commu_time = commu_time + (time1 - time0);

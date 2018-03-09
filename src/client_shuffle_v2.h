@@ -204,6 +204,7 @@ void client_compute_shuffle_v2(network *netp, unsigned int number_of_jobs, std::
         free_image(sized);
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
+		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
 		std::cout << "Computation time is: " << comp_time/IMG_NUM << std::endl;
 	}
     }
@@ -406,6 +407,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 			write_sock(newsockfd, (char*)&all, sizeof(all));
 			write_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 			write_sock(newsockfd, blob_buffer, bytes_length);
+			commu_data_amount = commu_data_amount + sizeof(all) + sizeof(bytes_length) + bytes_length; 
 		        //std::cout << "Got job "<< job_id << " from queue, "<<"job size is: "<< bytes_length <<", sending job "  << std::endl;
 		}else if( (need_ir_data[job_id]==1) && (is_part_ready_v2(job_id, frame, cli_id)) ){
 		     	write_sock(newsockfd, (char*)&all, sizeof(all));
@@ -413,6 +415,7 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 		    	write_sock(newsockfd, blob_buffer, bytes_length);
 			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id << std::endl;
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+			commu_data_amount = commu_data_amount + sizeof(all) + sizeof(bytes_length) + bytes_length + sizeof(job_id); 
 		}else if( need_ir_data[job_id]==1 ) {
 			bytes_length = input_ranges[job_id][0].w*input_ranges[job_id][0].h*net.layers[0].c*sizeof(float);
 			write_sock(newsockfd, (char*)&all, sizeof(all));
@@ -421,11 +424,13 @@ void serve_steal_and_gather_result_shuffle_v2(network net, int portno)
 			//std::cout << "Serve the stealing of reuse data for partition number: "<< job_id<<", well it is not ready yet ...." << std::endl;
 			job_id = -1; 
 			write_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+			commu_data_amount = commu_data_amount + sizeof(all) + sizeof(bytes_length) + bytes_length + sizeof(job_id); 
 		}
 
 	     }
 	     free(blob_buffer);
 	     time1 = what_time_is_it_now();
+
 	     commu_time = commu_time + (time1 - time0);
         }else if(strcmp (request_type,"ir_data") == 0){
 	     read_sock(newsockfd, (char*)&all, sizeof(all));
