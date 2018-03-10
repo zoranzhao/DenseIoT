@@ -129,7 +129,7 @@ void task_share(network net, int number_of_images, int portno)
 	     fork_input(0, (float*)blob_buffer, net);
 	     int part = 0;
 	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-		std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
+		if(print_gateway) std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
 		int input_sockfd = send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
 		for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
 			if(print_gateway)
@@ -153,7 +153,7 @@ void task_share(network net, int number_of_images, int portno)
 		  time0 = what_time_is_it_now();
 		  read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 		  read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
-		  std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
+		  if(print_gateway) std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 		  blob_buffer = (char*)malloc(bytes_length);
 		  read_sock(newsockfd, blob_buffer, bytes_length);
 		  time1 = what_time_is_it_now();
@@ -161,7 +161,7 @@ void task_share(network net, int number_of_images, int portno)
 		  commu_time = commu_time + time1 - time0;
 	     	  close(newsockfd);
 		  recv_data[id][cli_id][job_id]=(float*)blob_buffer;
-		  std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
+		  if(print_gateway) std::cout << "Receiving stage result at layer from client" << inet_ntoa(cli_addr.sin_addr)<< " part "<< job_id << std::endl;
 	     }
 	     g_t1 = g_t1 + what_time_is_it_now() - g_t0;
 	     std::cout << "Global time is: " << g_t1 <<std::endl;

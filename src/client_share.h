@@ -19,6 +19,7 @@ inline int bind_port_client_share(int portno){
 }
 
 void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd, std::string thread_name){
+    bool print_client = false;
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in cli_addr;
@@ -29,7 +30,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	    if (newsockfd < 0) sock_error("ERROR on accept");
 	    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
-	    std::cout << "Recved task number is: "<< total_part_num << std::endl;
+	    if(print_client) std::cout << "Recved task number is: "<< total_part_num << std::endl;
 	    cur_client_task_num = total_part_num;
 	    //close(newsockfd);
 
@@ -43,7 +44,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 	       read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	       blob_buffer = (char*)malloc(bytes_length);
 	       read_sock(newsockfd, blob_buffer, bytes_length);
-	       std::cout << "Recved task : "<< job_id << " Size is: "<< bytes_length << std::endl;
+	       if(print_client) std::cout << "Recved task : "<< job_id << " Size is: "<< bytes_length << std::endl;
 	       put_job(blob_buffer, bytes_length, job_id);
 
 	    }
@@ -51,8 +52,8 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 
 	    for(int i = 0; i < total_part_num; i++){
 		dataBlob* blob = result_queue.Dequeue();
-		std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
-		std::cout <<"Sending results ID is: "<< blob->getID() << std::endl;  
+		if(print_client) std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
+		if(print_client) std::cout <<"Sending results ID is: "<< blob->getID() << std::endl;  
 		send_result_share(blob, AP, PORTNO);
 	    }
     }
@@ -60,6 +61,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 
 inline void send_yolo_input(network *netp, int sockfd, int frame, float* data)
 {
+    bool print_client = false;
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in cli_addr;
@@ -70,7 +72,7 @@ inline void send_yolo_input(network *netp, int sockfd, int frame, float* data)
       newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
       read_sock(newsockfd, request_type, 10);
       dataBlob* blob = new dataBlob((void*)data, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
-      std::cout << "Sending the entire input to gateway ..." << std::endl;
+      if(print_client) std::cout << "Sending the entire input to gateway ..." << std::endl;
       send_result_share(blob, AP, PORTNO);
       //free(netp -> input);
       delete blob;
@@ -82,7 +84,7 @@ inline void send_yolo_input(network *netp, int sockfd, int frame, float* data)
 inline void forward_network_dist_share(network *netp, int sockfd, int frame)
 {
 
-
+    bool print_client = false;
     network net = *netp;
 
     int startfrom = 0;
@@ -116,9 +118,9 @@ inline void forward_network_dist_share(network *netp, int sockfd, int frame)
 
     time0 = what_time_is_it_now();
     for(int part = 0; 1; part ++){
-       std::cout << "Getting job task " << std::endl;
+       if(print_client) std::cout << "Getting job task " << std::endl;
        get_job((void**)&data, &size, &part_id);
-       std::cout << "Processing task " << part_id << std::endl;
+       if(print_client) std::cout << "Processing task " << part_id << std::endl;
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), part_id);
        free(data);
