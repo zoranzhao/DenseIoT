@@ -23,9 +23,9 @@ inline void forward_network_dist_local_mr(network *netp)
     double t0 = get_real_time_now();
     float* tmp[PARTITIONS];
     for(int ii = startfrom; ii < (upto + 1); ii++){
-	std::cout << "At layer ... " << ii << std::endl;        
+	//std::cout << "At layer ... " << ii << std::endl;        
 	for(part_id = 0; part_id<PARTITIONS; part_id ++){
-	   std::cout << "==========Processing=============: " << part_id << std::endl;
+	   //std::cout << "==========Processing=============: " << part_id << std::endl;
            output_part_data_mr[part_id] = (float*)malloc(
 						(input_ranges_mr[part_id][ii].w/net.layers[ii].stride)*
 						(input_ranges_mr[part_id][ii].h/net.layers[ii].stride)*net.layers[ii].out_c*sizeof(float));
@@ -46,7 +46,7 @@ inline void forward_network_dist_local_mr(network *netp)
 	      //req_ir_data_deserialization_mr(net, part_id, tmp[part_id], ii+1);
 	      //free(tmp[part_id]);
 	   //}
-	   std::cout << "==========Preparing the input for next layer=============: " << std::endl;
+	   //std::cout << "==========Preparing the input for next layer=============: " << std::endl;
 	   for(part_id = 0; part_id<PARTITIONS; part_id ++){
                free(part_data_mr[part_id]);
 	       cross_map_overlap_output(net, part_id, ii+1);
@@ -189,7 +189,7 @@ inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
 	     float* part_result = result_ir_data_serialization_mr(net, job_id, ii);	
 	     unsigned int result_size = result_ir_data_size_mr[job_id/PARTITIONS_W][job_id%PARTITIONS_W][ii]*sizeof(float);
 	     dataBlob* blob = new dataBlob(part_result, result_size, job_id); 
-             std::cout << "Sending IR result at layer"<<(ii)<<" to AP" << " part "<< job_id << std::endl;
+             //std::cout << "Sending IR result at layer"<<(ii)<<" to AP" << " part "<< job_id << std::endl;
              send_result_mr(blob, AP, PORTNO);
 	     free(part_result);
 	     delete blob;
@@ -199,7 +199,7 @@ inline void forward_network_dist_mr(network *netp, int sockfd, int frame)
              read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
 	     read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
 	     blob_buffer = (char*)malloc(bytes_length);
-             std::cout << "Receiving IR result for layer"<<(ii+1)<<" from AP" << " part "<< job_id << std::endl;
+             //std::cout << "Receiving IR result for layer"<<(ii+1)<<" from AP" << " part "<< job_id << std::endl;
 	     read_sock(newsockfd, blob_buffer, bytes_length);
 
 	     req_ir_data_deserialization_mr(net, job_id, (float*)blob_buffer, ii+1);
