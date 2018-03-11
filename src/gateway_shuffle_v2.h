@@ -67,7 +67,7 @@ void gateway_service_shuffle_v2(network net, std::string thread_name){
     int id = 0;
     while(1){
 	all = ready_queue.Dequeue();
-	std::cout << "Processing image from" << get_cli(all) << std::endl;
+	//std::cout << "Processing image from" << get_cli(all) << std::endl;
 	gateway_compute(&net, all);
 	#ifdef DEBUG_DIST
 	image sized;
@@ -164,7 +164,7 @@ void collect_result(network net, int portno)
 	     cli_id = get_cli_v2(all);
              job_id = get_part_v2(all);
              frame = get_frame_v2(all);
-	     std::cout << "[result]  .....Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " frame is: "<< frame <<std::endl;
+	     //std::cout << "[result]  .....Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " frame is: "<< frame <<std::endl;
 	     //std::cout << "Data from client " << cli_id << " part "<< job_id <<" is collected ... "<< " size is: "<< bytes_length <<std::endl;
              recv_data[frame][cli_id][job_id]=(float*)blob_buffer;
 	     recv_counters[frame][cli_id] = recv_counters[frame][cli_id] + 1; 
@@ -230,15 +230,15 @@ void task_and_ir_recorder(network net, int portno)
 	time0 = what_time_is_it_now();
         read_sock(newsockfd, request_type, 10); 
         if(strcmp (request_type,"register") == 0){
-	     std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
+	     //std::cout << "Recving task registration from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;
 	     read_sock(newsockfd, (char*)&job_num, sizeof(job_num));
 	     commu_data_amount = commu_data_amount + sizeof(job_num); 
 	     if(job_num > 0){
 		job_list.push_back( std::string(inet_ntoa(cli_addr.sin_addr)) );
-		std::cout << "Register task" << std::endl;
+		//std::cout << "Register task" << std::endl;
 	     }else{
 		job_list.remove(  std::string(inet_ntoa(cli_addr.sin_addr)) );
-		std::cout << "Delete task" << std::endl;
+		//std::cout << "Delete task" << std::endl;
              }
 	}else if(strcmp (request_type,"steals") == 0){
 	     //std::cout << "Recving quest from " << inet_ntoa(cli_addr.sin_addr) <<std::endl;

@@ -15,7 +15,7 @@ inline int forward_network_dist_gateway(network *netp, network orig, int frame)
     char reg[10] = "register";
 
     for(part = 0; part < PARTITIONS; part ++){
-      printf("Putting jobs %d\n", part);
+      //printf("Putting jobs %d\n", part);
       put_job(part_data[part], input_ranges[part][startfrom].w*input_ranges[part][startfrom].h*net.layers[startfrom].c*sizeof(float), merge_v2(cli_id, frame, part));
     }
     ask_gateway(reg, AP, SMART_GATEWAY); //register number of tasks
@@ -34,16 +34,16 @@ inline int forward_network_dist_gateway(network *netp, network orig, int frame)
        part_id = get_part_v2(all);
 
        if(data == NULL) {
-	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
+	   //printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
 	   workload_amount = part;
 	   break;
        }
-       std::cout<< "Processing task "<< part_id <<std::endl;
+       //std::cout<< "Processing task "<< part_id <<std::endl;
        time0 = what_time_is_it_now();
        net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W,  data, startfrom, upto, net);
        time1 = what_time_is_it_now();
-       std::cout << "partition time is: " << (time1 - time0)<< std::endl;
+       //std::cout << "partition time is: " << (time1 - time0)<< std::endl;
        comp_time = comp_time + (time1 - time0); 
        
        put_result(net.layers[upto].output, net.layers[upto].outputs* sizeof(float), all);
@@ -91,7 +91,7 @@ void client_compute(network *netp, unsigned int number_of_jobs, std::string thre
         float *X = sized.data;
 	workload_amount  = workload_amount + network_predict_dist(net, X, cnt);
         free_image(sized);
-	std::cout << workload_amount << std::endl;
+	//std::cout << workload_amount << std::endl;
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
 		std::cout << "Communication data amount: " << commu_data_amount/(IMG_NUM*1024*1024) << std::endl;
@@ -157,7 +157,7 @@ inline void steal_through_gateway(network *netp, std::string thread_name){
 	part_id = get_part_v2(all);
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size <<std::endl;
+	//std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size <<std::endl;
         time0 = what_time_is_it_now();
 	net = forward_stage(part_id/PARTITIONS_W, part_id%PARTITIONS_W, data, startfrom, upto, net);
         time1 = what_time_is_it_now();
