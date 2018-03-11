@@ -97,7 +97,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = (p_h) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		need_ir_data[part_id[p_h][p_w]]=0;
-		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		//printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(reuse_part_data[part_id[p_h][p_w]], 
 			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			merge_v2(cli_id, frame, part_id[p_h][p_w]));
@@ -106,7 +106,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
     for(int p_h = 0; p_h < PARTITIONS_H; p_h++){
 	for(int p_w = (p_h+1) % 2; p_w < PARTITIONS_W; p_w = p_w + 2){ 
 		need_ir_data[part_id[p_h][p_w]]=1;
-		printf("Putting jobs %d\n", part_id[p_h][p_w]);
+		//printf("Putting jobs %d\n", part_id[p_h][p_w]);
 		put_job(reuse_part_data[part_id[p_h][p_w]], 
 			reuse_input_ranges[part_id[p_h][p_w]][startfrom].w*reuse_input_ranges[part_id[p_h][p_w]][startfrom].h*net.layers[startfrom].c*sizeof(float), 
 			merge_v2(cli_id, frame, part_id[p_h][p_w]));
@@ -127,7 +127,7 @@ inline int forward_network_dist_gateway_shuffle_v2(network *netp, network orig, 
        part_id = get_part_v2(all);
        if(data == NULL) {
 	   ask_gateway(reg, AP, SMART_GATEWAY); //remove the registration when we are running out of tasks
-	   printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
+	   //printf("%d parts out of the %d are processes locally, yeeha!\n", part, PARTITIONS); 
 	   workload_amount = part;
 	   break;
        }
@@ -200,7 +200,7 @@ void client_compute_shuffle_v2(network *netp, unsigned int number_of_jobs, std::
         load_image_by_number(&sized, id);
         float *X = sized.data;
 	workload_amount = workload_amount + network_predict_dist_shuffle_v2(net, X, cnt);
-	std::cout << workload_amount << std::endl;
+	//std::cout << workload_amount << std::endl;
         free_image(sized);
 	if((cnt+1) == IMG_NUM) {
 		std::cout << "Communication/synchronization overhead time is: " << commu_time/IMG_NUM << std::endl;
@@ -312,7 +312,7 @@ inline void steal_through_gateway_shuffle_v2(network *netp, std::string thread_n
 	part_id = get_part_v2(all);
 	frame = get_frame_v2(all);
 	size = blob -> getSize();
-	std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
+	//std::cout << "Steal part " << part_id << " from client "<< cli_id <<", size is: "<< size << " with ready flag: "<< ready <<std::endl;
 	//std::cout << "[steals] .... got task from cli "<< cli_id<< " , frame: " << frame << ", part: "<< part_id << std::endl;
 	if( ready == 0 && need_ir_data[part_id]==1){
 		time0 = what_time_is_it_now();
