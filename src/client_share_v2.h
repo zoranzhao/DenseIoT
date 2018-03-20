@@ -25,9 +25,6 @@ void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_o
 		    if(print_client) std::cout << "Recved task number is: "<< total_part_num << std::endl;
 		    if(print_client) std::cout << "Starting task ID is: "<< part << std::endl;
 		    cur_client_task_num = total_part_num;
-
-
-
 		    int job_id; 
 		    unsigned int bytes_length;  
 		    char* blob_buffer;
