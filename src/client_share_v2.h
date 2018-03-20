@@ -5,7 +5,7 @@ void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd
 
 void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name){
     network net = *netp; 
-    bool print_client = false;
+    bool print_client = true;
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in cli_addr;
