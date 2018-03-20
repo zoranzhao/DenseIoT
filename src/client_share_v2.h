@@ -29,6 +29,7 @@ void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_o
 		    unsigned int bytes_length;  
 		    char* blob_buffer;
 	     	    for(int i = 0; i < total_part_num; i ++ ){
+		        if(print_client) std::cout << "put_job task ID is: "<< part << std::endl;
 			put_job(part_data[part], input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float), part);
 			part ++;
 	   	    }
