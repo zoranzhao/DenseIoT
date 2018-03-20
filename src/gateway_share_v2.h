@@ -80,7 +80,7 @@ void task_share_v2(network net, int number_of_images, int portno)
 	     int input_sockfd;
 	     unsigned int to_sent;
 	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
-		input_sockfd = send_one_number(cli_cnt, addr_list[cli_cnt], portno );
+		input_sockfd = send_one_number(cli_id, addr_list[cli_cnt], portno );
 		if(cli_cnt == cli_id){ 
 			//send_two_number(part, assigned_task_num[cli_cnt], addr_list[cli_cnt], portno);
 			to_sent = part;
