@@ -76,13 +76,13 @@ int main(int argc, char **argv)
 	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
-		idle_client_share();
+		idle_client_share_v2();
 	}else if(0 == strcmp(argv[3], "victim")){
 		std::cout <<"victim" << std::endl;
-		busy_client_share();
+		busy_client_share_v2();
 	}else if(0 == strcmp(argv[3], "gateway")){
 		std::cout <<"gateway" << std::endl;
-		smart_gateway_share();
+		smart_gateway_share_v2();
 	}
     }
 
