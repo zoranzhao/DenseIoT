@@ -29,7 +29,7 @@ void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_o
 		    unsigned int bytes_length;  
 		    char* blob_buffer;
 	     	    for(int i = 0; i < total_part_num; i ++ ){
-			put_job(part_data[part], input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float), merge_v2(CUR_CLI, frame, part));
+			put_job(part_data[part], input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float), part);
 			part ++;
 	   	    }
 	   }else{
@@ -58,30 +58,6 @@ void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_o
 
 
 
-
-	    for(int i = 0; i < total_part_num; i++){
-		dataBlob* blob = result_queue.Dequeue();
-		if(print_client) std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
-		if(print_client) std::cout <<"Sending results ID is: "<< blob->getID() << std::endl;  
-		send_result_share(blob, AP, PORTNO);
-	    }
-    }
-}
-
-void send_result_to_gateway(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name){
-    network net = *netp; 
-    bool print_client = true;
-    int newsockfd;
-    socklen_t clilen;
-    struct sockaddr_in cli_addr;
-    clilen = sizeof(cli_addr);
-
-    for(int frame = 0; frame < number_of_jobs; frame++){
-	    unsigned int total_part_num = 0;
-            unsigned int part = 0;
-
-	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-	    if (newsockfd < 0) sock_error("ERROR on accept");
 
 	    for(int i = 0; i < total_part_num; i++){
 		dataBlob* blob = result_queue.Dequeue();
