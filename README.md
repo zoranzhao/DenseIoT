@@ -1,1 +1,1 @@
-# yolo_dist
+# DistrIoT
