@@ -31,6 +31,8 @@ inline int send_two_number(unsigned int number1, unsigned int number2, const cha
      return sockfd;
 }
 
+
+
 void task_share_v2(network net, int number_of_images, int portno)
 {  
    bool print_gateway = false;
@@ -75,14 +77,22 @@ void task_share_v2(network net, int number_of_images, int portno)
 	     //Distribute the data 
 	     fork_input(0, (float*)blob_buffer, net);
 	     int part = 0;
+	     int input_sockfd;
+	     unsigned int to_sent;
 	     for(int cli_cnt = 0; cli_cnt < ACT_CLI; cli_cnt ++ ){
+		input_sockfd = send_one_number(cli_cnt, addr_list[cli_cnt], portno );
 		if(cli_cnt == cli_id){ 
-			send_two_number(part, assigned_task_num[cli_cnt], addr_list[cli_cnt], portno);
+			//send_two_number(part, assigned_task_num[cli_cnt], addr_list[cli_cnt], portno);
+			to_sent = part;
+			write_sock(input_sockfd, (char*)&to_sent, sizeof(to_sent));
+			to_sent = assigned_task_num[cli_cnt];
+			write_sock(input_sockfd, (char*)&to_sent, sizeof(to_sent));
 			part = part + assigned_task_num[cli_cnt];
 			continue;
 		}
 		if(print_gateway) std::cout << "Sending to client" << addr_list[cli_cnt] << " Total task num is: " << assigned_task_num[cli_cnt] << std::endl;
-		int input_sockfd = send_one_number(assigned_task_num[cli_cnt], addr_list[cli_cnt], portno );
+		to_sent = assigned_task_num[cli_cnt];
+		write_sock(input_sockfd, (char*)&to_sent, sizeof(to_sent));
 		for(int i = 0; i < assigned_task_num[cli_cnt]; i ++ ){
 			if(print_gateway)
 			  std::cout << "Sending the partition "<< part << " to client" << addr_list[cli_cnt] << std::endl;

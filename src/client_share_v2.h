@@ -3,7 +3,73 @@ void send_result_share(dataBlob* blob, const char *dest_ip, int portno);
 inline int bind_port_client_share(int portno);
 void get_data_and_send_result_to_gateway(unsigned int number_of_jobs, int sockfd, std::string thread_name);
 
+void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name){
+    network net = *netp; 
+    bool print_client = false;
+    int newsockfd;
+    socklen_t clilen;
+    struct sockaddr_in cli_addr;
+    clilen = sizeof(cli_addr);
 
+    for(int frame = 0; frame < number_of_jobs; frame++){
+	    unsigned int total_part_num = 0;
+            unsigned int part = 0;
+	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+	    if (newsockfd < 0) sock_error("ERROR on accept");
+	    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
+
+   	    if(total_part_num == CUR_CLI){
+		    read_sock(newsockfd, (char*)&part, sizeof(part));
+		    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
+
+		    if(print_client) std::cout << "Recved task number is: "<< total_part_num << std::endl;
+		    if(print_client) std::cout << "Starting task ID is: "<< part << std::endl;
+		    cur_client_task_num = total_part_num;
+
+
+
+		    int job_id; 
+		    unsigned int bytes_length;  
+		    char* blob_buffer;
+	     	    for(int i = 0; i < total_part_num; i ++ ){
+			put_job(part_data[part], input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float), merge_v2(CUR_CLI, frame, part));
+			part ++;
+	   	    }
+	   }else{
+	            read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
+		    if(print_client) std::cout << "Recved task number is: "<< total_part_num << std::endl;
+		    cur_client_task_num = total_part_num;
+		    //close(newsockfd);
+
+
+		    int job_id; 
+		    unsigned int bytes_length;  
+		    char* blob_buffer;
+		    for(int i = 0; i < total_part_num; i++){
+		       //newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		       read_sock(newsockfd, (char*)&job_id, sizeof(job_id));
+		       read_sock(newsockfd, (char*)&bytes_length, sizeof(bytes_length));
+		       blob_buffer = (char*)malloc(bytes_length);
+		       read_sock(newsockfd, blob_buffer, bytes_length);
+		       if(print_client) std::cout << "Recved task : "<< job_id << " Size is: "<< bytes_length << std::endl;
+		       put_job(blob_buffer, bytes_length, job_id);
+
+		    }
+		    close(newsockfd);
+
+	    }
+
+
+
+
+	    for(int i = 0; i < total_part_num; i++){
+		dataBlob* blob = result_queue.Dequeue();
+		if(print_client) std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
+		if(print_client) std::cout <<"Sending results ID is: "<< blob->getID() << std::endl;  
+		send_result_share(blob, AP, PORTNO);
+	    }
+    }
+}
 
 void send_result_to_gateway(network *netp, unsigned int number_of_jobs, int sockfd, std::string thread_name){
     network net = *netp; 
@@ -19,22 +85,7 @@ void send_result_to_gateway(network *netp, unsigned int number_of_jobs, int sock
 
 	    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 	    if (newsockfd < 0) sock_error("ERROR on accept");
-	    read_sock(newsockfd, (char*)&total_part_num, sizeof(total_part_num));
-	    read_sock(newsockfd, (char*)&part, sizeof(part));
 
-	    if(print_client) std::cout << "Recved task number is: "<< total_part_num << std::endl;
-	    if(print_client) std::cout << "Starting task ID is: "<< part << std::endl;
-	    cur_client_task_num = total_part_num;
-
-     	    for(int i = 0; i < total_part_num; i ++ ){
-		put_job(part_data[part], input_ranges[part][0].w*input_ranges[part][0].h*net.layers[0].c*sizeof(float), merge_v2(CUR_CLI, frame, part));
-		part ++;
-   	    }
-
-
-	    int job_id; 
-	    unsigned int bytes_length;  
-	    char* blob_buffer;
 	    for(int i = 0; i < total_part_num; i++){
 		dataBlob* blob = result_queue.Dequeue();
 		if(print_client) std::cout <<"Sending results size is: "<< blob->getSize() << std::endl;
@@ -95,7 +146,7 @@ void busy_client_share_v2(){
     g_t0 = what_time_is_it_now();
     std::thread t1(send_all_input_to_gateway_and_fork_local, &net, number_of_jobs, sockfd_syn, "send_all_input_to_gateway_and_fork_local");
     std::thread t2(client_without_image_input_share, &net, number_of_jobs*DATA_CLI, sockfd_syn, "client_without_image_input_share");
-    std::thread t3(send_result_to_gateway, &net, number_of_jobs*DATA_CLI, sockfd, "send_result_to_gateway");
+    std::thread t3(get_data_and_send_result_to_gateway_v2, &net, number_of_jobs*DATA_CLI, sockfd, "get_data_and_send_result_to_gateway_v2");
     t1.join();
     t2.join();
     t3.join();
@@ -112,7 +163,7 @@ void idle_client_share_v2(){
     g_t1 = 0;
     g_t0 = what_time_is_it_now();
     std::thread t1(client_without_image_input_share, &net, number_of_jobs*DATA_CLI, sockfd, "client_without_image_input_share");
-    std::thread t2(get_data_and_send_result_to_gateway, number_of_jobs*DATA_CLI, sockfd, "get_data_and_send_result_to_gateway");
+    std::thread t2(get_data_and_send_result_to_gateway_v2, &net, number_of_jobs*DATA_CLI, sockfd, "get_data_and_send_result_to_gateway_v2");
     t1.join();
     t2.join();
 }
