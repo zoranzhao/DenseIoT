@@ -58,13 +58,13 @@ int main(int argc, char **argv)
 	std::cout << "DATA_CLI: " << DATA_CLI << std::endl;
 	if(0 == strcmp(argv[3], "idle")){
 		std::cout <<"idle" << std::endl;
-		idle_client_mr();
+		idle_client_mr_v2();
 	}else if(0 == strcmp(argv[3], "victim")){
 		std::cout <<"victim" << std::endl;
-		busy_client_mr();
+		busy_client_mr_v2();
 	}else if(0 == strcmp(argv[3], "gateway")){
 		std::cout <<"gateway" << std::endl;
-		smart_gateway_mr();
+		smart_gateway_mr_v2();
 	}
     }else if(0 == strcmp(argv[2], "share")){
 	std::cout <<"share" << std::endl;
