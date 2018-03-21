@@ -70,7 +70,27 @@ void get_data_and_send_result_to_gateway_v2(network *netp, unsigned int number_o
 }
 
 
-inline void send_yolo_input(network *netp, int sockfd, int frame, float* data);
+inline void send_yolo_input_v2(network *netp, int sockfd, int frame, float* data)
+{
+    bool print_client = false;
+    int newsockfd;
+    socklen_t clilen;
+    struct sockaddr_in cli_addr;
+    clilen = sizeof(cli_addr);
+    network net = *netp;
+    if(netp -> input != NULL ){
+      char request_type[10];
+      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+      read_sock(newsockfd, request_type, 10);
+      dataBlob* blob = new dataBlob((void*)data, (stage_input_range.w)*(stage_input_range.h)*(net.layers[0].c)*sizeof(float), frame); 
+      if(print_client) std::cout << "Sending the entire input to gateway ..." << std::endl;
+      fork_input(0, data, *netp);
+      send_result_share(blob, AP, PORTNO);
+      //free(netp -> input);
+      delete blob;
+    }
+
+}
 inline void forward_network_dist_share(network *netp, int sockfd, int frame);
 
 
@@ -92,9 +112,7 @@ void send_all_input_to_gateway_and_fork_local(network *netp, unsigned int number
         net->truth = 0;
         net->train = 0;
         net->delta = 0;
-
-        fork_input(0, sized.data, *net);
-        send_yolo_input(net, sockfd, cnt, sized.data);
+        send_yolo_input_v2(net, sockfd, cnt, sized.data);
         free_image(sized);
     }
 
