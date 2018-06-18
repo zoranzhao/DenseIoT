@@ -54,7 +54,6 @@ inline void gateway_compute(network *netp, int all);
 
 
 void gateway_service_shuffle_v2(network net, std::string thread_name){
-
     net.truth = 0;
     net.train = 0;
     net.delta = 0;
