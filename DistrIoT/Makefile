@@ -3,7 +3,7 @@ SLIB=libdistriot.so
 ALIB=libdistriot.a
 EXEC=test
 OBJDIR=./obj/
-CONFIGPATH=../DenseIoT/include
+CONFIGPATH=../include
 
 CC=gcc
 CXX=g++
