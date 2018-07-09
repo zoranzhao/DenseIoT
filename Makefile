@@ -14,7 +14,7 @@ ARFLAGS=rcs
 LDFLAGS= -lm -pthread 
 CFLAGS=-Wall -fPIC
 DARKNET= ../darknet-nnpack
-DISTRIOT= ../DistrIoT
+DISTRIOT= ./DistrIoT
 COMMON= -I$(DARKNET)/include/ -I$(DARKNET)/src/ -I$(DISTRIOT)/include/ -I$(DISTRIOT)/src/  -Iinclude/ -Isrc/ 
 LDLIB=-L$(DARKNET) -l:libdarknet.a -L$(DISTRIOT) -l:libdistriot.a 
 
