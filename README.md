@@ -1,1 +1,1 @@
-# DistrIoT
+# DenseIoT
